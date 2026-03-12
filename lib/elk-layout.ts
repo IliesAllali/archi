@@ -129,6 +129,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       data: { entryPoints: n.entryPoints, targetId: n.id },
       selectable: false,
       draggable: false,
+      zIndex: 10,
     });
 
     rfEdges.push({

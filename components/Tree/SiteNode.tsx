@@ -19,58 +19,58 @@ interface Section {
 
 export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
   home: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Hero", h: 48, skin: "hero" },
-    { label: "Cards", h: 36, skin: "cards" },
-    { label: "Mise en avant", h: 28, skin: "image" },
-    { label: "CTA", h: 20, skin: "cta" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Hero", h: 60, skin: "hero" },
+    { label: "Cards", h: 48, skin: "cards" },
+    { label: "Mise en avant", h: 36, skin: "image" },
+    { label: "CTA", h: 28, skin: "cta" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   listing: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Breadcrumb", h: 8, skin: "breadcrumb" },
-    { label: "Filtres", h: 14, skin: "filtres" },
-    { label: "Grille", h: 44, skin: "grille" },
-    { label: "Pagination", h: 10, skin: "pagination" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Breadcrumb", h: 14, skin: "breadcrumb" },
+    { label: "Filtres", h: 22, skin: "filtres" },
+    { label: "Grille", h: 56, skin: "grille" },
+    { label: "Pagination", h: 16, skin: "pagination" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   detail: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Breadcrumb", h: 8, skin: "breadcrumb" },
-    { label: "Contenu", h: 48, skin: "contenu" },
-    { label: "Sidebar", h: 28, skin: "sidebar" },
-    { label: "CTA", h: 20, skin: "cta" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Breadcrumb", h: 14, skin: "breadcrumb" },
+    { label: "Contenu", h: 60, skin: "contenu" },
+    { label: "Sidebar", h: 36, skin: "sidebar" },
+    { label: "CTA", h: 28, skin: "cta" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   form: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Titre", h: 14, skin: "titre" },
-    { label: "Formulaire", h: 48, skin: "form" },
-    { label: "Envoi", h: 14, skin: "submit" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Titre", h: 20, skin: "titre" },
+    { label: "Formulaire", h: 60, skin: "form" },
+    { label: "Envoi", h: 22, skin: "submit" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   landing: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Hero", h: 52, skin: "hero" },
-    { label: "Arguments", h: 32, skin: "arguments" },
-    { label: "Social proof", h: 20, skin: "social-proof" },
-    { label: "CTA", h: 20, skin: "cta" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Hero", h: 64, skin: "hero" },
+    { label: "Arguments", h: 42, skin: "arguments" },
+    { label: "Social proof", h: 28, skin: "social-proof" },
+    { label: "CTA", h: 28, skin: "cta" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   quiz: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Progression", h: 8, skin: "progression" },
-    { label: "Question", h: 20, skin: "question" },
-    { label: "Réponses", h: 40, skin: "reponses" },
-    { label: "Nav quiz", h: 12, skin: "nav-quiz" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Progression", h: 14, skin: "progression" },
+    { label: "Question", h: 28, skin: "question" },
+    { label: "Réponses", h: 52, skin: "reponses" },
+    { label: "Nav quiz", h: 18, skin: "nav-quiz" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
   search: [
-    { label: "Navigation", h: 12, skin: "nav" },
-    { label: "Recherche", h: 16, skin: "search-bar" },
-    { label: "Résultats", h: 44, skin: "resultats" },
-    { label: "Pagination", h: 10, skin: "pagination" },
-    { label: "Footer", h: 14, skin: "footer" },
+    { label: "Navigation", h: 18, skin: "nav" },
+    { label: "Recherche", h: 22, skin: "search-bar" },
+    { label: "Résultats", h: 56, skin: "resultats" },
+    { label: "Pagination", h: 16, skin: "pagination" },
+    { label: "Footer", h: 20, skin: "footer" },
   ],
 };
 
@@ -466,15 +466,22 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
                   borderLeft: "2px solid rgba(255,255,255,0.06)",
                 }}
               >
-                {/* Section label */}
-                <span
-                  className="absolute top-[1px] left-[4px] text-white/30 leading-none select-none pointer-events-none font-medium"
-                  style={{ fontSize: "4px", letterSpacing: "0.03em" }}
+                {/* Section label — primary info */}
+                <div
+                  className="px-[4px] pt-[2px]"
+                  style={{ height: 10 }}
                 >
-                  {section.label}
-                </span>
-                {/* Wireframe skin */}
-                <Skin />
+                  <span
+                    className="text-white/50 leading-none select-none pointer-events-none font-medium"
+                    style={{ fontSize: "5.5px", letterSpacing: "0.02em" }}
+                  >
+                    {section.label}
+                  </span>
+                </div>
+                {/* Wireframe skin — fills remaining space */}
+                <div className="h-[calc(100%-10px)]">
+                  <Skin />
+                </div>
               </div>
             );
           })}

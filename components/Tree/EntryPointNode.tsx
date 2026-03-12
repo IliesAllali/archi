@@ -55,7 +55,15 @@ function EntryBadge({ type, label }: { type: string; label: string }) {
 function EntryPointNodeComponent({ data }: NodeProps<EntryPointGroupData>) {
   return (
     <>
-      <div className="flex flex-col items-center gap-[3px]">
+      <div
+        className="flex flex-col items-center gap-[3px] rounded-lg px-[6px] py-[4px]"
+        style={{
+          background: "rgba(14,14,16,0.85)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          border: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
         {data.entryPoints.map((ep, i) => (
           <div key={i}>
             {ep.type === "google" ? (
