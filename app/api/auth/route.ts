@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, COOKIE_NAME } from "@/lib/auth";
-import { getProject } from "@/lib/project-loader";
+import { getProject, getAllProjects } from "@/lib/project-loader";
 
 export async function POST(req: NextRequest) {
   const { password: rawPassword, project: projectId } = await req.json();
@@ -32,6 +32,24 @@ export async function POST(req: NextRequest) {
       const token = await createSession({ role: "viewer", project: projectId });
       const res = NextResponse.json({ ok: true });
       res.cookies.set(`arbo_project_${projectId}`, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+      return res;
+    }
+  }
+
+  // No project specified — try matching password against all projects
+  if (!projectId) {
+    const allProjects = getAllProjects();
+    const matched = allProjects.find((p) => p.password && password === p.password);
+    if (matched) {
+      const token = await createSession({ role: "viewer", project: matched.id });
+      const res = NextResponse.json({ ok: true, project: matched.id });
+      res.cookies.set(`arbo_project_${matched.id}`, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

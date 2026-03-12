@@ -29,7 +29,10 @@ function LoginForm() {
       });
 
       if (res.ok) {
-        router.push(redirectTo);
+        const data = await res.json().catch(() => ({}));
+        // If auth returned a matched project, redirect there
+        const destination = data.project ? `/${data.project}` : redirectTo;
+        router.push(destination);
         router.refresh();
       } else {
         const data = await res.json().catch(() => ({}));

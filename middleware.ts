@@ -6,6 +6,7 @@ export async function middleware(req: NextRequest) {
 
   // Public routes — no auth needed
   if (
+    pathname === "/" ||
     pathname === "/login" ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
