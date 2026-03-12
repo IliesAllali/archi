@@ -1,0 +1,171 @@
+{
+  "id": "serce-2026",
+  "name": "Refonte metiers-electricite.com",
+  "client": "SERCE x NéNo",
+  "version": "v1",
+  "date": "2026-03-13",
+  "accent": "#2563EB",
+  "password": "serce2026",
+  "nodes": [
+    {
+      "id": "home",
+      "label": "Accueil",
+      "type": "home",
+      "priority": "primary",
+      "description": "Point d'entrée — 2 CTAs principaux vers Métiers et Formations.",
+      "notes": "Insight clé ateliers : si pas compris en 3 secondes, les 15-22 ans quittent. La promesse doit être immédiate.",
+      "rationale": "Page la plus critique — doit corriger la perception 'uniquement électricien' et montrer la diversité du secteur dès le hero.",
+      "zoning": "home",
+      "cta": ["Explorer les métiers", "Trouver ma formation"],
+      "tags": ["mobile-first", "vidéo", "quiz-teaser"],
+      "children": ["metiers", "formations", "orientation", "actu", "contact"]
+    },
+    {
+      "id": "metiers",
+      "label": "Les Métiers",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Catalogue des métiers organisé par secteur économique.",
+      "notes": "Entrée par secteur (Réseaux / Bâtiments / Numérique) plutôt que par filière interne. Plus parlant pour un lycéen.",
+      "rationale": "Besoin #1 identifié en atelier. Les jeunes viennent d'abord pour comprendre les métiers.",
+      "zoning": "listing",
+      "tags": ["filtres", "cards", "mobile-first"],
+      "children": ["reseaux", "batiments", "industrie", "metiers-recrutent"]
+    },
+    {
+      "id": "reseaux",
+      "label": "Réseaux & Infra",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Fiches métiers du secteur réseaux et infrastructures électriques.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "batiments",
+      "label": "Bâtiments & Habitat",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Fiches métiers du secteur bâtiment et habitat intelligent.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "industrie",
+      "label": "Industrie & Numérique",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Fiches métiers du secteur industrie et transition numérique.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "metiers-recrutent",
+      "label": "Métiers qui recrutent",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Top des métiers avec le plus d'offres en ce moment.",
+      "zoning": "listing",
+      "tags": ["badge-recrutement", "carte-région"],
+      "children": []
+    },
+    {
+      "id": "formations",
+      "label": "Les Formations",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Parcours de formation organisés par niveau — après 3ème, bac, études sup, reconversion.",
+      "notes": "Deuxième entrée principale. Certains jeunes arrivent par les formations, pas par les métiers.",
+      "zoning": "listing",
+      "cta": ["Trouver une formation", "Carte des écoles"],
+      "children": ["apres-3e", "apres-bac", "superieur", "reconversion"]
+    },
+    {
+      "id": "apres-3e",
+      "label": "Après la 3ème",
+      "type": "listing",
+      "priority": "primary",
+      "description": "CAP, Bac Pro — formations accessibles après le collège.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "apres-bac",
+      "label": "Après le Bac",
+      "type": "listing",
+      "priority": "primary",
+      "description": "BTS, BUT, Licence Pro — formations post-bac.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "superieur",
+      "label": "Études supérieures",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Écoles d'ingénieurs, Masters.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "reconversion",
+      "label": "Reconversion",
+      "type": "landing",
+      "priority": "secondary",
+      "description": "Formations continues, CPF, témoignages adultes en reconversion.",
+      "zoning": "landing",
+      "children": []
+    },
+    {
+      "id": "orientation",
+      "label": "Mon Orientation",
+      "type": "quiz",
+      "priority": "primary",
+      "description": "Aide à la décision — quiz et témoignages pour trouver sa voie.",
+      "notes": "Section la plus différenciante vs le site actuel. Les jeunes veulent être guidés, pas juste informés.",
+      "rationale": "Réponse directe au besoin #2 des ateliers : orientation. Le quiz capte les indécis (la majorité).",
+      "zoning": "quiz",
+      "cta": ["Faire le quiz"],
+      "tags": ["quiz", "témoignages", "interactif"],
+      "children": ["quiz", "temoignages"]
+    },
+    {
+      "id": "quiz",
+      "label": "Quiz orientation",
+      "type": "quiz",
+      "priority": "primary",
+      "description": "5-7 questions — résultat : 3 métiers suggérés avec liens vers fiches.",
+      "notes": "À valider : outil tiers (Diagoriente) ou développement custom ?",
+      "zoning": "quiz",
+      "children": []
+    },
+    {
+      "id": "temoignages",
+      "label": "Témoignages",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Portraits vidéo de jeunes en formation ou en poste.",
+      "zoning": "listing",
+      "tags": ["vidéo", "filtres-profil"],
+      "children": []
+    },
+    {
+      "id": "actu",
+      "label": "Actualités",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Événements, salons, offres de stage et alternance, news secteur.",
+      "zoning": "listing",
+      "children": []
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "type": "form",
+      "priority": "utility",
+      "description": "Formulaire de contact + FAQ orientation + ressources téléchargeables.",
+      "zoning": "form",
+      "children": []
+    }
+  ]
+}
