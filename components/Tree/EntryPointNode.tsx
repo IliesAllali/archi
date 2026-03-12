@@ -14,7 +14,12 @@ function GoogleSearchEntry({ query }: { query: string }) {
   return (
     <div
       className="flex items-center gap-[5px] h-[18px] px-[6px] rounded-full"
-      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{
+        background: "rgba(14,14,16,0.7)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
     >
       {/* Google "G" logo */}
       <svg width="8" height="8" viewBox="0 0 24 24" fill="none">
@@ -44,7 +49,13 @@ function EntryBadge({ type, label }: { type: string; label: string }) {
   return (
     <div
       className="flex items-center gap-[4px] h-[14px] px-[5px] rounded-full text-[7px] leading-none"
-      style={{ background: cfg.bg, border: `1px solid ${cfg.color}20`, color: cfg.color }}
+      style={{
+        background: "rgba(14,14,16,0.7)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        border: `1px solid ${cfg.color}20`,
+        color: cfg.color,
+      }}
     >
       <span className="font-semibold">{cfg.icon}</span>
       <span className="text-white/35 truncate max-w-[80px]">{label}</span>
