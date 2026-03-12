@@ -5,7 +5,7 @@ import { getCardHeight, CARD_WIDTH } from "@/components/Tree/SiteNode";
 const LABEL_HEIGHT = 28;
 const NODE_WIDTH = CARD_WIDTH + 20;
 const EP_WIDTH = 150;
-const EP_MARGIN = 16; // gap between EP group and page top
+const EP_MARGIN = 20; // gap between EP group bottom and page top
 
 function getEntryPointGroupHeight(entryPoints: EntryPoint[]): number {
   let h = 0;
@@ -17,19 +17,34 @@ function getEntryPointGroupHeight(entryPoints: EntryPoint[]): number {
 }
 
 /**
- * ELK layouts ONLY page nodes. Entry points are positioned manually
- * above their target page, shifted to the side to avoid overlapping
- * any other page node in the layout.
+ * ELK layouts page nodes. Pages with entry points get inflated heights
+ * so ELK reserves vertical space above them. After layout, the page
+ * is shifted down and the EP node is placed in the reserved space.
  */
 export async function computeLayout(nodes: SiteNode[]): Promise<{
   rfNodes: Node[];
   rfEdges: Edge[];
 }> {
-  // --- ELK graph: pages only ---
+  // Compute real card heights and EP overhead
+  const pageHeight: Record<string, number> = {};
+  const epOverhead: Record<string, number> = {};
+
+  nodes.forEach((n) => {
+    const cardH = getCardHeight(n.zoning) + LABEL_HEIGHT;
+    pageHeight[n.id] = cardH;
+
+    if (n.entryPoints && n.entryPoints.length > 0) {
+      epOverhead[n.id] = getEntryPointGroupHeight(n.entryPoints) + EP_MARGIN;
+    } else {
+      epOverhead[n.id] = 0;
+    }
+  });
+
+  // ELK nodes: height includes EP overhead so layout reserves space
   const elkNodes = nodes.map((n) => ({
     id: n.id,
     width: NODE_WIDTH,
-    height: getCardHeight(n.zoning) + LABEL_HEIGHT,
+    height: pageHeight[n.id] + epOverhead[n.id],
   }));
 
   const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
@@ -49,7 +64,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
       "elk.spacing.nodeNode": "50",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "70",
       "elk.edgeRouting": "SPLINES",
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
@@ -63,27 +78,27 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layouted = await elk.layout(graph as any);
 
-  const positionMap: Record<string, { x: number; y: number; w: number; h: number }> = {};
-  (layouted.children as { id: string; x: number; y: number; width: number; height: number }[]).forEach((n) => {
-    positionMap[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height };
+  const positionMap: Record<string, { x: number; y: number }> = {};
+  (layouted.children as { id: string; x: number; y: number }[]).forEach((n) => {
+    positionMap[n.id] = { x: n.x, y: n.y };
   });
 
   const rfNodes: Node[] = [];
   const rfEdges: Edge[] = [];
 
-  // Page nodes
+  // Page nodes — shifted down by EP overhead so EP fits above
   nodes.forEach((n) => {
     const p = positionMap[n.id];
     if (!p) return;
     rfNodes.push({
       id: n.id,
       type: "siteNode",
-      position: { x: p.x, y: p.y },
+      position: { x: p.x, y: p.y + epOverhead[n.id] },
       data: n,
     });
   });
 
-  // Page-to-page edges
+  // Page-to-page edges (parent → direct children only)
   nodes.forEach((n) => {
     n.children.forEach((childId) => {
       rfEdges.push({
@@ -96,57 +111,21 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     });
   });
 
-  // --- Place entry points above their target page, offset to the left ---
-  // Collect all page bounding boxes for collision avoidance
-  const pageBounds = nodes.map((n) => {
-    const p = positionMap[n.id];
-    if (!p) return null;
-    return { id: n.id, x: p.x, y: p.y, w: p.w, h: p.h };
-  }).filter(Boolean) as { id: string; x: number; y: number; w: number; h: number }[];
-
-  const epPlaced: { x: number; y: number; w: number; h: number }[] = [];
-
-  function overlapsAny(x: number, y: number, w: number, h: number): boolean {
-    // Check against page nodes
-    for (const b of pageBounds) {
-      if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return true;
-    }
-    // Check against already-placed EP nodes
-    for (const b of epPlaced) {
-      if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return true;
-    }
-    return false;
-  }
-
+  // Entry point nodes — placed in the reserved space above their page
   nodes.forEach((n) => {
     if (!n.entryPoints || n.entryPoints.length === 0) return;
-    const page = positionMap[n.id];
-    if (!page) return;
+    const p = positionMap[n.id];
+    if (!p) return;
 
     const epH = getEntryPointGroupHeight(n.entryPoints);
-
-    // Default: centered above the page
-    let epX = page.x + (NODE_WIDTH - EP_WIDTH) / 2;
-    let epY = page.y - epH - EP_MARGIN;
-
-    // If that overlaps, try shifting left, then right, then further out
-    if (overlapsAny(epX, epY, EP_WIDTH, epH)) {
-      const offsets = [-NODE_WIDTH - 20, NODE_WIDTH + 20, -2 * NODE_WIDTH - 40, 2 * NODE_WIDTH + 40];
-      for (const dx of offsets) {
-        const tryX = page.x + dx;
-        if (!overlapsAny(tryX, epY, EP_WIDTH, epH)) {
-          epX = tryX;
-          break;
-        }
-      }
-    }
-
-    epPlaced.push({ x: epX, y: epY, w: EP_WIDTH, h: epH });
 
     rfNodes.push({
       id: `ep_${n.id}`,
       type: "entryPointNode",
-      position: { x: epX, y: epY },
+      position: {
+        x: p.x + (NODE_WIDTH - EP_WIDTH) / 2,
+        y: p.y, // top of reserved space
+      },
       data: { entryPoints: n.entryPoints, targetId: n.id },
       selectable: false,
       draggable: false,
@@ -161,29 +140,8 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       style: {
         strokeDasharray: "3 4",
         strokeWidth: 0.75,
-        stroke: "rgba(255,255,255,0.12)",
+        stroke: "rgba(255,255,255,0.10)",
       },
-    });
-  });
-
-  // --- Cross-links: dashed horizontal edges ---
-  nodes.forEach((n) => {
-    if (!n.links || n.links.length === 0) return;
-    n.links.forEach((targetId) => {
-      rfEdges.push({
-        id: `link_${n.id}->${targetId}`,
-        source: n.id,
-        sourceHandle: "right",
-        target: targetId,
-        targetHandle: "left",
-        type: "default",
-        className: "edge-crosslink",
-        style: {
-          strokeDasharray: "4 4",
-          strokeWidth: 0.75,
-          stroke: "rgba(255,255,255,0.18)",
-        },
-      });
     });
   });
 

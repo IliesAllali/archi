@@ -2,7 +2,12 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
-import type { SiteNode, ZoningType } from "@/lib/types";
+import {
+  PAGE_TYPE_CONFIG,
+  PRIORITY_CONFIG,
+  type SiteNode,
+  type ZoningType,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /* ─── Section with wireframe skin ─── */
@@ -76,15 +81,151 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 
 const SECTION_GAP = 2;
 const CARD_PAD = 4;
-const TITLE_HEIGHT = 20;
+const TITLE_HEIGHT = 32;
+const MIN_SECTION_HEIGHT = 16;
+const SECTION_HEADER_HEIGHT = 8;
 export const CARD_WIDTH = 160;
+
+function getSectionHeight(section: Section): number {
+  return Math.max(section.h, MIN_SECTION_HEIGHT);
+}
 
 export function getCardHeight(zoning: ZoningType): number {
   const sections = ZONING_SECTIONS[zoning] || ZONING_SECTIONS.detail;
-  const totalH = sections.reduce((sum, s) => sum + s.h, 0);
+  const totalH = sections.reduce((sum, s) => sum + getSectionHeight(s), 0);
   const gaps = sections.length * SECTION_GAP; // gap above each section
   return TITLE_HEIGHT + totalH + gaps + CARD_PAD;
 }
+
+type SectionSkin = Section["skin"];
+
+const SECTION_STYLES: Partial<Record<SectionSkin, {
+  shell: string;
+  header: string;
+  border: string;
+}>> = {
+  nav: {
+    shell: "linear-gradient(180deg, #35d4c4 0%, #20b9a8 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(11, 117, 105, 0.22)",
+  },
+  hero: {
+    shell: "linear-gradient(180deg, #f6b34d 0%, #ed9a32 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(164, 92, 15, 0.22)",
+  },
+  cards: {
+    shell: "linear-gradient(180deg, #438cf5 0%, #2f73e4 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(23, 72, 168, 0.18)",
+  },
+  cta: {
+    shell: "linear-gradient(180deg, #bb6df4 0%, #9b56df 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(103, 47, 157, 0.24)",
+  },
+  footer: {
+    shell: "linear-gradient(180deg, #8ca0bf 0%, #7689a8 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(79, 93, 122, 0.22)",
+  },
+  breadcrumb: {
+    shell: "linear-gradient(180deg, #7cb9ff 0%, #60a7fa 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(53, 95, 173, 0.2)",
+  },
+  filtres: {
+    shell: "linear-gradient(180deg, #5889ff 0%, #4475eb 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(42, 69, 150, 0.22)",
+  },
+  grille: {
+    shell: "linear-gradient(180deg, #4c8ef5 0%, #3a7ee7 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(35, 78, 161, 0.2)",
+  },
+  contenu: {
+    shell: "linear-gradient(180deg, #4f96ff 0%, #327be2 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(32, 72, 151, 0.22)",
+  },
+  sidebar: {
+    shell: "linear-gradient(180deg, #55b6f1 0%, #3899da 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(31, 97, 144, 0.2)",
+  },
+  form: {
+    shell: "linear-gradient(180deg, #ff8198 0%, #ef627e 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(161, 53, 78, 0.22)",
+  },
+  submit: {
+    shell: "linear-gradient(180deg, #a86ff7 0%, #8f59e5 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(84, 42, 145, 0.22)",
+  },
+  titre: {
+    shell: "linear-gradient(180deg, #5b8eff 0%, #4677ec 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(43, 68, 149, 0.2)",
+  },
+  arguments: {
+    shell: "linear-gradient(180deg, #ff8f73 0%, #ef6f52 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(157, 67, 48, 0.22)",
+  },
+  "social-proof": {
+    shell: "linear-gradient(180deg, #7c9bff 0%, #6181f0 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(55, 73, 145, 0.2)",
+  },
+  progression: {
+    shell: "linear-gradient(180deg, #67bbff 0%, #469fe8 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(40, 103, 154, 0.2)",
+  },
+  question: {
+    shell: "linear-gradient(180deg, #5f8dfd 0%, #4674e4 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(43, 67, 150, 0.22)",
+  },
+  reponses: {
+    shell: "linear-gradient(180deg, #4e8bff 0%, #3773e2 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(33, 73, 152, 0.22)",
+  },
+  navigation: {
+    shell: "linear-gradient(180deg, #7393ff 0%, #5d7ce9 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(57, 73, 142, 0.2)",
+  },
+  "search-bar": {
+    shell: "linear-gradient(180deg, #39d2bd 0%, #24b8a6 100%)",
+    header: "rgba(255,255,255,0.14)",
+    border: "rgba(18, 112, 102, 0.22)",
+  },
+  resultats: {
+    shell: "linear-gradient(180deg, #4a8ff7 0%, #3678df 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(31, 74, 151, 0.22)",
+  },
+  pagination: {
+    shell: "linear-gradient(180deg, #99aac5 0%, #8193af 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(80, 92, 115, 0.22)",
+  },
+  image: {
+    shell: "linear-gradient(180deg, #6fb7ff 0%, #4a98e7 100%)",
+    header: "rgba(255,255,255,0.12)",
+    border: "rgba(45, 100, 152, 0.22)",
+  },
+};
+
+const DEFAULT_SECTION_STYLE = {
+  shell: "linear-gradient(180deg, #4a8cf4 0%, #346fd7 100%)",
+  header: "rgba(255,255,255,0.12)",
+  border: "rgba(29, 64, 130, 0.22)",
+};
 
 /* ─── Wireframe skins — tiny structural previews ─── */
 const w = "bg-white/20"; // wireframe element color
@@ -402,6 +543,8 @@ const SKIN_MAP: Record<string, React.FC> = {
 function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
   const sections = ZONING_SECTIONS[data.zoning] || ZONING_SECTIONS.detail;
   const cardH = getCardHeight(data.zoning);
+  const pageType = PAGE_TYPE_CONFIG[data.type];
+  const priority = PRIORITY_CONFIG[data.priority];
 
   return (
     <>
@@ -413,56 +556,115 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
 
       <div
         className={cn(
-          "rounded-lg overflow-hidden cursor-pointer",
+          "rounded-[20px] overflow-hidden cursor-pointer border",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-2px]",
           "active:translate-y-[0px]",
-          selected
-            ? "ring-[1.5px] ring-white shadow-[0_0_24px_rgba(255,255,255,0.1)]"
-            : "ring-1 ring-white/[0.15] hover:ring-white/30",
           data.priority === "utility" && !selected && "opacity-50",
         )}
-        style={{ width: CARD_WIDTH, height: cardH, background: "#101012" }}
+        style={{
+          width: CARD_WIDTH,
+          height: cardH,
+          background:
+            "linear-gradient(180deg, rgba(250,252,255,0.98) 0%, rgba(241,246,255,0.98) 100%)",
+          borderColor: selected ? "var(--accent)" : "rgba(109, 144, 201, 0.55)",
+          boxShadow: selected
+            ? "0 18px 36px rgba(20, 53, 110, 0.26), 0 0 0 1px rgba(255,255,255,0.45) inset"
+            : "0 16px 30px rgba(14, 30, 64, 0.2), 0 0 0 1px rgba(255,255,255,0.7) inset",
+        }}
       >
-        {/* Page title — inside card at top */}
         <div
-          className="flex items-center px-[6px] border-b border-white/[0.08]"
-          style={{ height: TITLE_HEIGHT }}
+          className="px-[8px] pt-[6px] pb-[5px] border-b"
+          style={{
+            height: TITLE_HEIGHT,
+            borderColor: "rgba(95, 127, 184, 0.18)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(236,243,255,0.78) 100%)",
+          }}
         >
-          <p className={cn(
-            "text-[8px] font-semibold leading-none truncate w-full",
-            selected ? "text-white" : "text-white/70"
-          )}>
+          <div className="flex items-center justify-between gap-[4px] mb-[4px]">
+            <span
+              className="px-[4px] py-[1px] rounded-full text-[4.5px] font-semibold uppercase tracking-[0.18em]"
+              style={{
+                color: "var(--accent)",
+                background: "rgba(59, 113, 225, 0.1)",
+              }}
+            >
+              {pageType.label}
+            </span>
+            <span
+              className="px-[4px] py-[1px] rounded-full text-[4.5px] font-semibold uppercase tracking-[0.18em]"
+              style={{
+                color: "rgba(58, 74, 104, 0.9)",
+                background:
+                  data.priority === "primary"
+                    ? "rgba(46, 204, 113, 0.16)"
+                    : data.priority === "secondary"
+                      ? "rgba(59, 113, 225, 0.12)"
+                      : "rgba(120, 130, 150, 0.14)",
+              }}
+            >
+              {priority.label}
+            </span>
+          </div>
+          <p
+            className="text-[10px] font-bold leading-none truncate text-center w-full"
+            style={{
+              color: "var(--accent)",
+              letterSpacing: "-0.02em",
+            }}
+          >
             {data.label}
           </p>
         </div>
 
-        {/* Sections */}
         {sections.map((section, i) => {
           const Skin = SKIN_MAP[section.skin] || SkinDefault;
+          const sectionStyle = SECTION_STYLES[section.skin] || DEFAULT_SECTION_STYLE;
+          const sectionHeight = getSectionHeight(section);
+          const bodyHeight = Math.max(sectionHeight - SECTION_HEADER_HEIGHT - 2, 6);
+
           return (
             <div
               key={i}
-              className="relative overflow-hidden"
+              className="relative overflow-hidden border"
               style={{
-                height: section.h,
-                marginTop: i === 0 ? SECTION_GAP : SECTION_GAP,
+                height: sectionHeight,
+                marginTop: SECTION_GAP,
                 marginLeft: CARD_PAD,
                 marginRight: CARD_PAD,
-                borderRadius: 3,
-                backgroundColor: section.accent
-                  ? "rgba(255,255,255,0.08)"
-                  : "rgba(255,255,255,0.03)",
+                borderRadius: 8,
+                background: sectionStyle.shell,
+                borderColor: sectionStyle.border,
+                boxShadow: section.accent
+                  ? "0 6px 14px rgba(16, 42, 89, 0.14)"
+                  : "0 3px 8px rgba(16, 42, 89, 0.08)",
               }}
             >
-              <Skin />
-              {/* Section label — top-left, visible white */}
-              <span
-                className="absolute top-[2px] left-[4px] text-white/40 leading-none select-none pointer-events-none font-medium uppercase tracking-wider"
-                style={{ fontSize: "4.5px" }}
+              <div
+                className="flex items-center px-[5px] border-b"
+                style={{
+                  height: SECTION_HEADER_HEIGHT,
+                  background: sectionStyle.header,
+                  borderColor: "rgba(255,255,255,0.12)",
+                }}
               >
-                {section.label}
-              </span>
+                <span
+                  className="text-white/95 leading-none select-none pointer-events-none font-semibold truncate"
+                  style={{ fontSize: "5.4px", letterSpacing: "-0.01em" }}
+                >
+                  {section.label}
+                </span>
+              </div>
+              <div
+                className="relative overflow-hidden"
+                style={{
+                  height: bodyHeight,
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)",
+                }}
+              >
+                <Skin />
+              </div>
             </div>
           );
         })}
