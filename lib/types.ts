@@ -41,6 +41,7 @@ export interface SiteNode {
   tags?: string[];
   children: string[];
   entryPoints?: EntryPoint[];
+  links?: string[]; // cross-references to other pages (dashed arrows)
 }
 
 export interface Project {

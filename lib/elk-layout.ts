@@ -166,5 +166,26 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     });
   });
 
+  // --- Cross-links: dashed horizontal edges ---
+  nodes.forEach((n) => {
+    if (!n.links || n.links.length === 0) return;
+    n.links.forEach((targetId) => {
+      rfEdges.push({
+        id: `link_${n.id}->${targetId}`,
+        source: n.id,
+        sourceHandle: "right",
+        target: targetId,
+        targetHandle: "left",
+        type: "default",
+        className: "edge-crosslink",
+        style: {
+          strokeDasharray: "4 4",
+          strokeWidth: 0.75,
+          stroke: "rgba(255,255,255,0.18)",
+        },
+      });
+    });
+  });
+
   return { rfNodes, rfEdges };
 }

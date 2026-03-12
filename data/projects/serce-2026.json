@@ -51,7 +51,8 @@
       "priority": "primary",
       "description": "Fiches métiers du secteur réseaux et infrastructures électriques.",
       "zoning": "listing",
-      "children": []
+      "children": [],
+      "links": ["formations"]
     },
     {
       "id": "batiments",
@@ -60,7 +61,8 @@
       "priority": "primary",
       "description": "Fiches métiers du secteur bâtiment et habitat intelligent.",
       "zoning": "listing",
-      "children": []
+      "children": [],
+      "links": ["formations"]
     },
     {
       "id": "industrie",
@@ -69,7 +71,8 @@
       "priority": "primary",
       "description": "Fiches métiers du secteur industrie et transition numérique.",
       "zoning": "listing",
-      "children": []
+      "children": [],
+      "links": ["formations"]
     },
     {
       "id": "metiers-recrutent",
@@ -164,7 +167,8 @@
       "description": "5-7 questions — résultat : 3 métiers suggérés avec liens vers fiches.",
       "notes": "À valider : outil tiers (Diagoriente) ou développement custom ?",
       "zoning": "quiz",
-      "children": []
+      "children": [],
+      "links": ["metiers", "formations"]
     },
     {
       "id": "temoignages",

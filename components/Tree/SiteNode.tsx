@@ -76,13 +76,14 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 
 const SECTION_GAP = 2;
 const CARD_PAD = 4;
+const TITLE_HEIGHT = 20;
 export const CARD_WIDTH = 160;
 
 export function getCardHeight(zoning: ZoningType): number {
   const sections = ZONING_SECTIONS[zoning] || ZONING_SECTIONS.detail;
   const totalH = sections.reduce((sum, s) => sum + s.h, 0);
-  const gaps = (sections.length - 1) * SECTION_GAP;
-  return totalH + gaps + CARD_PAD * 2;
+  const gaps = sections.length * SECTION_GAP; // gap above each section
+  return TITLE_HEIGHT + totalH + gaps + CARD_PAD;
 }
 
 /* ─── Wireframe skins — tiny structural previews ─── */
@@ -405,64 +406,67 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
   return (
     <>
       <Handle type="target" position={Position.Top} className="!opacity-0 !w-0 !h-0" />
+      <Handle type="source" position={Position.Bottom} className="!opacity-0 !w-0 !h-0" />
+      {/* Side handles for cross-links */}
+      <Handle id="left" type="target" position={Position.Left} className="!opacity-0 !w-0 !h-0" />
+      <Handle id="right" type="source" position={Position.Right} className="!opacity-0 !w-0 !h-0" />
 
-      <div className="flex flex-col items-center">
-        {/* Page card */}
+      <div
+        className={cn(
+          "rounded-lg overflow-hidden cursor-pointer",
+          "transition-all duration-200 ease-out",
+          "hover:translate-y-[-2px]",
+          "active:translate-y-[0px]",
+          selected
+            ? "ring-[1.5px] ring-white shadow-[0_0_24px_rgba(255,255,255,0.1)]"
+            : "ring-1 ring-white/[0.15] hover:ring-white/30",
+          data.priority === "utility" && !selected && "opacity-50",
+        )}
+        style={{ width: CARD_WIDTH, height: cardH, background: "#101012" }}
+      >
+        {/* Page title — inside card at top */}
         <div
-          className={cn(
-            "rounded-lg overflow-hidden cursor-pointer",
-            "transition-all duration-200 ease-out",
-            "hover:translate-y-[-2px]",
-            "active:translate-y-[0px]",
-            selected
-              ? "ring-[1.5px] ring-white shadow-[0_0_24px_rgba(255,255,255,0.1)]"
-              : "ring-1 ring-white/[0.15] hover:ring-white/30",
-            data.priority === "utility" && !selected && "opacity-50",
-          )}
-          style={{ width: CARD_WIDTH, height: cardH, background: "#101012" }}
+          className="flex items-center px-[6px] border-b border-white/[0.08]"
+          style={{ height: TITLE_HEIGHT }}
         >
-          {sections.map((section, i) => {
-            const Skin = SKIN_MAP[section.skin] || SkinDefault;
-            return (
-              <div
-                key={i}
-                className="relative overflow-hidden"
-                style={{
-                  height: section.h,
-                  marginTop: i === 0 ? CARD_PAD : SECTION_GAP,
-                  marginLeft: CARD_PAD,
-                  marginRight: CARD_PAD,
-                  borderRadius: 3,
-                  backgroundColor: section.accent
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(255,255,255,0.03)",
-                }}
-              >
-                <Skin />
-                {/* Section label — top-left overlay */}
-                <span
-                  className="absolute top-[1px] right-[3px] text-white/15 leading-none select-none pointer-events-none"
-                  style={{ fontSize: "5px" }}
-                >
-                  {section.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Label below card */}
-        <div className="mt-2.5 text-center" style={{ maxWidth: CARD_WIDTH + 20 }}>
           <p className={cn(
-            "text-[11px] font-medium leading-tight truncate",
-            selected ? "text-white" : "text-white/55"
+            "text-[8px] font-semibold leading-none truncate w-full",
+            selected ? "text-white" : "text-white/70"
           )}>
             {data.label}
           </p>
         </div>
-      </div>
 
-      <Handle type="source" position={Position.Bottom} className="!opacity-0 !w-0 !h-0" />
+        {/* Sections */}
+        {sections.map((section, i) => {
+          const Skin = SKIN_MAP[section.skin] || SkinDefault;
+          return (
+            <div
+              key={i}
+              className="relative overflow-hidden"
+              style={{
+                height: section.h,
+                marginTop: i === 0 ? SECTION_GAP : SECTION_GAP,
+                marginLeft: CARD_PAD,
+                marginRight: CARD_PAD,
+                borderRadius: 3,
+                backgroundColor: section.accent
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(255,255,255,0.03)",
+              }}
+            >
+              <Skin />
+              {/* Section label — top-left, visible white */}
+              <span
+                className="absolute top-[2px] left-[4px] text-white/40 leading-none select-none pointer-events-none font-medium uppercase tracking-wider"
+                style={{ fontSize: "4.5px" }}
+              >
+                {section.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }
