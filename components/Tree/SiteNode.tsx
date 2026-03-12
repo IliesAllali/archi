@@ -78,12 +78,13 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 
 const SECTION_GAP = 1;
 const CARD_PAD = 3;
-const TITLE_HEIGHT = 18;
+const TITLE_HEIGHT = 22;
+const LABEL_H = 10; // height for section label row
 export const CARD_WIDTH = 160;
 
 export function getCardHeight(zoning: ZoningType): number {
   const sections = ZONING_SECTIONS[zoning] || ZONING_SECTIONS.detail;
-  const totalH = sections.reduce((sum, s) => sum + s.h, 0);
+  const totalH = sections.reduce((sum, s) => sum + s.h + LABEL_H, 0);
   const gaps = (sections.length - 1) * SECTION_GAP;
   return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
 }
@@ -421,65 +422,62 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
 
       <div
         className={cn(
-          "rounded-lg overflow-hidden cursor-pointer",
+          "rounded overflow-hidden cursor-pointer",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-1px]",
           selected
             ? "ring-[1.5px] ring-white/80 shadow-[0_0_20px_rgba(255,255,255,0.08)]"
-            : "ring-1 ring-white/[0.12] hover:ring-white/25",
+            : "ring-1 ring-white/[0.10] hover:ring-white/20",
           data.priority === "utility" && !selected && "opacity-45",
         )}
-        style={{ width: CARD_WIDTH, height: cardH, background: "#0e0e10" }}
+        style={{ width: CARD_WIDTH, height: cardH, background: "#0c0c0e" }}
       >
-        {/* ── Page title bar ── */}
+        {/* ── Page title — tab style ── */}
         <div
           className="flex items-center px-[6px]"
           style={{
             height: TITLE_HEIGHT,
-            background: "rgba(255,255,255,0.04)",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.05)",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           <p
             className={cn(
-              "text-[7.5px] font-semibold leading-none truncate w-full",
-              selected ? "text-white/90" : "text-white/60",
+              "text-[9px] font-bold leading-none truncate w-full",
+              selected ? "text-white" : "text-white/80",
             )}
           >
             {data.label}
           </p>
         </div>
 
-        {/* ── Section blocks ── */}
-        <div style={{ padding: CARD_PAD }}>
+        {/* ── Section blocks — flex column ── */}
+        <div className="flex flex-col" style={{ padding: CARD_PAD, gap: SECTION_GAP }}>
           {sections.map((section, i) => {
             const Skin = SKIN_MAP[section.skin] || SkinDefault;
             return (
               <div
                 key={i}
-                className="relative overflow-hidden"
+                className="flex flex-col rounded-sm overflow-hidden"
                 style={{
-                  height: section.h,
-                  marginTop: i === 0 ? 0 : SECTION_GAP,
-                  borderRadius: 3,
                   background: "rgba(255,255,255,0.025)",
                   borderLeft: "2px solid rgba(255,255,255,0.06)",
                 }}
               >
-                {/* Section label — primary info */}
+                {/* Label row — fixed height, never clipped */}
                 <div
-                  className="px-[4px] pt-[2px]"
-                  style={{ height: 10 }}
+                  className="flex items-center px-[4px] shrink-0"
+                  style={{ height: LABEL_H }}
                 >
                   <span
-                    className="text-white/50 leading-none select-none pointer-events-none font-medium"
-                    style={{ fontSize: "5.5px", letterSpacing: "0.02em" }}
+                    className="text-white/55 leading-none select-none font-medium truncate"
+                    style={{ fontSize: "5.5px" }}
                   >
                     {section.label}
                   </span>
                 </div>
-                {/* Wireframe skin — fills remaining space */}
-                <div className="h-[calc(100%-10px)]">
+                {/* Skin content — takes section.h */}
+                <div style={{ height: section.h }}>
                   <Skin />
                 </div>
               </div>
