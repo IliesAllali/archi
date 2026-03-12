@@ -18,9 +18,11 @@ import {
   MousePointerClick,
   Lightbulb,
   MessageSquare,
+  Globe,
 } from "lucide-react";
 import type { SiteNode, Project, PageType, Priority } from "@/lib/types";
 import ZoningPreview from "./ZoningPreview";
+import EntryPointsBlock from "./EntryPointsBlock";
 
 const ICON_MAP: Record<PageType, React.ElementType> = {
   home: Home,
@@ -102,7 +104,7 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded-md hover:bg-bg-hover transition-colors"
+                className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-colors duration-100"
               >
                 <X className="w-4 h-4 text-label-muted" />
               </button>
@@ -117,6 +119,13 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
                 {node.description}
               </p>
             </Section>
+
+            {/* Entry Points */}
+            {node.entryPoints && node.entryPoints.length > 0 && (
+              <Section title="Points d'entrée" icon={Globe}>
+                <EntryPointsBlock entryPoints={node.entryPoints} />
+              </Section>
+            )}
 
             {/* Zoning */}
             <Section title="Zoning">

@@ -1,47 +1,68 @@
 export default function ZoningQuiz({ accent }: { accent: string }) {
   return (
-    <svg viewBox="0 0 340 420" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+    <div className="w-full bg-bg-base text-label-primary select-none" style={{ fontSize: 0 }}>
       {/* Navbar */}
-      <rect x="0" y="0" width="340" height="36" fill="#111113" />
-      <rect x="16" y="13" width="40" height="10" rx="2" fill="#2E2E35" />
-      <rect x="308" y="12" width="16" height="12" rx="3" fill={accent} opacity="0.8" />
+      <div className="flex items-center justify-between px-4 h-9 bg-bg-surface border-b border-line">
+        <div className="w-10 h-2.5 rounded bg-line-strong" />
+        <div className="h-5 px-2.5 rounded text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>CTA</div>
+      </div>
 
-      {/* Progress bar */}
-      <rect x="40" y="56" width="260" height="4" rx="2" fill="#1F1F23" />
-      <rect x="40" y="56" width="130" height="4" rx="2" fill={accent} opacity="0.7" />
-      <rect x="280" y="48" width="20" height="8" rx="2" fill="#1F1F23" />
+      {/* Progress */}
+      <div className="px-6 pt-5 pb-2 flex items-center gap-3">
+        <div className="flex-1 h-1 rounded-full bg-bg-hover overflow-hidden">
+          <div className="h-full w-1/2 rounded-full" style={{ backgroundColor: accent, opacity: 0.8 }} />
+        </div>
+        <span className="text-[9px] text-label-muted font-medium">3/6</span>
+      </div>
 
       {/* Step label */}
-      <rect x="140" y="72" width="60" height="6" rx="2" fill="#2E2E35" />
+      <div className="text-center pb-3">
+        <div className="w-14 h-1.5 rounded bg-line-strong mx-auto" />
+      </div>
 
       {/* Question card */}
-      <rect x="30" y="96" width="280" height="280" rx="12" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
+      <div className="mx-4 rounded-xl border border-line bg-bg-surface p-5">
+        {/* Question */}
+        <div className="text-center mb-5">
+          <div className="w-44 h-2.5 rounded bg-line-strong mx-auto mb-2" />
+          <div className="w-36 h-1.5 rounded bg-bg-hover mx-auto" />
+        </div>
 
-      {/* Question */}
-      <rect x="60" y="124" width="220" height="10" rx="3" fill="#2E2E35" />
-      <rect x="80" y="142" width="180" height="6" rx="2" fill="#1F1F23" />
+        {/* Options */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-line bg-bg-base">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-line-strong shrink-0" />
+            <div className="w-24 h-1.5 rounded bg-bg-hover" />
+          </div>
 
-      {/* Options */}
-      <rect x="54" y="172" width="232" height="36" rx="8" fill="#0A0A0B" stroke="#1F1F23" strokeWidth="1" />
-      <circle cx="74" cy="190" r="6" fill="none" stroke="#2E2E35" strokeWidth="1.5" />
-      <rect x="90" y="186" width="120" height="6" rx="2" fill="#1F1F23" />
+          <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border" style={{ borderColor: `${accent}40`, backgroundColor: `${accent}08` }}>
+            <div className="w-3.5 h-3.5 rounded-full border-2 shrink-0 flex items-center justify-center" style={{ borderColor: accent }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: accent }} />
+            </div>
+            <div className="w-28 h-1.5 rounded bg-line-strong" />
+          </div>
 
-      <rect x="54" y="218" width="232" height="36" rx="8" fill={accent} opacity="0.08" stroke={accent} strokeWidth="1" strokeOpacity="0.3" />
-      <circle cx="74" cy="236" r="6" fill={accent} opacity="0.6" />
-      <circle cx="74" cy="236" r="3" fill={accent} />
-      <rect x="90" y="232" width="140" height="6" rx="2" fill="#2E2E35" />
+          <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-line bg-bg-base">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-line-strong shrink-0" />
+            <div className="w-20 h-1.5 rounded bg-bg-hover" />
+          </div>
 
-      <rect x="54" y="264" width="232" height="36" rx="8" fill="#0A0A0B" stroke="#1F1F23" strokeWidth="1" />
-      <circle cx="74" cy="282" r="6" fill="none" stroke="#2E2E35" strokeWidth="1.5" />
-      <rect x="90" y="278" width="100" height="6" rx="2" fill="#1F1F23" />
-
-      <rect x="54" y="310" width="232" height="36" rx="8" fill="#0A0A0B" stroke="#1F1F23" strokeWidth="1" />
-      <circle cx="74" cy="328" r="6" fill="none" stroke="#2E2E35" strokeWidth="1.5" />
-      <rect x="90" y="324" width="130" height="6" rx="2" fill="#1F1F23" />
+          <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-line bg-bg-base">
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-line-strong shrink-0" />
+            <div className="w-26 h-1.5 rounded bg-bg-hover" />
+          </div>
+        </div>
+      </div>
 
       {/* Nav buttons */}
-      <rect x="30" y="392" width="130" height="28" rx="6" fill="#1F1F23" stroke="#2E2E35" strokeWidth="1" />
-      <rect x="180" y="392" width="130" height="28" rx="6" fill={accent} opacity="0.85" />
-    </svg>
+      <div className="flex gap-2 px-4 pt-4 pb-5">
+        <div className="flex-1 h-8 rounded-md border border-line bg-bg-surface flex items-center justify-center">
+          <div className="w-12 h-1.5 rounded bg-bg-hover" />
+        </div>
+        <div className="flex-1 h-8 rounded-md flex items-center justify-center text-white text-[9px] font-medium" style={{ backgroundColor: accent }}>
+          Suivant →
+        </div>
+      </div>
+    </div>
   );
 }

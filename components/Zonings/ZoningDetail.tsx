@@ -1,60 +1,66 @@
 export default function ZoningDetail({ accent }: { accent: string }) {
   return (
-    <svg viewBox="0 0 340 480" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+    <div className="w-full bg-bg-base text-label-primary select-none" style={{ fontSize: 0 }}>
       {/* Navbar */}
-      <rect x="0" y="0" width="340" height="36" fill="#111113" />
-      <rect x="16" y="13" width="40" height="10" rx="2" fill="#2E2E35" />
-      <rect x="308" y="12" width="16" height="12" rx="3" fill={accent} opacity="0.8" />
+      <div className="flex items-center justify-between px-4 h-9 bg-bg-surface border-b border-line">
+        <div className="w-10 h-2.5 rounded bg-line-strong" />
+        <div className="h-5 px-2.5 rounded text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>Contact</div>
+      </div>
 
       {/* Breadcrumb */}
-      <rect x="16" y="48" width="32" height="6" rx="2" fill="#1F1F23" />
-      <rect x="54" y="48" width="4" height="6" rx="1" fill="#2E2E35" />
-      <rect x="64" y="48" width="48" height="6" rx="2" fill="#1F1F23" />
-      <rect x="118" y="48" width="4" height="6" rx="1" fill="#2E2E35" />
-      <rect x="128" y="48" width="64" height="6" rx="2" fill={accent} opacity="0.4" />
+      <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
+        <div className="w-7 h-1.5 rounded bg-bg-hover" />
+        <span className="text-[8px] text-label-faint">/</span>
+        <div className="w-10 h-1.5 rounded bg-bg-hover" />
+        <span className="text-[8px] text-label-faint">/</span>
+        <div className="w-14 h-1.5 rounded" style={{ backgroundColor: `${accent}40` }} />
+      </div>
 
       {/* Hero media */}
-      <rect x="16" y="68" width="308" height="110" rx="8" fill="#18181B" />
-      <circle cx="170" cy="123" r="16" fill="#111113" stroke="#2E2E35" strokeWidth="1" />
-      <polygon points="166,117 178,123 166,129" fill="#2E2E35" />
+      <div className="mx-4 h-24 rounded-lg bg-bg-elevated flex items-center justify-center mb-3">
+        <div className="w-8 h-8 rounded-full border border-line bg-bg-surface flex items-center justify-center">
+          <div className="w-0 h-0 border-t-[5px] border-b-[5px] border-l-[8px] border-transparent border-l-line-strong ml-0.5" />
+        </div>
+      </div>
 
       {/* Title */}
-      <rect x="16" y="194" width="200" height="14" rx="3" fill="#2E2E35" />
-      <rect x="16" y="216" width="160" height="6" rx="2" fill="#1F1F23" />
+      <div className="px-4 pb-3">
+        <div className="w-40 h-3.5 rounded bg-line-strong mb-2" />
+        <div className="w-32 h-1.5 rounded bg-bg-hover" />
+      </div>
 
       {/* KPI row */}
-      <rect x="16" y="240" width="72" height="44" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="26" y="250" width="20" height="8" rx="2" fill={accent} opacity="0.5" />
-      <rect x="26" y="264" width="40" height="5" rx="1" fill="#1F1F23" />
+      <div className="grid grid-cols-4 gap-1.5 px-4 pb-4">
+        {["120+", "3 ans", "Bac", "CDI"].map((val) => (
+          <div key={val} className="rounded-md border border-line bg-bg-surface p-2 text-center">
+            <div className="text-[9px] font-semibold mb-0.5" style={{ color: accent }}>{val}</div>
+            <div className="w-8 h-1 rounded bg-bg-hover mx-auto" />
+          </div>
+        ))}
+      </div>
 
-      <rect x="96" y="240" width="72" height="44" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="106" y="250" width="20" height="8" rx="2" fill={accent} opacity="0.5" />
-      <rect x="106" y="264" width="40" height="5" rx="1" fill="#1F1F23" />
-
-      <rect x="176" y="240" width="72" height="44" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="186" y="250" width="20" height="8" rx="2" fill={accent} opacity="0.5" />
-      <rect x="186" y="264" width="40" height="5" rx="1" fill="#1F1F23" />
-
-      <rect x="256" y="240" width="68" height="44" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="266" y="250" width="20" height="8" rx="2" fill={accent} opacity="0.5" />
-      <rect x="266" y="264" width="40" height="5" rx="1" fill="#1F1F23" />
-
-      {/* Content */}
-      <rect x="16" y="300" width="220" height="6" rx="2" fill="#1F1F23" />
-      <rect x="16" y="314" width="200" height="4" rx="1" fill="#161619" />
-      <rect x="16" y="324" width="240" height="4" rx="1" fill="#161619" />
-      <rect x="16" y="334" width="180" height="4" rx="1" fill="#161619" />
-      <rect x="16" y="348" width="230" height="4" rx="1" fill="#161619" />
-      <rect x="16" y="358" width="200" height="4" rx="1" fill="#161619" />
-      <rect x="16" y="368" width="160" height="4" rx="1" fill="#161619" />
+      {/* Content lines */}
+      <div className="px-4 pb-3 space-y-1.5">
+        <div className="w-full h-1.5 rounded bg-bg-hover" />
+        <div className="w-11/12 h-1 rounded bg-bg-elevated" />
+        <div className="w-full h-1 rounded bg-bg-elevated" />
+        <div className="w-9/12 h-1 rounded bg-bg-elevated" />
+        <div className="h-1" />
+        <div className="w-full h-1 rounded bg-bg-elevated" />
+        <div className="w-10/12 h-1 rounded bg-bg-elevated" />
+        <div className="w-8/12 h-1 rounded bg-bg-elevated" />
+      </div>
 
       {/* CTA */}
-      <rect x="16" y="392" width="308" height="40" rx="8" fill={accent} opacity="0.12" stroke={accent} strokeWidth="1" strokeOpacity="0.2" />
-      <rect x="120" y="406" width="100" height="10" rx="3" fill={accent} opacity="0.6" />
+      <div className="mx-4 mb-3 rounded-lg border p-3 flex items-center justify-center" style={{ borderColor: `${accent}30`, backgroundColor: `${accent}08` }}>
+        <div className="h-2 w-20 rounded" style={{ backgroundColor: `${accent}70` }} />
+      </div>
 
       {/* Related */}
-      <rect x="16" y="452" width="96" height="6" rx="2" fill="#2E2E35" />
-      <rect x="16" y="466" width="68" height="4" rx="1" fill="#1F1F23" />
-    </svg>
+      <div className="px-4 pb-4">
+        <div className="w-16 h-1.5 rounded bg-line-strong mb-2" />
+        <div className="w-14 h-1 rounded bg-bg-hover" />
+      </div>
+    </div>
   );
 }

@@ -20,6 +20,13 @@ export type ZoningType =
 
 export type Priority = "primary" | "secondary" | "utility";
 
+export type EntryPointType = "google" | "direct" | "nav" | "social" | "email" | "ads" | "qrcode";
+
+export interface EntryPoint {
+  type: EntryPointType;
+  label: string;
+}
+
 export interface SiteNode {
   id: string;
   label: string;
@@ -33,6 +40,7 @@ export interface SiteNode {
   cta?: string[];
   tags?: string[];
   children: string[];
+  entryPoints?: EntryPoint[];
 }
 
 export interface Project {

@@ -3,11 +3,16 @@ import { createSession, COOKIE_NAME } from "@/lib/auth";
 import { getProject } from "@/lib/project-loader";
 
 export async function POST(req: NextRequest) {
-  const { password, project: projectId } = await req.json();
+  const { password: rawPassword, project: projectId } = await req.json();
+  const password = (rawPassword || "").trim();
   const adminPassword = process.env.ADMIN_PASSWORD;
 
+  if (!password) {
+    return NextResponse.json({ error: "Mot de passe requis" }, { status: 401 });
+  }
+
   // Check admin password
-  if (password === adminPassword) {
+  if (adminPassword && password === adminPassword) {
     const token = await createSession({ role: "admin" });
     const res = NextResponse.json({ ok: true });
     res.cookies.set(COOKIE_NAME, token, {

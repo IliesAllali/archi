@@ -1,86 +1,107 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useState, useRef, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 function LoginForm() {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const projectId = searchParams.get("project");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(false);
+    setError("");
     setLoading(true);
 
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, project: searchParams.get("project") }),
+        body: JSON.stringify({ password: password.trim(), project: projectId }),
       });
 
       if (res.ok) {
         router.push(redirectTo);
         router.refresh();
       } else {
-        setError(true);
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Mot de passe incorrect");
+        inputRef.current?.select();
       }
     } catch {
-      setError(true);
+      setError("Erreur de connexion");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="relative">
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-label-faint" />
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="relative group">
         <input
-          type="password"
+          ref={inputRef}
+          type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);
-            setError(false);
+            if (error) setError("");
           }}
           placeholder="Mot de passe"
           autoFocus
+          autoComplete="current-password"
           className={`
-            w-full h-10 pl-10 pr-4 rounded-lg text-sm
-            bg-bg-surface border transition-all duration-150
+            w-full h-10 pl-4 pr-10 rounded-lg text-sm
+            bg-bg-elevated border transition-all duration-150
             placeholder:text-label-faint text-label-primary
             focus:outline-none focus:ring-1
             ${
               error
-                ? "border-red-500/50 focus:ring-red-500/30"
-                : "border-line focus:border-accent/50 focus:ring-accent/20"
+                ? "border-red-500/40 focus:ring-red-500/20 shake"
+                : "border-line-strong focus:border-label-muted/30 focus:ring-label-muted/10"
             }
           `}
         />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          tabIndex={-1}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-label-faint hover:text-label-muted transition-colors"
+        >
+          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        </button>
       </div>
 
-      {error && (
-        <p className="text-2xs text-red-400 text-center animate-fade-in">
-          Mot de passe incorrect
-        </p>
-      )}
+      <div className="h-4 flex items-center justify-center">
+        {error && (
+          <p className="text-2xs text-red-400 animate-fade-in">
+            {error}
+          </p>
+        )}
+      </div>
 
       <button
         type="submit"
-        disabled={loading || !password}
+        disabled={loading || !password.trim()}
         className="
           w-full h-10 rounded-lg text-sm font-medium
-          bg-accent text-white transition-all duration-150
-          hover:brightness-110 active:brightness-95
-          disabled:opacity-40 disabled:cursor-not-allowed
+          bg-label-primary text-bg-base transition-all duration-150
+          hover:bg-white active:scale-[0.98]
+          disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100
         "
       >
-        {loading ? "…" : "Accéder"}
+        {loading ? (
+          <Loader2 className="w-4 h-4 mx-auto animate-spin" />
+        ) : (
+          "Accéder"
+        )}
       </button>
     </form>
   );
@@ -89,11 +110,11 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-base">
-      <div className="w-full max-w-[320px] mx-4">
+      <div className="w-full max-w-[300px] mx-4">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="w-10 h-10 rounded-xl bg-bg-surface border border-line flex items-center justify-center">
-            <span className="text-lg font-semibold text-label-primary">a</span>
+          <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+            <Logo size={22} />
           </div>
         </div>
 
@@ -101,8 +122,8 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
 
-        <p className="text-2xs text-label-faint text-center mt-6">
-          Accès protégé par mot de passe
+        <p className="text-2xs text-label-faint text-center mt-8 select-none">
+          Accès protégé
         </p>
       </div>
     </div>

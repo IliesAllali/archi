@@ -1,59 +1,65 @@
 export default function ZoningHome({ accent }: { accent: string }) {
   return (
-    <svg viewBox="0 0 340 480" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+    <div className="w-full bg-bg-base text-label-primary select-none" style={{ fontSize: 0 }}>
       {/* Navbar */}
-      <rect x="0" y="0" width="340" height="36" fill="#111113" />
-      <rect x="16" y="13" width="40" height="10" rx="2" fill="#2E2E35" />
-      <rect x="200" y="14" width="28" height="8" rx="2" fill="#1F1F23" />
-      <rect x="236" y="14" width="28" height="8" rx="2" fill="#1F1F23" />
-      <rect x="272" y="14" width="28" height="8" rx="2" fill="#1F1F23" />
-      <rect x="308" y="12" width="16" height="12" rx="3" fill={accent} opacity="0.8" />
+      <div className="flex items-center justify-between px-4 h-9 bg-bg-surface border-b border-line">
+        <div className="w-10 h-2.5 rounded bg-line-strong" />
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-2 rounded bg-bg-hover" />
+          <div className="w-7 h-2 rounded bg-bg-hover" />
+          <div className="w-7 h-2 rounded bg-bg-hover" />
+          <div className="h-5 px-2.5 rounded text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>CTA</div>
+        </div>
+      </div>
 
       {/* Hero */}
-      <rect x="0" y="36" width="340" height="160" fill="#18181B" />
-      <rect x="40" y="70" width="180" height="12" rx="3" fill="#2E2E35" />
-      <rect x="70" y="90" width="120" height="8" rx="2" fill="#1F1F23" />
-      <rect x="105" y="115" width="56" height="24" rx="6" fill={accent} opacity="0.9" />
-      <rect x="170" y="115" width="65" height="24" rx="6" fill="#1F1F23" stroke="#2E2E35" strokeWidth="1" />
+      <div className="relative px-8 py-12 bg-bg-elevated text-center">
+        <div className="w-44 h-3 rounded bg-line-strong mx-auto mb-3" />
+        <div className="w-28 h-2 rounded bg-bg-hover mx-auto mb-5" />
+        <div className="flex items-center justify-center gap-2">
+          <div className="h-6 px-4 rounded-md text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>Explorer</div>
+          <div className="h-6 px-4 rounded-md text-[9px] font-medium flex items-center border border-line text-label-muted bg-bg-base">Formation</div>
+        </div>
+      </div>
 
       {/* Key figures */}
-      <rect x="16" y="212" width="96" height="48" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="32" y="224" width="24" height="10" rx="2" fill={accent} opacity="0.4" />
-      <rect x="32" y="240" width="48" height="6" rx="2" fill="#1F1F23" />
-      <rect x="122" y="212" width="96" height="48" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="138" y="224" width="24" height="10" rx="2" fill={accent} opacity="0.4" />
-      <rect x="138" y="240" width="48" height="6" rx="2" fill="#1F1F23" />
-      <rect x="228" y="212" width="96" height="48" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="244" y="224" width="24" height="10" rx="2" fill={accent} opacity="0.4" />
-      <rect x="244" y="240" width="48" height="6" rx="2" fill="#1F1F23" />
+      <div className="grid grid-cols-3 gap-2 px-4 py-4">
+        {["120+", "15k", "94%"].map((val) => (
+          <div key={val} className="rounded-md border border-line bg-bg-surface p-3 text-center">
+            <div className="text-[11px] font-semibold mb-1" style={{ color: accent }}>{val}</div>
+            <div className="w-10 h-1.5 rounded bg-bg-hover mx-auto" />
+          </div>
+        ))}
+      </div>
 
       {/* Section title */}
-      <rect x="110" y="280" width="120" height="8" rx="2" fill="#2E2E35" />
+      <div className="px-4 pt-2 pb-3">
+        <div className="w-24 h-2 rounded bg-line-strong mx-auto" />
+      </div>
 
       {/* Cards grid */}
-      <rect x="16" y="300" width="96" height="72" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="24" y="308" width="60" height="6" rx="2" fill="#2E2E35" />
-      <rect x="24" y="320" width="80" height="4" rx="1" fill="#1F1F23" />
-      <rect x="24" y="328" width="64" height="4" rx="1" fill="#1F1F23" />
-      <rect x="24" y="352" width="36" height="12" rx="3" fill={accent} opacity="0.3" />
-
-      <rect x="122" y="300" width="96" height="72" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="130" y="308" width="60" height="6" rx="2" fill="#2E2E35" />
-      <rect x="130" y="320" width="80" height="4" rx="1" fill="#1F1F23" />
-      <rect x="130" y="328" width="64" height="4" rx="1" fill="#1F1F23" />
-      <rect x="130" y="352" width="36" height="12" rx="3" fill={accent} opacity="0.3" />
-
-      <rect x="228" y="300" width="96" height="72" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="236" y="308" width="60" height="6" rx="2" fill="#2E2E35" />
-      <rect x="236" y="320" width="80" height="4" rx="1" fill="#1F1F23" />
-      <rect x="236" y="328" width="64" height="4" rx="1" fill="#1F1F23" />
-      <rect x="236" y="352" width="36" height="12" rx="3" fill={accent} opacity="0.3" />
+      <div className="grid grid-cols-3 gap-2 px-4 pb-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-md border border-line bg-bg-surface overflow-hidden">
+            <div className="h-8 bg-bg-elevated" />
+            <div className="p-2">
+              <div className="w-12 h-1.5 rounded bg-line-strong mb-1.5" />
+              <div className="w-16 h-1 rounded bg-bg-hover mb-1" />
+              <div className="w-12 h-1 rounded bg-bg-hover mb-2" />
+              <div className="w-8 h-3 rounded text-[7px] flex items-center justify-center text-white" style={{ backgroundColor: accent, opacity: 0.7 }}>→</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Quiz teaser */}
-      <rect x="16" y="392" width="308" height="64" rx="8" fill="#18181B" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="32" y="408" width="140" height="8" rx="2" fill="#2E2E35" />
-      <rect x="32" y="422" width="100" height="6" rx="2" fill="#1F1F23" />
-      <rect x="248" y="412" width="56" height="24" rx="6" fill={accent} opacity="0.7" />
-    </svg>
+      <div className="mx-4 mb-4 rounded-lg border border-line bg-bg-elevated p-4 flex items-center justify-between">
+        <div>
+          <div className="w-28 h-2 rounded bg-line-strong mb-2" />
+          <div className="w-20 h-1.5 rounded bg-bg-hover" />
+        </div>
+        <div className="h-6 px-3 rounded-md text-[8px] font-medium flex items-center text-white shrink-0" style={{ backgroundColor: accent, opacity: 0.85 }}>Quiz →</div>
+      </div>
+    </div>
   );
 }

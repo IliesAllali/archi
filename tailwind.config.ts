@@ -56,6 +56,7 @@ const config: Config = {
         "slide-out": "slide-out 150ms cubic-bezier(0.16, 1, 0.3, 1)",
         "fade-in": "fade-in 150ms ease-out",
         "scale-in": "scale-in 150ms ease-out",
+        shake: "shake 400ms ease-out",
       },
       keyframes: {
         "slide-in": {
@@ -73,6 +74,13 @@ const config: Config = {
         "scale-in": {
           from: { opacity: "0", transform: "scale(0.97)" },
           to: { opacity: "1", transform: "scale(1)" },
+        },
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "20%": { transform: "translateX(-4px)" },
+          "40%": { transform: "translateX(4px)" },
+          "60%": { transform: "translateX(-2px)" },
+          "80%": { transform: "translateX(2px)" },
         },
       },
     },

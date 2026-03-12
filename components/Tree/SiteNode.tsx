@@ -44,6 +44,7 @@ const TYPE_LABEL: Record<PageType, string> = {
 function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
   const Icon = ICON_MAP[data.type] || FileText;
   const childCount = data.children?.length || 0;
+  const hasEntryPoints = data.entryPoints && data.entryPoints.length > 0;
 
   const priorityStyles = useMemo(() => {
     switch (data.priority) {
@@ -73,16 +74,46 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
       <Handle type="target" position={Position.Top} />
       <div
         className={cn(
-          "w-[220px] rounded-node border transition-all duration-150",
+          "w-[220px] rounded-node border cursor-pointer",
+          "transition-all duration-200 ease-out",
+          "hover:shadow-[0_2px_12px_rgba(0,0,0,0.3)] hover:translate-y-[-1px]",
+          "active:translate-y-[0px] active:shadow-none",
           priorityStyles.border,
           priorityStyles.bg,
-          selected && "ring-1 ring-accent/30 shadow-[0_0_20px_rgba(94,106,210,0.08)]"
+          selected && "ring-1 ring-accent/30 shadow-[0_0_24px_rgba(94,106,210,0.1)]",
+          !selected && "hover:border-line-strong"
         )}
       >
+        {/* Entry points indicator */}
+        {hasEntryPoints && (
+          <div className="flex items-center gap-1 px-3 pt-2">
+            {data.entryPoints!.slice(0, 3).map((ep, i) => (
+              <div
+                key={i}
+                className="w-1 h-1 rounded-full"
+                style={{
+                  backgroundColor:
+                    ep.type === "google" ? "#4285F4" :
+                    ep.type === "social" ? "#E1306C" :
+                    ep.type === "ads" ? "#FBBC04" :
+                    ep.type === "nav" ? "var(--accent, #5E6AD2)" :
+                    "#8B8B93",
+                }}
+              />
+            ))}
+            {data.entryPoints!.length > 3 && (
+              <span className="text-[8px] text-label-faint ml-0.5">+{data.entryPoints!.length - 3}</span>
+            )}
+          </div>
+        )}
+
         {/* Header */}
-        <div className="px-3 pt-2.5 pb-1.5 flex items-start justify-between gap-2">
+        <div className={cn("px-3 pb-1.5 flex items-start justify-between gap-2", hasEntryPoints ? "pt-1" : "pt-2.5")}>
           <div className="flex items-center gap-2 min-w-0">
-            <Icon className="w-3.5 h-3.5 shrink-0 text-label-muted" />
+            <Icon className={cn(
+              "w-3.5 h-3.5 shrink-0 transition-colors duration-150",
+              selected ? "text-accent" : "text-label-muted"
+            )} />
             <span className="text-sm font-medium text-label-primary truncate leading-tight">
               {data.label}
             </span>

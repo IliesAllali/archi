@@ -4,7 +4,7 @@
   "client": "SERCE x NéNo",
   "version": "v1",
   "date": "2026-03-13",
-  "accent": "#2563EB",
+  "accent": "#5E6AD2",
   "password": "serce2026",
   "nodes": [
     {
@@ -18,7 +18,14 @@
       "zoning": "home",
       "cta": ["Explorer les métiers", "Trouver ma formation"],
       "tags": ["mobile-first", "vidéo", "quiz-teaser"],
-      "children": ["metiers", "formations", "orientation", "actu", "contact"]
+      "children": ["metiers", "formations", "orientation", "actu", "contact"],
+      "entryPoints": [
+        { "type": "google", "label": "métiers électricité" },
+        { "type": "google", "label": "metiers-electricite.com" },
+        { "type": "direct", "label": "metiers-electricite.com" },
+        { "type": "social", "label": "LinkedIn SERCE" },
+        { "type": "ads", "label": "Google Ads — campagne orientation" }
+      ]
     },
     {
       "id": "metiers",
@@ -30,7 +37,12 @@
       "rationale": "Besoin #1 identifié en atelier. Les jeunes viennent d'abord pour comprendre les métiers.",
       "zoning": "listing",
       "tags": ["filtres", "cards", "mobile-first"],
-      "children": ["reseaux", "batiments", "industrie", "metiers-recrutent"]
+      "children": ["reseaux", "batiments", "industrie", "metiers-recrutent"],
+      "entryPoints": [
+        { "type": "google", "label": "métier électricien" },
+        { "type": "google", "label": "métier énergie renouvelable" },
+        { "type": "nav", "label": "Accueil → Explorer les métiers" }
+      ]
     },
     {
       "id": "reseaux",
@@ -78,7 +90,12 @@
       "notes": "Deuxième entrée principale. Certains jeunes arrivent par les formations, pas par les métiers.",
       "zoning": "listing",
       "cta": ["Trouver une formation", "Carte des écoles"],
-      "children": ["apres-3e", "apres-bac", "superieur", "reconversion"]
+      "children": ["apres-3e", "apres-bac", "superieur", "reconversion"],
+      "entryPoints": [
+        { "type": "google", "label": "formation électricien" },
+        { "type": "google", "label": "CAP électricité" },
+        { "type": "nav", "label": "Accueil → Trouver ma formation" }
+      ]
     },
     {
       "id": "apres-3e",
@@ -114,7 +131,12 @@
       "priority": "secondary",
       "description": "Formations continues, CPF, témoignages adultes en reconversion.",
       "zoning": "landing",
-      "children": []
+      "children": [],
+      "entryPoints": [
+        { "type": "google", "label": "reconversion électricien" },
+        { "type": "google", "label": "CPF formation électricité" },
+        { "type": "ads", "label": "Google Ads — reconversion pro" }
+      ]
     },
     {
       "id": "orientation",
@@ -127,7 +149,12 @@
       "zoning": "quiz",
       "cta": ["Faire le quiz"],
       "tags": ["quiz", "témoignages", "interactif"],
-      "children": ["quiz", "temoignages"]
+      "children": ["quiz", "temoignages"],
+      "entryPoints": [
+        { "type": "google", "label": "quel métier électricité choisir" },
+        { "type": "social", "label": "Instagram story — quiz teaser" },
+        { "type": "nav", "label": "Accueil → Quiz teaser CTA" }
+      ]
     },
     {
       "id": "quiz",

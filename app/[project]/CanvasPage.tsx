@@ -2,6 +2,7 @@
 
 import type { Project } from "@/lib/types";
 import Canvas from "@/components/Tree/Canvas";
+import Logo from "@/components/Logo";
 
 interface Props {
   project: Project;
@@ -19,20 +20,20 @@ export default function CanvasPage({ project }: Props) {
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 h-11 border-b border-line shrink-0 z-20 bg-bg-surface/80 backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
-          <div className="w-5 h-5 rounded bg-bg-hover flex items-center justify-center">
-            <span className="text-2xs font-semibold text-label-secondary">a</span>
+          <div className="w-6 h-6 rounded-md bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+            <Logo size={14} />
           </div>
-          <span className="text-label-faint">/</span>
+          <span className="text-label-faint select-none">/</span>
           <span className="text-sm font-medium text-label-primary truncate max-w-[300px]">
             {project.name}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-2xs text-label-muted font-mono">{project.client}</span>
+        <div className="flex items-center gap-3 text-2xs">
+          <span className="text-label-muted font-mono">{project.client}</span>
           <div className="w-px h-3 bg-line" />
           <span
-            className="text-2xs font-medium px-1.5 py-0.5 rounded"
+            className="font-medium px-1.5 py-0.5 rounded"
             style={{
               color: project.accent,
               backgroundColor: `${project.accent}18`,
@@ -40,9 +41,9 @@ export default function CanvasPage({ project }: Props) {
           >
             {project.version}
           </span>
-          <span className="text-2xs text-label-muted">{formattedDate}</span>
+          <span className="text-label-muted">{formattedDate}</span>
           <div className="w-px h-3 bg-line" />
-          <span className="text-2xs text-label-muted tabular-nums">
+          <span className="text-label-muted tabular-nums">
             {project.nodes.length} pages
           </span>
         </div>

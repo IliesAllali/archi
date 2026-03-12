@@ -1,44 +1,50 @@
 export default function ZoningListing({ accent }: { accent: string }) {
   return (
-    <svg viewBox="0 0 340 480" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+    <div className="w-full bg-bg-base text-label-primary select-none" style={{ fontSize: 0 }}>
       {/* Navbar */}
-      <rect x="0" y="0" width="340" height="36" fill="#111113" />
-      <rect x="16" y="13" width="40" height="10" rx="2" fill="#2E2E35" />
-      <rect x="272" y="14" width="28" height="8" rx="2" fill="#1F1F23" />
-      <rect x="308" y="12" width="16" height="12" rx="3" fill={accent} opacity="0.8" />
+      <div className="flex items-center justify-between px-4 h-9 bg-bg-surface border-b border-line">
+        <div className="w-10 h-2.5 rounded bg-line-strong" />
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-2 rounded bg-bg-hover" />
+          <div className="h-5 px-2.5 rounded text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>CTA</div>
+        </div>
+      </div>
 
-      {/* Title */}
-      <rect x="16" y="52" width="140" height="12" rx="3" fill="#2E2E35" />
-      <rect x="16" y="72" width="200" height="6" rx="2" fill="#1F1F23" />
+      {/* Header */}
+      <div className="px-4 pt-5 pb-3">
+        <div className="w-32 h-3 rounded bg-line-strong mb-2" />
+        <div className="w-44 h-1.5 rounded bg-bg-hover" />
+      </div>
 
       {/* Filters */}
-      <rect x="16" y="96" width="56" height="24" rx="12" fill={accent} opacity="0.15" stroke={accent} strokeWidth="1" strokeOpacity="0.3" />
-      <rect x="80" y="96" width="48" height="24" rx="12" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="136" y="96" width="56" height="24" rx="12" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="200" y="96" width="44" height="24" rx="12" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
+      <div className="flex gap-1.5 px-4 pb-4">
+        <div className="h-6 px-3 rounded-full text-[8px] font-medium flex items-center border" style={{ borderColor: accent, color: accent, backgroundColor: `${accent}15` }}>Tous</div>
+        <div className="h-6 px-3 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Réseaux</div>
+        <div className="h-6 px-3 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Bâtiment</div>
+        <div className="h-6 px-3 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Industrie</div>
+      </div>
 
-      {/* Card grid — 3x3 */}
-      {[0, 1, 2].map((row) =>
-        [0, 1, 2].map((col) => {
-          const x = 16 + col * 106;
-          const y = 136 + row * 108;
-          return (
-            <g key={`${row}-${col}`}>
-              <rect x={x} y={y} width="98" height="96" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-              <rect x={x + 8} y={y + 8} width="82" height="36" rx="4" fill="#18181B" />
-              <rect x={x + 8} y={y + 52} width="60" height="6" rx="2" fill="#2E2E35" />
-              <rect x={x + 8} y={y + 64} width="74" height="4" rx="1" fill="#1F1F23" />
-              <rect x={x + 8} y={y + 74} width="48" height="4" rx="1" fill="#1F1F23" />
-            </g>
-          );
-        })
-      )}
+      {/* Card grid 3x3 */}
+      <div className="grid grid-cols-3 gap-2 px-4 pb-4">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className="rounded-md border border-line bg-bg-surface overflow-hidden group">
+            <div className="h-8 bg-bg-elevated" />
+            <div className="p-2">
+              <div className="w-12 h-1.5 rounded bg-line-strong mb-1.5" />
+              <div className="w-16 h-1 rounded bg-bg-hover mb-1" />
+              <div className="w-10 h-1 rounded bg-bg-hover" />
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Pagination */}
-      <rect x="130" y="468" width="8" height="8" rx="2" fill={accent} opacity="0.6" />
-      <rect x="146" y="468" width="8" height="8" rx="2" fill="#1F1F23" />
-      <rect x="162" y="468" width="8" height="8" rx="2" fill="#1F1F23" />
-      <rect x="178" y="468" width="8" height="8" rx="2" fill="#1F1F23" />
-    </svg>
+      <div className="flex items-center justify-center gap-1.5 pb-4">
+        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: accent, opacity: 0.7 }} />
+        <div className="w-2 h-2 rounded-sm bg-bg-hover" />
+        <div className="w-2 h-2 rounded-sm bg-bg-hover" />
+        <div className="w-2 h-2 rounded-sm bg-bg-hover" />
+      </div>
+    </div>
   );
 }

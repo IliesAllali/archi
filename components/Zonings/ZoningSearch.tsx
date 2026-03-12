@@ -1,41 +1,58 @@
 export default function ZoningSearch({ accent }: { accent: string }) {
   return (
-    <svg viewBox="0 0 340 420" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+    <div className="w-full bg-bg-base text-label-primary select-none" style={{ fontSize: 0 }}>
       {/* Navbar */}
-      <rect x="0" y="0" width="340" height="36" fill="#111113" />
-      <rect x="16" y="13" width="40" height="10" rx="2" fill="#2E2E35" />
-      <rect x="308" y="12" width="16" height="12" rx="3" fill={accent} opacity="0.8" />
+      <div className="flex items-center justify-between px-4 h-9 bg-bg-surface border-b border-line">
+        <div className="w-10 h-2.5 rounded bg-line-strong" />
+        <div className="h-5 px-2.5 rounded text-[9px] font-medium flex items-center text-white" style={{ backgroundColor: accent }}>CTA</div>
+      </div>
 
       {/* Search bar */}
-      <rect x="30" y="56" width="280" height="36" rx="8" fill="#0A0A0B" stroke="#1F1F23" strokeWidth="1" />
-      <circle cx="52" cy="74" r="7" fill="none" stroke="#2E2E35" strokeWidth="1.5" />
-      <line x1="57" y1="79" x2="61" y2="83" stroke="#2E2E35" strokeWidth="1.5" strokeLinecap="round" />
-      <rect x="70" y="70" width="80" height="6" rx="2" fill="#1F1F23" />
+      <div className="mx-4 mt-5 mb-3">
+        <div className="flex items-center h-9 rounded-lg border border-line bg-bg-surface px-3 gap-2">
+          <svg className="w-3.5 h-3.5 text-label-faint shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <div className="w-16 h-1.5 rounded bg-bg-hover" />
+        </div>
+      </div>
 
       {/* Filter chips */}
-      <rect x="30" y="104" width="52" height="22" rx="11" fill={accent} opacity="0.12" stroke={accent} strokeWidth="1" strokeOpacity="0.25" />
-      <rect x="90" y="104" width="44" height="22" rx="11" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="142" y="104" width="56" height="22" rx="11" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-      <rect x="206" y="104" width="48" height="22" rx="11" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
+      <div className="flex gap-1.5 px-4 pb-4">
+        <div className="h-5 px-2.5 rounded-full text-[8px] font-medium flex items-center border" style={{ borderColor: `${accent}40`, color: accent, backgroundColor: `${accent}12` }}>Actif</div>
+        <div className="h-5 px-2.5 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Métier</div>
+        <div className="h-5 px-2.5 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Formation</div>
+        <div className="h-5 px-2.5 rounded-full text-[8px] font-medium flex items-center border border-line text-label-muted bg-bg-surface">Région</div>
+      </div>
 
       {/* Result count */}
-      <rect x="30" y="140" width="80" height="6" rx="2" fill="#2E2E35" />
+      <div className="px-4 pb-2">
+        <div className="w-16 h-1.5 rounded bg-line-strong" />
+      </div>
 
       {/* Results */}
-      {[0, 1, 2, 3, 4].map((i) => {
-        const y = 160 + i * 48;
-        return (
-          <g key={i}>
-            <rect x="30" y={y} width="280" height="40" rx="6" fill="#111113" stroke="#1F1F23" strokeWidth="1" />
-            <rect x="46" y={y + 10} width="120" height="6" rx="2" fill="#2E2E35" />
-            <rect x="46" y={y + 22} width="200" height="4" rx="1" fill="#1F1F23" />
-            <rect x="270" y={y + 12} width="24" height="16" rx="4" fill={accent} opacity={i === 0 ? "0.3" : "0.12"} />
-          </g>
-        );
-      })}
+      <div className="px-4 pb-4 space-y-1.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-md border border-line bg-bg-surface">
+            <div className="flex-1 min-w-0">
+              <div className="w-24 h-1.5 rounded bg-line-strong mb-1.5" />
+              <div className="w-40 h-1 rounded bg-bg-hover" />
+            </div>
+            <div
+              className="h-4 px-2 rounded text-[7px] font-medium flex items-center shrink-0"
+              style={{ backgroundColor: `${accent}${i === 1 ? '30' : '15'}`, color: accent }}
+            >
+              →
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Load more */}
-      <rect x="120" y="404" width="100" height="8" rx="2" fill="#1F1F23" />
-    </svg>
+      <div className="text-center pb-4">
+        <div className="w-20 h-2 rounded bg-bg-hover mx-auto" />
+      </div>
+    </div>
   );
 }
