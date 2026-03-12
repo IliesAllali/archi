@@ -14,9 +14,13 @@ import "reactflow/dist/style.css";
 import { computeLayout } from "@/lib/elk-layout";
 import type { Project, SiteNode } from "@/lib/types";
 import SiteNodeComponent from "./SiteNode";
+import EntryPointNodeComponent from "./EntryPointNode";
 import DetailPanel from "../Panel/DetailPanel";
 
-const nodeTypes = { siteNode: SiteNodeComponent };
+const nodeTypes = {
+  siteNode: SiteNodeComponent,
+  entryPointNode: EntryPointNodeComponent,
+};
 
 interface CanvasProps {
   project: Project;
@@ -55,6 +59,8 @@ export default function Canvas({ project }: CanvasProps) {
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
+      // Ignore entry point nodes
+      if (node.id.startsWith("ep_")) return;
       const siteNode = project.nodes.find((n) => n.id === node.id);
       if (siteNode) {
         setSelectedNode(siteNode);

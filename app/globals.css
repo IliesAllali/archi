@@ -40,13 +40,19 @@ html, body {
 .react-flow__background pattern circle { fill: #1A1A1E !important; }
 
 .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.12) !important;
+  stroke: rgba(255, 255, 255, 0.15) !important;
   stroke-width: 1.5 !important;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.1));
 }
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.35) !important;
+  stroke: rgba(255, 255, 255, 0.4) !important;
   stroke-width: 2 !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+}
+/* Entry point edges — thin dotted, no glow */
+.edge-entry .react-flow__edge-path {
+  filter: none !important;
 }
 
 .react-flow__handle {
