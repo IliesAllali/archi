@@ -67,7 +67,7 @@ export default function Canvas({ project }: CanvasProps) {
     setSelectedNode(null);
   }, []);
 
-  const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 0.85 }), []);
+  const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 0.9 }), []);
 
   if (!layoutReady) {
     return (

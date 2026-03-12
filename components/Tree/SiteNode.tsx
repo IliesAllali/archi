@@ -1,151 +1,203 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
-import {
-  Home,
-  LayoutGrid,
-  FileText,
-  PenLine,
-  Sparkles,
-  HelpCircle,
-  Search,
-  AlertTriangle,
-  Scale,
-  ChevronDown,
-} from "lucide-react";
-import type { SiteNode, PageType } from "@/lib/types";
+import type { SiteNode, ZoningType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const ICON_MAP: Record<PageType, React.ElementType> = {
-  home: Home,
-  listing: LayoutGrid,
-  detail: FileText,
-  form: PenLine,
-  landing: Sparkles,
-  quiz: HelpCircle,
-  search: Search,
-  error: AlertTriangle,
-  legal: Scale,
-};
+/* ─── Mini block zoning per page type ─── */
+function MiniZoning({ type }: { type: ZoningType }) {
+  const bar = "w-full h-[3px] rounded-[1px] bg-white/20";
+  const block = "rounded-[1px] bg-white/[0.07]";
+  const blockLight = "rounded-[1px] bg-white/[0.12]";
 
-const TYPE_LABEL: Record<PageType, string> = {
-  home: "Accueil",
-  listing: "Listing",
-  detail: "Détail",
-  form: "Formulaire",
-  landing: "Landing",
-  quiz: "Quiz",
-  search: "Recherche",
-  error: "Erreur",
-  legal: "Légal",
-};
+  switch (type) {
+    case "home":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(blockLight, "w-full h-[22px]")} />
+          <div className="flex gap-[3px] flex-1">
+            <div className={cn(block, "flex-1")} />
+            <div className={cn(block, "flex-1")} />
+            <div className={cn(block, "flex-1")} />
+          </div>
+          <div className={cn(block, "w-full h-[6px]")} />
+        </div>
+      );
+    case "listing":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(blockLight, "w-2/3 h-[4px]")} />
+          <div className="flex flex-col gap-[2px] flex-1">
+            <div className={cn(block, "w-full h-[8px]")} />
+            <div className={cn(block, "w-full h-[8px]")} />
+            <div className={cn(block, "w-full h-[8px]")} />
+          </div>
+        </div>
+      );
+    case "detail":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className="flex gap-[3px] flex-1">
+            <div className="flex flex-col gap-[2px] flex-[2]">
+              <div className={cn(blockLight, "w-full h-[5px]")} />
+              <div className={cn(block, "w-full flex-1")} />
+            </div>
+            <div className={cn(block, "flex-1")} />
+          </div>
+          <div className={cn(block, "w-full h-[6px]")} />
+        </div>
+      );
+    case "form":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className="flex flex-col gap-[2px] flex-1 items-center justify-center px-[6px]">
+            <div className={cn(block, "w-full h-[5px]")} />
+            <div className={cn(block, "w-full h-[5px]")} />
+            <div className={cn(block, "w-full h-[5px]")} />
+            <div className={cn(blockLight, "w-2/3 h-[5px] mt-[2px]")} />
+          </div>
+        </div>
+      );
+    case "landing":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(blockLight, "w-full h-[20px]")} />
+          <div className={cn(block, "w-full h-[10px]")} />
+          <div className={cn(block, "w-full flex-1")} />
+        </div>
+      );
+    case "quiz":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(blockLight, "w-3/4 h-[6px] mx-auto")} />
+          <div className="grid grid-cols-2 gap-[2px] flex-1">
+            <div className={cn(block)} />
+            <div className={cn(block)} />
+            <div className={cn(block)} />
+            <div className={cn(block)} />
+          </div>
+        </div>
+      );
+    case "search":
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(blockLight, "w-full h-[5px]")} />
+          <div className="flex flex-col gap-[2px] flex-1">
+            <div className={cn(block, "w-full h-[7px]")} />
+            <div className={cn(block, "w-full h-[7px]")} />
+            <div className={cn(block, "w-full h-[7px]")} />
+          </div>
+        </div>
+      );
+    default:
+      return (
+        <div className="flex flex-col gap-[3px] p-[6px] h-full">
+          <div className={cn(bar)} />
+          <div className={cn(block, "w-full flex-1")} />
+        </div>
+      );
+  }
+}
 
-function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
-  const Icon = ICON_MAP[data.type] || FileText;
-  const childCount = data.children?.length || 0;
-  const hasEntryPoints = data.entryPoints && data.entryPoints.length > 0;
+/* ─── Entry point pills shown above the node ─── */
+function EntryPointPills({ entryPoints }: { entryPoints: SiteNode["entryPoints"] }) {
+  if (!entryPoints || entryPoints.length === 0) return null;
 
-  const priorityStyles = useMemo(() => {
-    switch (data.priority) {
-      case "primary":
-        return {
-          border: selected ? "border-accent" : "border-line-strong",
-          bg: selected ? "bg-accent-muted" : "bg-bg-surface",
-          badge: "bg-accent-muted text-accent",
-        };
-      case "secondary":
-        return {
-          border: selected ? "border-accent" : "border-line",
-          bg: selected ? "bg-accent-muted" : "bg-bg-surface",
-          badge: "bg-bg-hover text-label-secondary",
-        };
-      case "utility":
-        return {
-          border: selected ? "border-accent" : "border-line border-dashed",
-          bg: selected ? "bg-accent-muted" : "bg-bg-base",
-          badge: "bg-bg-elevated text-label-muted",
-        };
-    }
-  }, [data.priority, selected]);
+  const EP_COLORS: Record<string, string> = {
+    google: "#4285F4",
+    social: "#E1306C",
+    ads: "#FBBC04",
+    direct: "#34A853",
+    nav: "#8B8B93",
+    email: "#8B8B93",
+    qrcode: "#8B8B93",
+  };
+
+  const EP_LABELS: Record<string, string> = {
+    google: "G",
+    social: "S",
+    ads: "A",
+    direct: "D",
+    nav: "→",
+    email: "@",
+    qrcode: "Q",
+  };
 
   return (
+    <div className="flex items-center justify-center gap-1 mb-1.5">
+      {entryPoints.slice(0, 4).map((ep, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-[3px] px-[5px] py-[1px] rounded-full text-[7px] font-medium leading-none"
+          style={{
+            backgroundColor: `${EP_COLORS[ep.type] || "#8B8B93"}20`,
+            color: EP_COLORS[ep.type] || "#8B8B93",
+            border: `1px solid ${EP_COLORS[ep.type] || "#8B8B93"}30`,
+          }}
+          title={ep.label}
+        >
+          <span>{EP_LABELS[ep.type]}</span>
+        </div>
+      ))}
+      {entryPoints.length > 4 && (
+        <span className="text-[7px] text-label-faint">+{entryPoints.length - 4}</span>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main site node ─── */
+function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
+  return (
     <>
-      <Handle type="target" position={Position.Top} />
-      <div
-        className={cn(
-          "w-[220px] rounded-node border cursor-pointer",
-          "transition-all duration-200 ease-out",
-          "hover:shadow-[0_2px_12px_rgba(0,0,0,0.3)] hover:translate-y-[-1px]",
-          "active:translate-y-[0px] active:shadow-none",
-          priorityStyles.border,
-          priorityStyles.bg,
-          selected && "ring-1 ring-accent/30 shadow-[0_0_24px_rgba(94,106,210,0.1)]",
-          !selected && "hover:border-line-strong"
-        )}
-      >
-        {/* Entry points indicator */}
-        {hasEntryPoints && (
-          <div className="flex items-center gap-1 px-3 pt-2">
-            {data.entryPoints!.slice(0, 3).map((ep, i) => (
-              <div
-                key={i}
-                className="w-1 h-1 rounded-full"
-                style={{
-                  backgroundColor:
-                    ep.type === "google" ? "#4285F4" :
-                    ep.type === "social" ? "#E1306C" :
-                    ep.type === "ads" ? "#FBBC04" :
-                    ep.type === "nav" ? "var(--accent, #5E6AD2)" :
-                    "#8B8B93",
-                }}
-              />
-            ))}
-            {data.entryPoints!.length > 3 && (
-              <span className="text-[8px] text-label-faint ml-0.5">+{data.entryPoints!.length - 3}</span>
-            )}
-          </div>
-        )}
+      <Handle type="target" position={Position.Top} className="!opacity-0 !w-0 !h-0" />
 
-        {/* Header */}
-        <div className={cn("px-3 pb-1.5 flex items-start justify-between gap-2", hasEntryPoints ? "pt-1" : "pt-2.5")}>
-          <div className="flex items-center gap-2 min-w-0">
-            <Icon className={cn(
-              "w-3.5 h-3.5 shrink-0 transition-colors duration-150",
-              selected ? "text-accent" : "text-label-muted"
-            )} />
-            <span className="text-sm font-medium text-label-primary truncate leading-tight">
-              {data.label}
-            </span>
-          </div>
-          <span
-            className={cn(
-              "text-2xs font-medium px-1.5 py-0.5 rounded shrink-0 leading-none",
-              priorityStyles.badge
-            )}
-          >
-            {TYPE_LABEL[data.type]}
-          </span>
+      <div className="flex flex-col items-center">
+        {/* Entry points above */}
+        <EntryPointPills entryPoints={data.entryPoints} />
+
+        {/* Page preview card */}
+        <div
+          className={cn(
+            "w-[140px] h-[100px] rounded-lg overflow-hidden cursor-pointer",
+            "transition-all duration-200 ease-out",
+            "hover:translate-y-[-2px] hover:shadow-[0_4px_20px_rgba(255,255,255,0.06)]",
+            "active:translate-y-[0px]",
+            selected
+              ? "ring-2 ring-white/60 shadow-[0_0_30px_rgba(255,255,255,0.08)]"
+              : "ring-1 ring-white/[0.12] hover:ring-white/25",
+            data.priority === "utility" && !selected && "ring-dashed opacity-70",
+          )}
+          style={{ background: "#141416" }}
+        >
+          <MiniZoning type={data.zoning} />
         </div>
 
-        {/* Description */}
-        <div className="px-3 pb-2">
-          <p className="text-2xs text-label-muted leading-relaxed line-clamp-2">
-            {data.description}
+        {/* Label */}
+        <div className="mt-2 text-center max-w-[160px]">
+          <p className={cn(
+            "text-xs font-medium leading-tight truncate",
+            selected ? "text-white" : "text-white/70"
+          )}>
+            {data.label}
           </p>
+          {data.priority === "primary" && (
+            <p className="text-[9px] text-white/30 mt-0.5 truncate">
+              {data.description?.slice(0, 40)}
+            </p>
+          )}
         </div>
-
-        {/* Footer — child count */}
-        {childCount > 0 && (
-          <div className="px-3 pb-2 flex items-center gap-1">
-            <ChevronDown className="w-3 h-3 text-label-faint" />
-            <span className="text-2xs text-label-faint">
-              {childCount} {childCount === 1 ? "page" : "pages"}
-            </span>
-          </div>
-        )}
       </div>
-      <Handle type="source" position={Position.Bottom} />
+
+      <Handle type="source" position={Position.Bottom} className="!opacity-0 !w-0 !h-0" />
     </>
   );
 }

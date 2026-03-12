@@ -1,8 +1,8 @@
 import type { SiteNode } from "./types";
 import type { Node, Edge } from "reactflow";
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 80;
+const NODE_WIDTH = 160;
+const NODE_HEIGHT = 140; // includes label + entry points
 
 export async function computeLayout(nodes: SiteNode[]): Promise<{
   rfNodes: Node[];
@@ -30,10 +30,11 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "50",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "90",
-      "elk.edgeRouting": "ORTHOGONAL",
+      "elk.spacing.nodeNode": "60",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.edgeRouting": "SPLINES",
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
     },
     children: elkNodes,
     edges: elkEdges,
@@ -63,7 +64,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
         id: `${n.id}->${childId}`,
         source: n.id,
         target: childId,
-        type: "smoothstep",
+        type: "default",
       });
     });
   });
