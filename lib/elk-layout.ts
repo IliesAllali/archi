@@ -3,74 +3,43 @@ import type { Node, Edge } from "reactflow";
 import { getCardHeight, CARD_WIDTH } from "@/components/Tree/SiteNode";
 
 const LABEL_HEIGHT = 28;
-const EP_ITEM_H_GOOGLE = 20;
-const EP_ITEM_H_OTHER = 16;
-const EP_GAP = 4;
-const EP_MARGIN_BOTTOM = 12; // space between entry group and page node
+const NODE_WIDTH = CARD_WIDTH + 20;
+const EP_WIDTH = 150;
+const EP_MARGIN = 16; // gap between EP group and page top
 
 function getEntryPointGroupHeight(entryPoints: EntryPoint[]): number {
   let h = 0;
   for (const ep of entryPoints) {
-    h += ep.type === "google" ? EP_ITEM_H_GOOGLE : EP_ITEM_H_OTHER;
+    h += ep.type === "google" ? 20 : 16;
   }
-  h += (entryPoints.length - 1) * EP_GAP;
+  h += (entryPoints.length - 1) * 4;
   return h;
 }
 
+/**
+ * ELK layouts ONLY page nodes. Entry points are positioned manually
+ * above their target page, shifted to the side to avoid overlapping
+ * any other page node in the layout.
+ */
 export async function computeLayout(nodes: SiteNode[]): Promise<{
   rfNodes: Node[];
   rfEdges: Edge[];
 }> {
-  // Build ELK graph — entry point groups are real nodes in the graph
-  // so ELK reserves space for them and nothing overlaps
-  const elkNodes: { id: string; width: number; height: number }[] = [];
+  // --- ELK graph: pages only ---
+  const elkNodes = nodes.map((n) => ({
+    id: n.id,
+    width: NODE_WIDTH,
+    height: getCardHeight(n.zoning) + LABEL_HEIGHT,
+  }));
+
   const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
-
-  // For each page node with entry points, create a compound:
-  // ep_node -> page_node (sequential, so ELK puts ep above page)
-  nodes.forEach((n) => {
-    const cardH = getCardHeight(n.zoning);
-    elkNodes.push({
-      id: n.id,
-      width: CARD_WIDTH + 20,
-      height: cardH + LABEL_HEIGHT,
-    });
-
-    // Add entry point group as an ELK node
-    if (n.entryPoints && n.entryPoints.length > 0) {
-      const epH = getEntryPointGroupHeight(n.entryPoints);
-      elkNodes.push({
-        id: `ep_${n.id}`,
-        width: CARD_WIDTH + 20,
-        height: epH,
-      });
-      // Edge from EP group to page — forces EP above the page in layout
-      elkEdges.push({
-        id: `ep_${n.id}->${n.id}`,
-        sources: [`ep_${n.id}`],
-        targets: [n.id],
-      });
-    }
-  });
-
-  // Page-to-page edges
   nodes.forEach((n) => {
     n.children.forEach((childId) => {
-      // If child has entry points, connect page -> ep_child (then ep_child -> child is already set)
-      const child = nodes.find((c) => c.id === childId);
-      if (child?.entryPoints && child.entryPoints.length > 0) {
-        elkEdges.push({
-          id: `${n.id}->ep_${childId}`,
-          sources: [n.id],
-          targets: [`ep_${childId}`],
-        });
-      } else {
-        elkEdges.push({
-          id: `${n.id}->${childId}`,
-          sources: [n.id],
-          targets: [childId],
-        });
-      }
+      elkEdges.push({
+        id: `${n.id}->${childId}`,
+        sources: [n.id],
+        targets: [childId],
+      });
     });
   });
 
@@ -79,8 +48,8 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
-      "elk.spacing.nodeNode": "40",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "60",
+      "elk.spacing.nodeNode": "50",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
       "elk.edgeRouting": "SPLINES",
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
       "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
@@ -94,9 +63,9 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layouted = await elk.layout(graph as any);
 
-  const positionMap: Record<string, { x: number; y: number }> = {};
-  (layouted.children as { id: string; x: number; y: number }[]).forEach((n) => {
-    positionMap[n.id] = { x: n.x, y: n.y };
+  const positionMap: Record<string, { x: number; y: number; w: number; h: number }> = {};
+  (layouted.children as { id: string; x: number; y: number; width: number; height: number }[]).forEach((n) => {
+    positionMap[n.id] = { x: n.x, y: n.y, w: n.width, h: n.height };
   });
 
   const rfNodes: Node[] = [];
@@ -104,31 +73,17 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
 
   // Page nodes
   nodes.forEach((n) => {
+    const p = positionMap[n.id];
+    if (!p) return;
     rfNodes.push({
       id: n.id,
       type: "siteNode",
-      position: positionMap[n.id] ?? { x: 0, y: 0 },
+      position: { x: p.x, y: p.y },
       data: n,
     });
   });
 
-  // Entry point group nodes
-  nodes.forEach((n) => {
-    if (!n.entryPoints || n.entryPoints.length === 0) return;
-    const epPos = positionMap[`ep_${n.id}`];
-    if (!epPos) return;
-
-    rfNodes.push({
-      id: `ep_${n.id}`,
-      type: "entryPointNode",
-      position: epPos,
-      data: { entryPoints: n.entryPoints, targetId: n.id },
-      selectable: false,
-      draggable: false,
-    });
-  });
-
-  // Page-to-page edges (skip entry-point intermediaries for visual edges)
+  // Page-to-page edges
   nodes.forEach((n) => {
     n.children.forEach((childId) => {
       rfEdges.push({
@@ -141,10 +96,61 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     });
   });
 
-  // Entry point to page edges
+  // --- Place entry points above their target page, offset to the left ---
+  // Collect all page bounding boxes for collision avoidance
+  const pageBounds = nodes.map((n) => {
+    const p = positionMap[n.id];
+    if (!p) return null;
+    return { id: n.id, x: p.x, y: p.y, w: p.w, h: p.h };
+  }).filter(Boolean) as { id: string; x: number; y: number; w: number; h: number }[];
+
+  const epPlaced: { x: number; y: number; w: number; h: number }[] = [];
+
+  function overlapsAny(x: number, y: number, w: number, h: number): boolean {
+    // Check against page nodes
+    for (const b of pageBounds) {
+      if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return true;
+    }
+    // Check against already-placed EP nodes
+    for (const b of epPlaced) {
+      if (x < b.x + b.w && x + w > b.x && y < b.y + b.h && y + h > b.y) return true;
+    }
+    return false;
+  }
+
   nodes.forEach((n) => {
     if (!n.entryPoints || n.entryPoints.length === 0) return;
-    if (!positionMap[`ep_${n.id}`]) return;
+    const page = positionMap[n.id];
+    if (!page) return;
+
+    const epH = getEntryPointGroupHeight(n.entryPoints);
+
+    // Default: centered above the page
+    let epX = page.x + (NODE_WIDTH - EP_WIDTH) / 2;
+    let epY = page.y - epH - EP_MARGIN;
+
+    // If that overlaps, try shifting left, then right, then further out
+    if (overlapsAny(epX, epY, EP_WIDTH, epH)) {
+      const offsets = [-NODE_WIDTH - 20, NODE_WIDTH + 20, -2 * NODE_WIDTH - 40, 2 * NODE_WIDTH + 40];
+      for (const dx of offsets) {
+        const tryX = page.x + dx;
+        if (!overlapsAny(tryX, epY, EP_WIDTH, epH)) {
+          epX = tryX;
+          break;
+        }
+      }
+    }
+
+    epPlaced.push({ x: epX, y: epY, w: EP_WIDTH, h: epH });
+
+    rfNodes.push({
+      id: `ep_${n.id}`,
+      type: "entryPointNode",
+      position: { x: epX, y: epY },
+      data: { entryPoints: n.entryPoints, targetId: n.id },
+      selectable: false,
+      draggable: false,
+    });
 
     rfEdges.push({
       id: `ep_edge_${n.id}`,
