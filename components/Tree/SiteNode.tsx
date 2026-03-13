@@ -95,8 +95,8 @@ export function getCardHeight(zoning: ZoningType): number {
    a distinct visual identity at a glance.
    ───────────────────────────────────────────── */
 
-const b = "bg-white/[0.14]"; // block element
-const bf = "bg-white/[0.08]"; // faint element
+const b = "wf-strong"; // wireframe element — styled via CSS
+const bf = "wf-faint"; // wireframe faint — styled via CSS
 
 function SkinNav() {
   return (

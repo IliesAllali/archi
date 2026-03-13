@@ -2,10 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Theme system ─── */
 :root {
   --accent: #5E6AD2;
   --accent-muted: rgba(94, 106, 210, 0.12);
   --accent-strong: rgba(94, 106, 210, 0.24);
+
+  /* Dark mode (default) */
+  --canvas-bg: #09090b;
+  --surface: #111113;
+  --surface-hover: #1a1a1e;
+  --elevated: #18181b;
+  --card-bg: #0c0c0e;
+  --card-ring: rgba(255,255,255,0.10);
+  --card-ring-hover: rgba(255,255,255,0.20);
+  --card-ring-selected: rgba(255,255,255,0.80);
+  --card-title-bg: rgba(255,255,255,0.06);
+  --card-title-border: rgba(255,255,255,0.08);
+  --title-color: rgba(255,255,255,0.90);
+  --title-selected: #fff;
+  --label-color: rgba(255,255,255,0.70);
+  --section-border-alpha: 0.35;
+  --section-bg-alpha: 0.14;
+  --wireframe-strong: rgba(255,255,255,0.14);
+  --wireframe-faint: rgba(255,255,255,0.08);
+  --dot-color: #1a1a1e;
+  --edge-color: rgba(255,255,255,0.25);
+  --edge-hover: rgba(255,255,255,0.50);
+  --edge-glow: rgba(255,255,255,0.15);
+  --text-primary: #ededef;
+  --text-secondary: #8b8b93;
+  --text-muted: #56565e;
+  --text-faint: #3b3b42;
+  --line: #1f1f23;
+  --line-strong: #2e2e35;
+  --line-subtle: #161619;
+  --controls-bg: #111113;
+  --controls-hover: #1f1f23;
+  --controls-fill: #8b8b93;
+  --controls-fill-hover: #ededef;
+  --scrollbar-thumb: #2e2e35;
+  --scrollbar-hover: #3b3b42;
+  --ep-bg: rgba(14,14,16,0.70);
+}
+
+[data-theme="light"] {
+  --canvas-bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-hover: #f0f0f2;
+  --elevated: #fafafa;
+  --card-bg: #ffffff;
+  --card-ring: rgba(0,0,0,0.10);
+  --card-ring-hover: rgba(0,0,0,0.18);
+  --card-ring-selected: rgba(0,0,0,0.60);
+  --card-title-bg: rgba(0,0,0,0.03);
+  --card-title-border: rgba(0,0,0,0.06);
+  --title-color: rgba(0,0,0,0.85);
+  --title-selected: #000;
+  --label-color: rgba(0,0,0,0.55);
+  --section-border-alpha: 0.25;
+  --section-bg-alpha: 0.08;
+  --wireframe-strong: rgba(0,0,0,0.12);
+  --wireframe-faint: rgba(0,0,0,0.06);
+  --dot-color: #e0e0e3;
+  --edge-color: rgba(0,0,0,0.15);
+  --edge-hover: rgba(0,0,0,0.35);
+  --edge-glow: rgba(0,0,0,0.06);
+  --text-primary: #1a1a1e;
+  --text-secondary: #6b6b73;
+  --text-muted: #9b9ba3;
+  --text-faint: #c5c5cb;
+  --line: #e5e5e8;
+  --line-strong: #d5d5d8;
+  --line-subtle: #efefef;
+  --controls-bg: #ffffff;
+  --controls-hover: #f0f0f2;
+  --controls-fill: #6b6b73;
+  --controls-fill-hover: #1a1a1e;
+  --scrollbar-thumb: #d0d0d5;
+  --scrollbar-hover: #b0b0b8;
+  --ep-bg: rgba(255,255,255,0.80);
 }
 
 * {
@@ -16,8 +92,8 @@
 
 html, body {
   height: 100%;
-  background: #0A0A0B;
-  color: #EDEDEF;
+  background: var(--canvas-bg);
+  color: var(--text-primary);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -26,35 +102,34 @@ html, body {
 
 ::selection {
   background: var(--accent-strong);
-  color: #EDEDEF;
+  color: var(--text-primary);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2E2E35; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3B3B42; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 
 /* ReactFlow */
-.react-flow__background { background: #0A0A0B !important; }
-.react-flow__background pattern circle { fill: #1A1A1E !important; }
+.react-flow__background { background: var(--canvas-bg) !important; }
+.react-flow__background pattern circle { fill: var(--dot-color) !important; }
 
 .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.25) !important;
+  stroke: var(--edge-color) !important;
   stroke-width: 1 !important;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15))
-          drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
+  filter: drop-shadow(0 0 6px var(--edge-glow))
+          drop-shadow(0 0 2px var(--edge-glow));
 }
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge:hover .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.5) !important;
+  stroke: var(--edge-hover) !important;
   stroke-width: 1.5 !important;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.25))
-          drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
+  filter: drop-shadow(0 0 8px var(--edge-glow))
+          drop-shadow(0 0 3px var(--edge-glow));
 }
-/* Entry point edges — thin dotted, subtle glow */
 .edge-entry .react-flow__edge-path {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.06)) !important;
+  filter: drop-shadow(0 0 3px var(--edge-glow)) !important;
 }
 
 .react-flow__handle {
@@ -69,40 +144,48 @@ html, body {
 
 .react-flow__controls {
   box-shadow: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--line) !important;
   border-radius: 8px !important;
   overflow: hidden !important;
-  background: #111113 !important;
+  background: var(--controls-bg) !important;
 }
 .react-flow__controls-button {
-  background: #111113 !important;
+  background: var(--controls-bg) !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  fill: #8B8B93 !important;
+  border-bottom: 1px solid var(--line-subtle) !important;
+  fill: var(--controls-fill) !important;
   width: 28px !important;
   height: 28px !important;
   padding: 6px !important;
 }
 .react-flow__controls-button:hover {
-  background: #1F1F23 !important;
-  fill: #EDEDEF !important;
+  background: var(--controls-hover) !important;
+  fill: var(--controls-fill-hover) !important;
 }
 .react-flow__controls-button:last-child {
   border-bottom: none !important;
 }
 
 .react-flow__minimap {
-  background: #111113 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: var(--controls-bg) !important;
+  border: 1px solid var(--line) !important;
   border-radius: 8px !important;
 }
 .react-flow__minimap-mask {
-  fill: rgba(255, 255, 255, 0.04) !important;
-  stroke: rgba(255, 255, 255, 0.2) !important;
+  fill: var(--wireframe-faint) !important;
+  stroke: var(--edge-color) !important;
   stroke-width: 1 !important;
 }
 .react-flow__minimap-node {
-  fill: rgba(255, 255, 255, 0.15) !important;
+  fill: var(--wireframe-strong) !important;
   stroke: none !important;
 }
 .react-flow__attribution { display: none !important; }
+
+/* Wireframe element classes */
+.wf-strong { background: var(--wireframe-strong); }
+.wf-faint { background: var(--wireframe-faint); }
+.wf-card { background: var(--wireframe-faint); }
+.wf-border { border-color: var(--wireframe-faint); }
+.wf-text { color: var(--wireframe-faint); }
+.wf-stroke { stroke: var(--wireframe-strong); }
