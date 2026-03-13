@@ -1,69 +1,139 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { FileDown, Loader2, Check } from "lucide-react";
 import type { Project } from "@/lib/types";
 
 interface ExportButtonProps {
   project: Project;
 }
 
+type ExportState = "idle" | "capturing" | "rendering" | "done" | "error";
+
+const STATE_LABEL: Record<ExportState, string> = {
+  idle: "PDF",
+  capturing: "Capture…",
+  rendering: "Génération…",
+  done: "Téléchargé",
+  error: "Erreur",
+};
+
 export default function ExportButton({ project }: ExportButtonProps) {
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<ExportState>("idle");
 
   const handleExport = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
+    if (state !== "idle") return;
 
     try {
-      // Dynamic import to avoid SSR issues
+      // Step 1 — fit view then capture the tree with html2canvas
+      setState("capturing");
+
+      // Fit view so the full tree is visible
+      const fitEvent = new KeyboardEvent("keydown", {
+        key: "f",
+        metaKey: true,
+        bubbles: true,
+      });
+      window.dispatchEvent(fitEvent);
+
+      // Wait for fitView animation (500ms duration + margin)
+      await new Promise((r) => setTimeout(r, 800));
+
       const html2canvas = (await import("html2canvas")).default;
 
-      // Target the ReactFlow viewport
-      const target =
-        document.querySelector(".react-flow__viewport") as HTMLElement ||
-        document.querySelector(".react-flow") as HTMLElement;
-
-      if (!target) {
-        console.warn("Canvas element not found");
-        setLoading(false);
+      const rfContainer = document.querySelector(".react-flow") as HTMLElement;
+      if (!rfContainer) {
+        setState("error");
+        setTimeout(() => setState("idle"), 2000);
         return;
       }
 
-      const canvas = await html2canvas(target, {
+      const canvas = await html2canvas(rfContainer, {
         backgroundColor: "#09090b",
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         logging: false,
-        width: target.scrollWidth,
-        height: target.scrollHeight,
+        width: rfContainer.offsetWidth,
+        height: rfContainer.offsetHeight,
       });
 
-      // Download as PNG
+      const treeImageDataUrl = canvas.toDataURL("image/png", 0.95);
+
+      // Step 2 — build PDF document
+      setState("rendering");
+
+      const { PDFDocumentComponent } = await import("@/components/PDF/PDFDocument");
+      const { pdf } = await import("@react-pdf/renderer");
+      const React = (await import("react")).default;
+
+      const doc = React.createElement(PDFDocumentComponent, {
+        project,
+        treeImageDataUrl,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any;
+
+      const blob = await pdf(doc).toBlob();
+
+      // Step 3 — trigger download
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `${project.id}-${project.version}.png`;
-      link.href = canvas.toDataURL("image/png", 1.0);
+      link.href = url;
+      link.download = `${project.id}-${project.version}.pdf`;
       link.click();
+      URL.revokeObjectURL(url);
+
+      setState("done");
+      setTimeout(() => setState("idle"), 2500);
     } catch (err) {
-      console.error("Export failed:", err);
-    } finally {
-      setLoading(false);
+      console.error("PDF export failed:", err);
+      setState("error");
+      setTimeout(() => setState("idle"), 2500);
     }
-  }, [loading, project.id, project.version]);
+  }, [state, project]);
+
+  const isLoading = state === "capturing" || state === "rendering";
+  const isDone = state === "done";
+  const isError = state === "error";
 
   return (
     <button
       onClick={handleExport}
-      disabled={loading}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium text-label-muted hover:text-label-primary hover:bg-bg-hover active:bg-bg-active transition-all duration-100 disabled:opacity-50 disabled:cursor-wait"
-      title="Exporter en PNG"
+      disabled={isLoading}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all duration-150 disabled:cursor-wait active:scale-95"
+      style={{
+        color: isDone
+          ? "var(--success-text)"
+          : isError
+          ? "var(--error-text)"
+          : "var(--text-muted)",
+        background: isDone
+          ? "var(--success-bg)"
+          : isError
+          ? "var(--error-glow)"
+          : "transparent",
+      }}
+      onMouseEnter={(e) => {
+        if (!isLoading && !isDone && !isError) {
+          e.currentTarget.style.background = "var(--surface-hover)";
+          e.currentTarget.style.color = "var(--text-primary)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isLoading && !isDone && !isError) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "var(--text-muted)";
+        }
+      }}
+      data-tooltip="Exporter en PDF (cover + arbre + pages)"
     >
-      {loading ? (
-        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      {isLoading ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+      ) : isDone ? (
+        <Check className="w-3.5 h-3.5 shrink-0" />
       ) : (
-        <Download className="w-3.5 h-3.5" />
+        <FileDown className="w-3.5 h-3.5 shrink-0" />
       )}
-      <span>Export</span>
+      <span>{STATE_LABEL[state]}</span>
     </button>
   );
 }

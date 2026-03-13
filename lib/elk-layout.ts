@@ -145,5 +145,30 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     });
   });
 
+  // Cross-links (dashed, side-to-side) — don't affect layout
+  nodes.forEach((n) => {
+    if (!n.links || n.links.length === 0) return;
+    n.links.forEach((targetId) => {
+      if (!positionMap[n.id] || !positionMap[targetId]) return;
+      const srcPos = positionMap[n.id];
+      const tgtPos = positionMap[targetId];
+      // Pick side handles based on relative position
+      const srcRight = srcPos.x < tgtPos.x;
+      rfEdges.push({
+        id: `link_${n.id}->${targetId}`,
+        source: n.id,
+        target: targetId,
+        sourceHandle: srcRight ? "right" : "left",
+        targetHandle: srcRight ? "left" : "right",
+        type: "default",
+        className: "edge-crosslink",
+        style: {
+          strokeDasharray: "4 4",
+          strokeWidth: 0.75,
+        },
+      });
+    });
+  });
+
   return { rfNodes, rfEdges };
 }

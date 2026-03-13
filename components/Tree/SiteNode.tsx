@@ -471,7 +471,9 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
       <Handle type="target" position={Position.Top} className="!opacity-0 !w-0 !h-0" />
       <Handle type="source" position={Position.Bottom} className="!opacity-0 !w-0 !h-0" />
       <Handle id="left" type="target" position={Position.Left} className="!opacity-0 !w-0 !h-0" />
+      <Handle id="left" type="source" position={Position.Left} className="!opacity-0 !w-0 !h-0" />
       <Handle id="right" type="source" position={Position.Right} className="!opacity-0 !w-0 !h-0" />
+      <Handle id="right" type="target" position={Position.Right} className="!opacity-0 !w-0 !h-0" />
 
       <div
         className={cn(

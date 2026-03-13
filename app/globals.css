@@ -154,6 +154,13 @@ html, body {
 .edge-entry .react-flow__edge-path {
   filter: drop-shadow(0 0 3px var(--edge-glow)) !important;
 }
+.edge-crosslink .react-flow__edge-path {
+  stroke: var(--edge-color) !important;
+  stroke-width: 0.75 !important;
+  stroke-dasharray: 4 4 !important;
+  opacity: 0.6;
+  filter: none !important;
+}
 
 .react-flow__handle {
   opacity: 0 !important;
@@ -335,6 +342,28 @@ html.theme-transition *::after {
 .react-flow__node {
   animation: node-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
+}
+
+/* ─── Node selection focus effect ─── */
+/* When a node is selected, all non-selected nodes fade to background */
+.has-selection .react-flow__node:not(.selected) {
+  opacity: 0.22 !important;
+  filter: saturate(0.4);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.has-selection .react-flow__node.selected {
+  opacity: 1 !important;
+  filter: saturate(1);
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+/* Dim edges too when a node is selected */
+.has-selection .react-flow__edge {
+  opacity: 0.15;
+  transition: opacity 0.25s ease;
+}
+/* Keep entry point edges even more subtle */
+.has-selection .react-flow__edge.edge-entry {
+  opacity: 0.08;
 }
 
 /* ─── Glass morphism utility ─── */

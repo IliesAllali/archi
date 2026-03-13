@@ -247,10 +247,11 @@
         "share",
         "badge-recrutement"
       ],
-      "children": [
+      "children": [],
+      "estimate": 2,
+      "links": [
         "formations"
-      ],
-      "estimate": 2
+      ]
     },
     {
       "id": "formations",

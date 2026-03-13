@@ -52,12 +52,23 @@ interface SpotlightProps {
   onSelect: (node: SiteNode) => void;
 }
 
+function buildParentLabels(nodes: SiteNode[]): Map<string, string> {
+  const parentMap = new Map<string, string>();
+  for (const n of nodes) {
+    for (const childId of n.children) {
+      if (!parentMap.has(childId)) parentMap.set(childId, n.label);
+    }
+  }
+  return parentMap;
+}
+
 export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const parentLabels = buildParentLabels(nodes);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -202,6 +213,11 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
+                        {parentLabels.has(node.id) && (
+                          <p className="text-2xs text-label-faint truncate leading-none mb-0.5">
+                            {parentLabels.get(node.id)} ›
+                          </p>
+                        )}
                         <p className={cn(
                           "text-sm truncate",
                           isActive ? "text-label-primary" : "text-label-secondary"

@@ -18,6 +18,7 @@ import type { Project, SiteNode } from "@/lib/types";
 import SiteNodeComponent from "./SiteNode";
 import EntryPointNodeComponent from "./EntryPointNode";
 import DetailPanel from "../Panel/DetailPanel";
+import CanvasStats from "../CanvasStats";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -137,7 +138,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
   }
 
   return (
-    <div className="w-full h-full relative">
+    <div className={`w-full h-full relative${selectedNode ? " has-selection" : ""}`}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -155,8 +156,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
         nodesConnectable={false}
         elementsSelectable={true}
         panOnDrag={true}
-        panOnScroll={true}
-        zoomOnScroll={false}
+        panOnScroll={false}
+        zoomOnScroll={true}
         zoomOnPinch={true}
         proOptions={{ hideAttribution: true }}
       >
@@ -187,6 +188,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
           maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
+
+      <CanvasStats project={project} visible={!selectedNode} />
 
       <DetailPanel
         node={selectedNode}
