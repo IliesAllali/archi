@@ -79,7 +79,7 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 const SECTION_GAP = 1;
 const CARD_PAD = 3;
 const TITLE_HEIGHT = 26;
-const LABEL_H = 10; // height for section label row
+const LABEL_H = 13; // height for section label row
 export const CARD_WIDTH = 160;
 
 export function getCardHeight(zoning: ZoningType): number {
@@ -533,7 +533,7 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
                 {/* Label row */}
                 <div
                   className="flex items-center px-[4px] shrink-0"
-                  style={{ height: LABEL_H }}
+                  style={{ height: LABEL_H, paddingTop: 2 }}
                 >
                   <span
                     className="leading-none select-none font-semibold truncate"

@@ -18,7 +18,6 @@ import type { Project, SiteNode } from "@/lib/types";
 import SiteNodeComponent from "./SiteNode";
 import EntryPointNodeComponent from "./EntryPointNode";
 import DetailPanel from "../Panel/DetailPanel";
-import ThemeToggle from "../ThemeToggle";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -172,11 +171,6 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
           maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
-
-      {/* Theme toggle */}
-      <div className="absolute bottom-[120px] left-4 z-10">
-        <ThemeToggle />
-      </div>
 
       <DetailPanel
         node={selectedNode}

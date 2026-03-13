@@ -31,7 +31,7 @@ export default function ExportButton({ project }: ExportButtonProps) {
       }
 
       const canvas = await html2canvas(target, {
-        backgroundColor: null,
+        backgroundColor: "#09090b",
         scale: 2,
         useCORS: true,
         logging: false,
