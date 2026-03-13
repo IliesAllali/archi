@@ -78,7 +78,7 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 
 const SECTION_GAP = 1;
 const CARD_PAD = 3;
-const TITLE_HEIGHT = 22;
+const TITLE_HEIGHT = 26;
 const LABEL_H = 10; // height for section label row
 export const CARD_WIDTH = 160;
 
@@ -405,6 +405,59 @@ const SKIN_MAP: Record<string, React.FC> = {
   image: SkinImage,
 };
 
+/* ─── Section colors — each type gets a unique tint ─── */
+const SECTION_COLORS: Record<string, string> = {
+  nav:            "rgba(139,147,165,0.20)",
+  hero:           "rgba(124,93,250,0.18)",
+  cards:          "rgba(67,140,245,0.16)",
+  cta:            "rgba(187,109,244,0.18)",
+  footer:         "rgba(100,116,139,0.16)",
+  breadcrumb:     "rgba(139,147,165,0.12)",
+  filtres:        "rgba(88,137,255,0.16)",
+  grille:         "rgba(76,142,245,0.15)",
+  contenu:        "rgba(79,150,255,0.15)",
+  sidebar:        "rgba(85,182,241,0.14)",
+  form:           "rgba(255,129,152,0.16)",
+  submit:         "rgba(168,111,247,0.18)",
+  titre:          "rgba(91,142,255,0.15)",
+  arguments:      "rgba(255,143,115,0.16)",
+  "social-proof": "rgba(124,155,255,0.14)",
+  progression:    "rgba(103,187,255,0.14)",
+  question:       "rgba(95,141,253,0.16)",
+  reponses:       "rgba(78,139,255,0.15)",
+  "nav-quiz":     "rgba(115,147,255,0.14)",
+  "search-bar":   "rgba(57,210,189,0.16)",
+  resultats:      "rgba(74,143,247,0.15)",
+  pagination:     "rgba(153,170,197,0.14)",
+  image:          "rgba(111,183,255,0.14)",
+};
+
+const SECTION_BORDER_COLORS: Record<string, string> = {
+  nav:            "rgba(139,147,165,0.40)",
+  hero:           "rgba(124,93,250,0.40)",
+  cards:          "rgba(67,140,245,0.35)",
+  cta:            "rgba(187,109,244,0.40)",
+  footer:         "rgba(100,116,139,0.30)",
+  breadcrumb:     "rgba(139,147,165,0.25)",
+  filtres:        "rgba(88,137,255,0.35)",
+  grille:         "rgba(76,142,245,0.30)",
+  contenu:        "rgba(79,150,255,0.30)",
+  sidebar:        "rgba(85,182,241,0.30)",
+  form:           "rgba(255,129,152,0.35)",
+  submit:         "rgba(168,111,247,0.40)",
+  titre:          "rgba(91,142,255,0.30)",
+  arguments:      "rgba(255,143,115,0.35)",
+  "social-proof": "rgba(124,155,255,0.28)",
+  progression:    "rgba(103,187,255,0.28)",
+  question:       "rgba(95,141,253,0.35)",
+  reponses:       "rgba(78,139,255,0.30)",
+  "nav-quiz":     "rgba(115,147,255,0.30)",
+  "search-bar":   "rgba(57,210,189,0.35)",
+  resultats:      "rgba(74,143,247,0.30)",
+  pagination:     "rgba(153,170,197,0.28)",
+  image:          "rgba(111,183,255,0.28)",
+};
+
 /* ─────────────────────────────────────────────
    Main site node component
    ───────────────────────────────────────────── */
@@ -432,51 +485,54 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
         )}
         style={{ width: CARD_WIDTH, height: cardH, background: "#0c0c0e" }}
       >
-        {/* ── Page title — tab style ── */}
+        {/* ── Page title ── */}
         <div
-          className="flex items-center px-[6px]"
+          className="flex items-center px-[7px]"
           style={{
             height: TITLE_HEIGHT,
-            background: "rgba(255,255,255,0.05)",
+            background: "rgba(255,255,255,0.06)",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           <p
             className={cn(
-              "text-[9px] font-bold leading-none truncate w-full",
-              selected ? "text-white" : "text-white/80",
+              "font-bold leading-none truncate w-full",
+              selected ? "text-white" : "text-white/90",
             )}
+            style={{ fontSize: "11px" }}
           >
             {data.label}
           </p>
         </div>
 
-        {/* ── Section blocks — flex column ── */}
+        {/* ── Section bricks — octopus.do style ── */}
         <div className="flex flex-col" style={{ padding: CARD_PAD, gap: SECTION_GAP }}>
           {sections.map((section, i) => {
             const Skin = SKIN_MAP[section.skin] || SkinDefault;
+            const bg = SECTION_COLORS[section.skin] || "rgba(255,255,255,0.03)";
+            const border = SECTION_BORDER_COLORS[section.skin] || "rgba(255,255,255,0.08)";
             return (
               <div
                 key={i}
                 className="flex flex-col rounded-sm overflow-hidden"
                 style={{
-                  background: "rgba(255,255,255,0.025)",
-                  borderLeft: "2px solid rgba(255,255,255,0.06)",
+                  background: bg,
+                  borderLeft: `2px solid ${border}`,
                 }}
               >
-                {/* Label row — fixed height, never clipped */}
+                {/* Label row */}
                 <div
                   className="flex items-center px-[4px] shrink-0"
                   style={{ height: LABEL_H }}
                 >
                   <span
-                    className="text-white/55 leading-none select-none font-medium truncate"
+                    className="text-white/70 leading-none select-none font-semibold truncate"
                     style={{ fontSize: "5.5px" }}
                   >
                     {section.label}
                   </span>
                 </div>
-                {/* Skin content — takes section.h */}
+                {/* Wireframe skin */}
                 <div style={{ height: section.h }}>
                   <Skin />
                 </div>
