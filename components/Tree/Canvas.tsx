@@ -18,7 +18,6 @@ import type { Project, SiteNode } from "@/lib/types";
 import SiteNodeComponent from "./SiteNode";
 import EntryPointNodeComponent from "./EntryPointNode";
 import DetailPanel from "../Panel/DetailPanel";
-import CanvasStats from "../CanvasStats";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -188,8 +187,6 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
           maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
-
-      <CanvasStats project={project} visible={!selectedNode} />
 
       <DetailPanel
         node={selectedNode}

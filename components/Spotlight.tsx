@@ -13,6 +13,7 @@ import {
   SearchIcon,
   AlertTriangle,
   Scale,
+  Layers,
 } from "lucide-react";
 import type { SiteNode, PageType } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const ICON_MAP: Record<PageType, React.ElementType> = {
   landing: Sparkles,
   quiz: HelpCircle,
   search: SearchIcon,
+  hub: Layers,
   error: AlertTriangle,
   legal: Scale,
 };
@@ -37,6 +39,7 @@ const TYPE_LABEL: Record<PageType, string> = {
   landing: "Landing",
   quiz: "Quiz",
   search: "Recherche",
+  hub: "Hub",
   error: "Erreur",
   legal: "Légal",
 };

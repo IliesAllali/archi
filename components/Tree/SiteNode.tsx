@@ -488,18 +488,30 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
           background: "var(--card-bg)",
           boxShadow: selected
             ? "0 0 0 1.5px var(--card-ring-selected), 0 0 20px var(--wireframe-faint)"
+            : data.priority === "primary"
+            ? "0 0 0 1px var(--accent), 0 2px 12px rgba(0,0,0,0.2)"
             : "0 0 0 1px var(--card-ring)",
         }}
         onMouseEnter={(e) => {
-          if (!selected) e.currentTarget.style.boxShadow = "0 0 0 1px var(--card-ring-hover)";
+          if (!selected) {
+            e.currentTarget.style.boxShadow =
+              data.priority === "primary"
+                ? "0 0 0 1.5px var(--accent), 0 4px 20px rgba(0,0,0,0.25)"
+                : "0 0 0 1px var(--card-ring-hover)";
+          }
         }}
         onMouseLeave={(e) => {
-          if (!selected) e.currentTarget.style.boxShadow = "0 0 0 1px var(--card-ring)";
+          if (!selected) {
+            e.currentTarget.style.boxShadow =
+              data.priority === "primary"
+                ? "0 0 0 1px var(--accent), 0 2px 12px rgba(0,0,0,0.2)"
+                : "0 0 0 1px var(--card-ring)";
+          }
         }}
       >
         {/* ── Page title ── */}
         <div
-          className="flex items-center px-[7px]"
+          className="flex items-center justify-between gap-1 px-[7px]"
           style={{
             height: TITLE_HEIGHT,
             background: "var(--card-title-bg)",
@@ -507,7 +519,7 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
           }}
         >
           <p
-            className="font-bold leading-none truncate w-full"
+            className="font-bold leading-none truncate flex-1"
             style={{
               fontSize: "11px",
               color: selected ? "var(--title-selected)" : "var(--title-color)",
@@ -515,6 +527,14 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
           >
             {data.label}
           </p>
+          {data.children.length > 0 && (
+            <span
+              className="shrink-0 font-mono leading-none"
+              style={{ fontSize: "7px", color: "var(--label-color)", opacity: 0.7 }}
+            >
+              {data.children.length}↓
+            </span>
+          )}
         </div>
 
         {/* ── Section bricks — octopus.do style ── */}

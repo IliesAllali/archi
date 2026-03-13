@@ -2,8 +2,8 @@
   "id": "serce-2026",
   "name": "Refonte metiers-electricite.com",
   "client": "SERCE x NéNo",
-  "version": "v2",
-  "date": "2026-03-14",
+  "version": "v3",
+  "date": "2026-03-13",
   "accent": "#5E6AD2",
   "password": "serce2026",
   "nodes": [
@@ -12,10 +12,8 @@
       "label": "Accueil",
       "type": "home",
       "priority": "primary",
-      "description": "Point d'entrée — double parcours : explorer les métiers OU trouver une formation par niveau.",
-      "notes": "Insight ateliers (15-22 ans) : si pas compris en 3 secondes, ils quittent. Hero recommandé : grille 6 photos de secteurs différents + accroche 'Pas juste l'électricité.' Corrige la perception 'uniquement électricien' sans une ligne de texte.",
-      "rationale": "Page la plus critique. Deux chemins d'entrée distincts — les jeunes arrivent soit par les métiers, soit par les formations.",
-      "zoning": "home",
+      "description": "Point d'entrée : deux chemins principaux (métiers / formations) pour ceux qui savent, quiz pour les indécis. Vidéo dans le hero.",
+      "rationale": "La majorité des jeunes sait si elle cherche un métier ou une formation. Le quiz capte les indécis sans polluer le parcours principal.",
       "cta": [
         "Explorer les métiers",
         "Trouver ma formation",
@@ -29,8 +27,7 @@
       "children": [
         "metiers",
         "formations",
-        "portraits",
-        "quiz"
+        "trouver-mon-metier"
       ],
       "entryPoints": [
         {
@@ -42,24 +39,19 @@
           "label": "formation électricité après bac"
         },
         {
-          "type": "direct",
-          "label": "metiers-electricite.com"
-        },
-        {
           "type": "social",
           "label": "LinkedIn SERCE"
         }
-      ]
+      ],
+      "notes": "Hero : 2 CTA primaires (Métiers / Formations) + 1 secondaire (Quiz). Vidéo : bloc dédié avec son si la vidéo porte un discours, fond silencieux si ambiance terrain."
     },
     {
       "id": "metiers",
       "label": "Les Métiers",
       "type": "listing",
       "priority": "primary",
-      "description": "Catalogue des métiers — entrée par secteur économique (8 secteurs) ou par niveau d'études.",
-      "notes": "Choix structurant : entrée par secteur plutôt que par filière interne (Études/Affaires/Travaux). La filière reste visible en badge sur les fiches, pas en navigation principale. Les 8 secteurs SERCE sont renommés en langage jeune.",
-      "rationale": "Besoin #1 des ateliers. Les jeunes cherchent un métier qui leur ressemble, pas une filière industrielle.",
-      "zoning": "listing",
+      "description": "Catalogue des métiers, entrée par secteur économique (8 secteurs) ou par niveau d'études.",
+      "notes": "Les 8 secteurs SERCE sont renommés en langage accessible. La filière interne (Études/Affaires/Travaux) reste visible en badge sur les fiches, pas en navigation principale.",
       "cta": [
         "Voir tous les métiers",
         "Filtrer par secteur",
@@ -83,7 +75,7 @@
       "entryPoints": [
         {
           "type": "nav",
-          "label": "Accueil → Explorer les métiers"
+          "label": "Accueil > Explorer les métiers"
         },
         {
           "type": "google",
@@ -97,8 +89,7 @@
       "type": "listing",
       "priority": "primary",
       "description": "Réseaux électriques, énergies renouvelables, smart grid.",
-      "notes": "Renommé depuis 'Énergie et réseaux électriques'. Plus court et évocateur.",
-      "zoning": "listing",
+      "notes": "Renommé depuis 'Énergie et réseaux électriques'.",
       "tags": [
         "reseaux",
         "renouvelables",
@@ -115,7 +106,6 @@
       "priority": "primary",
       "description": "Ville intelligente, smart building, domotique, BIM.",
       "notes": "Renommé depuis 'Ville intelligente et durable'.",
-      "zoning": "listing",
       "tags": [
         "smart-city",
         "domotique",
@@ -132,7 +122,6 @@
       "priority": "primary",
       "description": "Usine 4.0, automatisme, robotique industrielle.",
       "notes": "Renommé depuis 'Usine 4.0'.",
-      "zoning": "listing",
       "tags": [
         "usine",
         "automatisme",
@@ -149,7 +138,6 @@
       "priority": "primary",
       "description": "Réseaux numériques, fibre optique, data centers.",
       "notes": "Renommé depuis 'Territoires connectés'.",
-      "zoning": "listing",
       "tags": [
         "fibre",
         "telecom",
@@ -165,8 +153,6 @@
       "type": "listing",
       "priority": "secondary",
       "description": "CVC, qualité de l'air intérieur, pompes à chaleur.",
-      "notes": "Niche mais forte demande. Peu connue des jeunes.",
-      "zoning": "listing",
       "tags": [
         "CVC",
         "climatisation",
@@ -182,8 +168,6 @@
       "type": "listing",
       "priority": "secondary",
       "description": "Véhicule électrique, bornes de recharge, infrastructure routière.",
-      "notes": "Secteur perçu comme attractif par les jeunes — angle véhicule électrique à mettre en avant.",
-      "zoning": "listing",
       "tags": [
         "vehicule-electrique",
         "bornes",
@@ -199,7 +183,6 @@
       "type": "listing",
       "priority": "secondary",
       "description": "Maintenance préventive et corrective des installations électriques.",
-      "zoning": "listing",
       "tags": [
         "maintenance",
         "exploitation",
@@ -216,7 +199,6 @@
       "priority": "secondary",
       "description": "Construction et rénovation énergétique, RT2020, BBC.",
       "notes": "Renommé depuis 'Bâtiments performants et connectés'.",
-      "zoning": "listing",
       "tags": [
         "renovation",
         "RT2020",
@@ -231,10 +213,7 @@
       "label": "Fiche Métier",
       "type": "detail",
       "priority": "primary",
-      "description": "Détail complet : niveau d'accès, salaire débutant, missions, vidéo témoignage, formations associées, badge recrutement.",
-      "notes": "Améliorations vs site actuel : salaire visible dès le titre, niveau d'accès en badge, badge 'Fort recrutement', bouton partage WhatsApp/Insta/Snap. Vidéos YouTube SERCE existantes à réintégrer.",
-      "rationale": "Page la plus consultée après l'accueil. C'est là que se joue la décision du jeune.",
-      "zoning": "detail",
+      "description": "Détail complet : niveau d'accès, salaire débutant, durée des études, missions, débouchés, vidéo témoignage, formations associées.",
       "cta": [
         "Trouver une formation",
         "Partager cette fiche",
@@ -243,25 +222,25 @@
       "tags": [
         "salaire",
         "niveau-acces",
+        "duree-etudes",
+        "debouches",
         "video",
-        "share",
-        "badge-recrutement"
+        "share"
       ],
       "children": [],
       "estimate": 2,
       "links": [
         "formations"
-      ]
+      ],
+      "notes": "Lien bidirectionnel : la fiche liste les formations qui y mènent, et les pages formation listent les métiers accessibles."
     },
     {
       "id": "formations",
       "label": "Les Formations",
       "type": "listing",
       "priority": "primary",
-      "description": "Parcours de formation par niveau scolaire actuel — après 3e, bac, supérieur, reconversion.",
-      "notes": "Deuxième entrée principale. La logique utilisateur = 'Je suis en 3e, qu'est-ce que je peux faire ?' Filtre : niveau / région / type contrat (alternance/initial).",
-      "rationale": "Une partie des jeunes arrive avec un niveau scolaire en tête, pas un métier.",
-      "zoning": "listing",
+      "description": "Parcours de formation par niveau scolaire actuel : après 3e, bac, supérieur, reconversion.",
+      "notes": "Carte des établissements confirmée V1 (mentionnée dans la restitution ateliers). Bench UI/UX ONISEP avant intégration. Filtre région + alternance. Lien bidirectionnel avec les fiches métiers.\nProposition : séparer Études supérieures et Reconversion en deux entrées distinctes plutôt qu'un sous-menu unique.\nRaison : ce sont deux audiences très différentes (18 ans en poursuite d'études vs 35 ans en reconversion active via CPF).",
       "cta": [
         "Trouver une formation",
         "Voir la carte des établissements"
@@ -281,11 +260,11 @@
       "entryPoints": [
         {
           "type": "nav",
-          "label": "Accueil → Trouver ma formation"
+          "label": "Accueil > Trouver ma formation"
         },
         {
           "type": "nav",
-          "label": "Fiche métier → Formations qui y mènent"
+          "label": "Fiche métier > Formations qui y mènent"
         },
         {
           "type": "google",
@@ -298,9 +277,7 @@
       "label": "Après la 3ème",
       "type": "listing",
       "priority": "primary",
-      "description": "CAP, Bac Pro — après le collège. Carte des CFA et lycées professionnels.",
-      "notes": "Cible : 14-16 ans. Mettre en avant les témoignages de jeunes en alternance.",
-      "zoning": "listing",
+      "description": "CAP, Bac Pro. Carte des CFA et lycées professionnels.",
       "tags": [
         "CAP",
         "bac-pro",
@@ -314,72 +291,117 @@
       "label": "Après le Bac",
       "type": "listing",
       "priority": "primary",
-      "description": "BTS, BUT, Licence Pro — avec carte des établissements et filtres alternance/initial.",
-      "zoning": "listing",
+      "description": "BTS, BUT (bac+2). Carte des établissements, filtres alternance/initial.",
       "tags": [
         "BTS",
         "BUT",
-        "licence-pro"
+        "alternance"
       ],
       "children": []
     },
     {
       "id": "formation-superieur",
-      "label": "Études supérieures",
+      "label": "Bac +3 et plus",
       "type": "listing",
       "priority": "secondary",
-      "description": "Licences Pro, Écoles d'ingénieurs, Masters.",
-      "zoning": "listing",
+      "description": "Licence Pro, Licence, Master, Écoles d'ingénieurs.",
       "tags": [
+        "licence-pro",
         "ecole-ingenieur",
         "master"
       ],
-      "children": []
+      "children": [],
+      "notes": "Proposition : dédier une page aux parcours bac +3 et plus, distincte de la page Reconversion.\nRaison : l'audience ici est étudiante (post-BTS/BUT, parcours continu), à ne pas mélanger avec les adultes en reconversion CPF."
     },
     {
       "id": "formation-reconversion",
       "label": "Reconversion",
       "type": "landing",
-      "priority": "secondary",
-      "description": "Formations continues, CQP SERCE, CPF — pour adultes en reconversion.",
-      "notes": "Audience secondaire mais croissante. Témoignages d'adultes en reconversion très convaincants.",
-      "zoning": "landing",
+      "priority": "primary",
+      "description": "Formations continues, CQP SERCE, CPF.",
       "tags": [
         "CPF",
         "CQP",
         "formation-continue"
       ],
-      "children": []
+      "children": [],
+      "notes": "Audience distincte (adultes, démarche CPF active). Mérite une entrée visible dans la nav formations, pas seulement un onglet."
     },
     {
-      "id": "portraits",
-      "label": "Portraits & Témoignages",
+      "id": "trouver-mon-metier",
+      "label": "Trouver mon métier",
+      "type": "hub",
+      "priority": "primary",
+      "description": "Section pour les indécis : témoignages de jeunes, quiz d'orientation, métiers qui recrutent. Reprend la structure proposée dans les ateliers.",
+      "cta": [
+        "Découvrir des témoignages",
+        "Faire le quiz",
+        "Voir les métiers qui recrutent"
+      ],
+      "tags": [
+        "orientation",
+        "temoignages",
+        "quiz",
+        "metiers-qui-recrutent"
+      ],
+      "children": [
+        "temoignages",
+        "quiz",
+        "metiers-qui-recrutent"
+      ],
+      "notes": "Proposition : regrouper témoignages, quiz et métiers qui recrutent dans une section dédiée « Trouver mon métier ».\nRaison : plutôt que de disperser ces contenus dans des sous-menus différents, une section unique crée un parcours cohérent pour les jeunes qui ne savent pas encore ce qu'ils veulent."
+    },
+    {
+      "id": "le-serce",
+      "label": "Le SERCE",
+      "type": "landing",
+      "priority": "secondary",
+      "description": "Présentation du syndicat : missions, chiffres clés du secteur, entreprises membres.",
+      "cta": [
+        "Découvrir les entreprises membres",
+        "Voir les chiffres du secteur"
+      ],
+      "tags": [
+        "institutionnel",
+        "syndicat",
+        "chiffres-cles"
+      ],
+      "children": [],
+      "notes": "Accessible depuis le footer uniquement."
+    },
+    {
+      "id": "temoignages",
+      "label": "Témoignages",
       "type": "listing",
       "priority": "primary",
-      "description": "Vidéos et portraits de jeunes en formation ou en poste — filtrables par secteur, niveau, genre.",
-      "notes": "Les vidéos YouTube SERCE (Sandrine Dessinatrice Projeteur, etc.) sont enterrées dans les fiches métiers. Les regrouper ici leur donne un impact beaucoup plus fort. Format cible : 30-90s.",
-      "rationale": "Insight atelier : les jeunes font confiance aux pairs. Une vidéo de 30s d'un jeune de 22 ans sur le terrain > 10 fiches texte.",
-      "zoning": "listing",
+      "description": "Vidéos et portraits de jeunes en formation ou en poste, filtrables par secteur et niveau.",
+      "notes": "Tags sur 3 niveaux (secteur, spécialité, territoire) pour remontée dynamique dans les fiches métiers.\nProposition : lier témoignages et ressources.\nPrévoir une FAQ, à intégrer dans la section Ressources.",
       "cta": [
-        "Voir tous les portraits",
+        "Voir tous les témoignages",
         "Filtrer par secteur"
       ],
       "tags": [
         "video",
-        "temoignages",
-        "YouTube-SERCE",
-        "filtres-profil"
+        "tags-secteur",
+        "tags-metier",
+        "cross-linking"
       ],
-      "children": [],
-      "entryPoints": [
-        {
-          "type": "nav",
-          "label": "Accueil → Portraits"
-        },
-        {
-          "type": "nav",
-          "label": "Fiche métier → Témoignages similaires"
-        }
+      "children": []
+    },
+    {
+      "id": "metiers-qui-recrutent",
+      "label": "Métiers qui recrutent",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Sélection de métiers avec fort besoin de recrutement, mis à jour régulièrement.",
+      "notes": "Vue filtrée du catalogue métiers (tag 'fort-recrutement'). Pas de contenu dupliqué : c'est un filtre affiché comme page dédiée pour l'impact.",
+      "tags": [
+        "recrutement",
+        "debouches",
+        "filtre"
+      ],
+      "children": [
+        "fiche-metier"
       ]
     },
     {
@@ -387,10 +409,8 @@
       "label": "Quiz d'orientation",
       "type": "quiz",
       "priority": "primary",
-      "description": "5 questions sur les centres d'intérêt — résultat : 3 métiers suggérés avec liens vers les fiches.",
-      "notes": "Transversal — accessible depuis l'accueil, les fiches métiers et les formations. PAS une section de navigation principale. À confirmer call 14/03 : outil tiers (Diagoriente) ou développement custom ?",
-      "rationale": "Réponse aux indécis — la majorité des 15-17 ans.",
-      "zoning": "quiz",
+      "description": "5 questions sur les centres d'intérêt, résultat : 3 métiers suggérés avec liens vers les fiches.",
+      "notes": "Développement custom intégré à Framer. Sous-page de Trouver mon métier, mais accessible aussi depuis l'accueil (CTA secondaire hero), les fiches métiers et les pages formations.",
       "cta": [
         "Commencer le quiz",
         "Voir mes résultats"
@@ -399,19 +419,21 @@
         "orientation",
         "5-questions",
         "personnalisation",
-        "a-confirmer"
+        "custom-dev",
+        "framer"
       ],
       "children": [],
       "entryPoints": [
         {
           "type": "nav",
-          "label": "Accueil → Faire le quiz"
+          "label": "Accueil > Faire le quiz"
         },
         {
           "type": "nav",
-          "label": "Fiche métier → Tu hésites ? Fais le quiz"
+          "label": "Fiche métier > Tu hésites ? Fais le quiz"
         }
       ]
     }
-  ]
+  ],
+  "notes": "URL actuelle metiers-electricite.com jugée trop associée au seul métier d'électricien. Nouvelle URL à définir avec le client."
 }

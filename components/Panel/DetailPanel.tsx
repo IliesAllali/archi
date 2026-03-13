@@ -13,6 +13,7 @@ import {
   Search,
   AlertTriangle,
   Scale,
+  Layers,
   Clock,
   Tag,
   MousePointerClick,
@@ -32,6 +33,7 @@ const ICON_MAP: Record<PageType, React.ElementType> = {
   landing: Sparkles,
   quiz: HelpCircle,
   search: Search,
+  hub: Layers,
   error: AlertTriangle,
   legal: Scale,
 };
@@ -44,6 +46,7 @@ const TYPE_LABEL: Record<PageType, string> = {
   landing: "Landing",
   quiz: "Quiz",
   search: "Recherche",
+  hub: "Hub",
   error: "Erreur",
   legal: "Légal",
 };

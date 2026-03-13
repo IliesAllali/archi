@@ -131,16 +131,10 @@ html, body {
 .react-flow__background { background: var(--canvas-bg) !important; }
 .react-flow__background pattern circle { fill: var(--dot-color) !important; }
 
-/* ─── Edge draw-in animation ─── */
-@keyframes edge-draw {
-  from { stroke-dashoffset: 1000; }
-  to { stroke-dashoffset: 0; }
-}
+/* ─── Edges ─── */
 .react-flow__edge-path {
   stroke: var(--edge-color) !important;
   stroke-width: 1 !important;
-  stroke-dasharray: 1000;
-  animation: edge-draw 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   filter: drop-shadow(0 0 6px var(--edge-glow))
           drop-shadow(0 0 2px var(--edge-glow));
 }

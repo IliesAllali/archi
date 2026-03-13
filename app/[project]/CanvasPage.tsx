@@ -7,9 +7,6 @@ import Canvas from "@/components/Tree/Canvas";
 import Logo from "@/components/Logo";
 import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
-import ExportButton from "@/components/ExportButton";
-import ThemeToggle from "@/components/ThemeToggle";
-import ShortcutsOverlay from "@/components/ShortcutsOverlay";
 import { Share2, ChevronLeft, Command } from "lucide-react";
 
 interface Props {
@@ -117,12 +114,7 @@ export default function CanvasPage({ project }: Props) {
             <span className="font-mono">F</span>
           </button>
 
-          <ThemeToggle />
-          <ShortcutsOverlay />
-
           <div className="w-px h-4 bg-line mx-1 hidden sm:block" />
-
-          <ExportButton project={project} />
 
           {/* Share */}
           <button
@@ -156,3 +148,5 @@ export default function CanvasPage({ project }: Props) {
     </div>
   );
 }
+
+

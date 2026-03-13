@@ -6,6 +6,7 @@ export type PageType =
   | "landing"
   | "quiz"
   | "search"
+  | "hub"
   | "error"
   | "legal";
 
@@ -63,6 +64,7 @@ export const PAGE_TYPE_CONFIG: Record<PageType, { icon: string; label: string }>
   landing: { icon: "Sparkles", label: "Landing" },
   quiz: { icon: "HelpCircle", label: "Quiz" },
   search: { icon: "Search", label: "Recherche" },
+  hub: { icon: "Layers", label: "Hub" },
   error: { icon: "AlertTriangle", label: "Erreur" },
   legal: { icon: "Scale", label: "Légal" },
 };

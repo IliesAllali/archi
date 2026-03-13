@@ -28,6 +28,7 @@ const TYPE_LABEL: Record<PageType, string> = {
   landing: "Landing",
   quiz: "Quiz",
   search: "Recherche",
+  hub: "Hub",
   error: "Erreur",
   legal: "Légal",
 };
@@ -104,7 +105,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     color: "#52525b",
     letterSpacing: 2,
-    textTransform: "uppercase",
     marginBottom: 8,
   },
   coverTitle: {
@@ -251,7 +251,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: "#9ca3af",
     letterSpacing: 1.5,
-    textTransform: "uppercase",
     marginBottom: 6,
   },
   sectionText: {
@@ -391,7 +390,7 @@ function NodeFooter({ project, node, pageNum, totalPages }: {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{label}</Text>
+      <Text style={styles.sectionLabel}>{label.toUpperCase()}</Text>
       {children}
     </View>
   );
