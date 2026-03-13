@@ -15,10 +15,10 @@ function GoogleSearchEntry({ query }: { query: string }) {
     <div
       className="flex items-center gap-[5px] h-[18px] px-[6px] rounded-full"
       style={{
-        background: "rgba(14,14,16,0.7)",
+        background: "var(--ep-bg)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid var(--card-ring)",
       }}
     >
       {/* Google "G" logo */}
@@ -28,7 +28,7 @@ function GoogleSearchEntry({ query }: { query: string }) {
         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
       </svg>
-      <span className="text-[7px] text-white/40 truncate max-w-[100px]">{query}</span>
+      <span className="text-[7px] truncate max-w-[100px]" style={{ color: "var(--text-muted)" }}>{query}</span>
     </div>
   );
 }
@@ -50,7 +50,7 @@ function EntryBadge({ type, label }: { type: string; label: string }) {
     <div
       className="flex items-center gap-[4px] h-[14px] px-[5px] rounded-full text-[7px] leading-none"
       style={{
-        background: "rgba(14,14,16,0.7)",
+        background: "var(--ep-bg)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         border: `1px solid ${cfg.color}20`,
@@ -58,7 +58,7 @@ function EntryBadge({ type, label }: { type: string; label: string }) {
       }}
     >
       <span className="font-semibold">{cfg.icon}</span>
-      <span className="text-white/35 truncate max-w-[80px]">{label}</span>
+      <span className="truncate max-w-[80px]" style={{ color: "var(--text-muted)" }}>{label}</span>
     </div>
   );
 }

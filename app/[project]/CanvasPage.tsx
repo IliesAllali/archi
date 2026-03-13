@@ -16,22 +16,35 @@ export default function CanvasPage({ project }: Props) {
   });
 
   return (
-    <div className="flex flex-col h-screen bg-bg-base">
+    <div className="flex flex-col h-screen" style={{ background: "var(--canvas-bg)" }}>
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 h-11 border-b border-line shrink-0 z-20 bg-bg-surface/80 backdrop-blur-sm">
+      <header
+        className="flex items-center justify-between px-4 h-11 shrink-0 z-20"
+        style={{
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--line)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+          <div
+            className="w-6 h-6 rounded-md flex items-center justify-center"
+            style={{
+              background: "var(--card-title-bg)",
+              border: "1px solid var(--card-ring)",
+            }}
+          >
             <Logo size={14} />
           </div>
-          <span className="text-label-faint select-none">/</span>
-          <span className="text-sm font-medium text-label-primary truncate max-w-[300px]">
+          <span style={{ color: "var(--text-faint)" }} className="select-none">/</span>
+          <span className="text-sm font-medium truncate max-w-[300px]" style={{ color: "var(--text-primary)" }}>
             {project.name}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-2xs">
-          <span className="text-label-muted font-mono">{project.client}</span>
-          <div className="w-px h-3 bg-line" />
+          <span className="font-mono" style={{ color: "var(--text-muted)" }}>{project.client}</span>
+          <div className="w-px h-3" style={{ background: "var(--line)" }} />
           <span
             className="font-medium px-1.5 py-0.5 rounded"
             style={{
@@ -41,9 +54,9 @@ export default function CanvasPage({ project }: Props) {
           >
             {project.version}
           </span>
-          <span className="text-label-muted">{formattedDate}</span>
-          <div className="w-px h-3 bg-line" />
-          <span className="text-label-muted tabular-nums">
+          <span style={{ color: "var(--text-muted)" }}>{formattedDate}</span>
+          <div className="w-px h-3" style={{ background: "var(--line)" }} />
+          <span className="tabular-nums" style={{ color: "var(--text-muted)" }}>
             {project.nodes.length} pages
           </span>
         </div>

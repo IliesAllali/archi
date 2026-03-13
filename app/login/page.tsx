@@ -62,15 +62,19 @@ function LoginForm() {
           autoComplete="current-password"
           className={`
             w-full h-10 pl-4 pr-10 rounded-lg text-sm
-            bg-bg-elevated border transition-all duration-150
-            placeholder:text-label-faint text-label-primary
+            transition-all duration-150
             focus:outline-none focus:ring-1
             ${
               error
                 ? "border-red-500/40 focus:ring-red-500/20 shake"
-                : "border-line-strong focus:border-label-muted/30 focus:ring-label-muted/10"
+                : "focus:ring-[var(--text-muted)]/10"
             }
           `}
+          style={{
+            background: "var(--elevated)",
+            color: "var(--text-primary)",
+            border: error ? undefined : "1px solid var(--line-strong)",
+          }}
         />
         <button
           type="button"
@@ -95,10 +99,14 @@ function LoginForm() {
         disabled={loading || !password.trim()}
         className="
           w-full h-10 rounded-lg text-sm font-medium
-          bg-label-primary text-bg-base transition-all duration-150
-          hover:bg-white active:scale-[0.98]
+          transition-all duration-150
+          active:scale-[0.98]
           disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100
         "
+        style={{
+          background: "var(--text-primary)",
+          color: "var(--canvas-bg)",
+        }}
       >
         {loading ? (
           <Loader2 className="w-4 h-4 mx-auto animate-spin" />
@@ -112,11 +120,17 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-base">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
       <div className="w-full max-w-[300px] mx-4">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{
+              background: "var(--card-title-bg)",
+              border: "1px solid var(--card-ring)",
+            }}
+          >
             <Logo size={22} />
           </div>
         </div>
@@ -125,7 +139,7 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
 
-        <p className="text-2xs text-label-faint text-center mt-8 select-none">
+        <p className="text-2xs text-center mt-8 select-none" style={{ color: "var(--text-faint)" }}>
           Accès protégé
         </p>
       </div>

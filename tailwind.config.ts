@@ -11,22 +11,22 @@ const config: Config = {
     extend: {
       colors: {
         bg: {
-          base: "#0A0A0B",
-          surface: "#111113",
-          elevated: "#18181B",
-          hover: "#1F1F23",
-          active: "#27272A",
+          base: "var(--canvas-bg)",
+          surface: "var(--surface)",
+          elevated: "var(--elevated)",
+          hover: "var(--surface-hover)",
+          active: "var(--controls-hover)",
         },
         line: {
-          DEFAULT: "#1F1F23",
-          strong: "#2E2E35",
-          subtle: "#161619",
+          DEFAULT: "var(--line)",
+          strong: "var(--line-strong)",
+          subtle: "var(--line-subtle)",
         },
         label: {
-          primary: "#EDEDEF",
-          secondary: "#8B8B93",
-          muted: "#56565E",
-          faint: "#3B3B42",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          faint: "var(--text-faint)",
         },
         accent: {
           DEFAULT: "var(--accent, #5E6AD2)",

@@ -125,7 +125,7 @@ function SkinCards() {
   return (
     <div className="flex gap-[2px] h-full p-[3px]">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="flex-1 rounded-sm flex flex-col gap-[2px] p-[2px] bg-white/[0.04]">
+        <div key={i} className="flex-1 rounded-sm flex flex-col gap-[2px] p-[2px] wf-card">
           <div className={cn(bf, "w-full h-[10px] rounded-sm")} />
           <div className={cn(bf, "w-[65%] h-[2px] rounded-sm")} />
           <div className={cn(bf, "w-[45%] h-[2px] rounded-sm")} />
@@ -161,9 +161,9 @@ function SkinBreadcrumb() {
   return (
     <div className="flex items-center gap-[2px] h-full px-[5px]">
       <div className={cn(bf, "w-[6px] h-[2px] rounded-sm")} />
-      <span className="text-white/10 text-[4px]">›</span>
+      <span className="wf-text text-[4px]">›</span>
       <div className={cn(bf, "w-[12px] h-[2px] rounded-sm")} />
-      <span className="text-white/10 text-[4px]">›</span>
+      <span className="wf-text text-[4px]">›</span>
       <div className={cn(b, "w-[8px] h-[2px] rounded-sm")} />
     </div>
   );
@@ -187,7 +187,7 @@ function SkinGrille() {
   return (
     <div className="grid grid-cols-3 gap-[2px] h-full p-[3px]">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="rounded-sm flex flex-col gap-[1px] p-[2px] bg-white/[0.04]">
+        <div key={i} className="rounded-sm flex flex-col gap-[1px] p-[2px] wf-card">
           <div className={cn(bf, "w-full h-[7px] rounded-sm")} />
           <div className={cn(bf, "w-[60%] h-[2px] rounded-sm")} />
         </div>
@@ -217,7 +217,7 @@ function SkinSidebar() {
         <div className={cn(bf, "w-full h-[2px] rounded-sm")} />
         <div className={cn(bf, "w-[75%] h-[2px] rounded-sm")} />
       </div>
-      <div className="flex-1 rounded-sm bg-white/[0.04] p-[2px]">
+      <div className="flex-1 rounded-sm wf-card p-[2px]">
         <div className="flex flex-col gap-[2px]">
           <div className={cn(bf, "w-full h-[2px] rounded-sm")} />
           <div className={cn(bf, "w-[55%] h-[2px] rounded-sm")} />
@@ -233,7 +233,7 @@ function SkinForm() {
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex flex-col gap-[1px]">
           <div className={cn(bf, "w-[28%] h-[2px] rounded-sm")} />
-          <div className="w-full h-[5px] rounded border border-white/[0.06]" />
+          <div className="w-full h-[5px] rounded wf-border" style={{ borderWidth: 1 }} />
         </div>
       ))}
     </div>
@@ -303,7 +303,7 @@ function SkinReponses() {
   return (
     <div className="grid grid-cols-2 gap-[2px] h-full p-[3px]">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="rounded-sm flex items-center justify-center border border-white/[0.06]">
+        <div key={i} className="rounded-sm flex items-center justify-center wf-border" style={{ borderWidth: 1 }}>
           <div className={cn(bf, "w-[55%] h-[2px] rounded-sm")} />
         </div>
       ))}
@@ -323,7 +323,7 @@ function SkinNavQuiz() {
 function SkinSearchBar() {
   return (
     <div className="flex items-center justify-center h-full px-[5px]">
-      <div className="flex items-center gap-[2px] w-full h-[7px] rounded-full border border-white/[0.06] px-[3px]">
+      <div className="flex items-center gap-[2px] w-full h-[7px] rounded-full wf-border px-[3px]" style={{ borderWidth: 1 }}>
         <div className={cn(bf, "w-[3px] h-[3px] rounded-full shrink-0")} />
         <div className={cn(bf, "flex-1 h-[2px] rounded-sm")} />
       </div>
@@ -360,8 +360,8 @@ function SkinPagination() {
 function SkinImage() {
   return (
     <div className="flex items-center justify-center h-full p-[3px]">
-      <div className="w-full h-full rounded-sm bg-white/[0.04] flex items-center justify-center">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5">
+      <div className="w-full h-full rounded-sm wf-card flex items-center justify-center">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="wf-stroke" strokeWidth="1.5">
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <circle cx="8.5" cy="8.5" r="1.5" />
           <path d="M21 15l-5-5L5 21" />
@@ -478,28 +478,38 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
           "rounded overflow-hidden cursor-pointer",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-1px]",
-          selected
-            ? "ring-[1.5px] ring-white/80 shadow-[0_0_20px_rgba(255,255,255,0.08)]"
-            : "ring-1 ring-white/[0.10] hover:ring-white/20",
           data.priority === "utility" && !selected && "opacity-45",
         )}
-        style={{ width: CARD_WIDTH, height: cardH, background: "#0c0c0e" }}
+        style={{
+          width: CARD_WIDTH,
+          height: cardH,
+          background: "var(--card-bg)",
+          boxShadow: selected
+            ? "0 0 0 1.5px var(--card-ring-selected), 0 0 20px var(--wireframe-faint)"
+            : "0 0 0 1px var(--card-ring)",
+        }}
+        onMouseEnter={(e) => {
+          if (!selected) e.currentTarget.style.boxShadow = "0 0 0 1px var(--card-ring-hover)";
+        }}
+        onMouseLeave={(e) => {
+          if (!selected) e.currentTarget.style.boxShadow = "0 0 0 1px var(--card-ring)";
+        }}
       >
         {/* ── Page title ── */}
         <div
           className="flex items-center px-[7px]"
           style={{
             height: TITLE_HEIGHT,
-            background: "rgba(255,255,255,0.06)",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background: "var(--card-title-bg)",
+            borderBottom: "1px solid var(--card-title-border)",
           }}
         >
           <p
-            className={cn(
-              "font-bold leading-none truncate w-full",
-              selected ? "text-white" : "text-white/90",
-            )}
-            style={{ fontSize: "11px" }}
+            className="font-bold leading-none truncate w-full"
+            style={{
+              fontSize: "11px",
+              color: selected ? "var(--title-selected)" : "var(--title-color)",
+            }}
           >
             {data.label}
           </p>
@@ -509,8 +519,8 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
         <div className="flex flex-col" style={{ padding: CARD_PAD, gap: SECTION_GAP }}>
           {sections.map((section, i) => {
             const Skin = SKIN_MAP[section.skin] || SkinDefault;
-            const bg = SECTION_COLORS[section.skin] || "rgba(255,255,255,0.03)";
-            const border = SECTION_BORDER_COLORS[section.skin] || "rgba(255,255,255,0.08)";
+            const bg = SECTION_COLORS[section.skin] || "var(--wireframe-faint)";
+            const border = SECTION_BORDER_COLORS[section.skin] || "var(--wireframe-strong)";
             return (
               <div
                 key={i}
@@ -526,8 +536,8 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
                   style={{ height: LABEL_H }}
                 >
                   <span
-                    className="text-white/70 leading-none select-none font-semibold truncate"
-                    style={{ fontSize: "5.5px" }}
+                    className="leading-none select-none font-semibold truncate"
+                    style={{ fontSize: "5.5px", color: "var(--label-color)" }}
                   >
                     {section.label}
                   </span>

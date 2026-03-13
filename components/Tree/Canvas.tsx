@@ -16,6 +16,7 @@ import type { Project, SiteNode } from "@/lib/types";
 import SiteNodeComponent from "./SiteNode";
 import EntryPointNodeComponent from "./EntryPointNode";
 import DetailPanel from "../Panel/DetailPanel";
+import ThemeToggle from "../ThemeToggle";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -110,7 +111,6 @@ export default function Canvas({ project }: CanvasProps) {
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1}
-          color="#1F1F23"
         />
         <Controls
           showInteractive={false}
@@ -127,6 +127,11 @@ export default function Canvas({ project }: CanvasProps) {
           }}
         />
       </ReactFlow>
+
+      {/* Theme toggle — bottom left, above controls */}
+      <div className="absolute bottom-[140px] left-[10px] z-10">
+        <ThemeToggle />
+      </div>
 
       <DetailPanel
         node={selectedNode}
