@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   type Node,
   BackgroundVariant,
 } from "reactflow";
@@ -25,13 +27,17 @@ const nodeTypes = {
 
 interface CanvasProps {
   project: Project;
+  externalSelectedNode?: SiteNode | null;
+  onExternalSelectClear?: () => void;
 }
 
-export default function Canvas({ project }: CanvasProps) {
+function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: CanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<SiteNode | null>(null);
   const [layoutReady, setLayoutReady] = useState(false);
+  const { fitView, setCenter } = useReactFlow();
+  const rfNodesRef = useRef<Node[]>([]);
 
   // Set CSS accent color from project
   useEffect(() => {
@@ -39,49 +45,81 @@ export default function Canvas({ project }: CanvasProps) {
     const r = parseInt(project.accent.slice(1, 3), 16);
     const g = parseInt(project.accent.slice(3, 5), 16);
     const b = parseInt(project.accent.slice(5, 7), 16);
-    document.documentElement.style.setProperty(
-      "--accent-muted",
-      `rgba(${r}, ${g}, ${b}, 0.12)`
-    );
-    document.documentElement.style.setProperty(
-      "--accent-strong",
-      `rgba(${r}, ${g}, ${b}, 0.24)`
-    );
+    document.documentElement.style.setProperty("--accent-muted", `rgba(${r}, ${g}, ${b}, 0.12)`);
+    document.documentElement.style.setProperty("--accent-strong", `rgba(${r}, ${g}, ${b}, 0.24)`);
   }, [project.accent]);
 
   // Compute layout
   useEffect(() => {
     computeLayout(project.nodes).then(({ rfNodes, rfEdges }) => {
+      rfNodesRef.current = rfNodes;
       setNodes(rfNodes);
       setEdges(rfEdges);
       setLayoutReady(true);
     });
   }, [project.nodes, setNodes, setEdges]);
 
+  // Handle external spotlight selection — center on node
+  useEffect(() => {
+    if (!externalSelectedNode || !layoutReady) return;
+    setSelectedNode(externalSelectedNode);
+
+    // Find the node position and center camera on it
+    const rfNode = rfNodesRef.current.find((n) => n.id === externalSelectedNode.id);
+    if (rfNode && rfNode.position) {
+      const nodeWidth = rfNode.width ?? 160;
+      const nodeHeight = rfNode.height ?? 200;
+      setCenter(
+        rfNode.position.x + nodeWidth / 2,
+        rfNode.position.y + nodeHeight / 2,
+        { zoom: 1.2, duration: 500 }
+      );
+    }
+  }, [externalSelectedNode, layoutReady, setCenter]);
+
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
-      // Ignore entry point nodes
       if (node.id.startsWith("ep_")) return;
       const siteNode = project.nodes.find((n) => n.id === node.id);
-      if (siteNode) {
-        setSelectedNode(siteNode);
-      }
+      if (siteNode) setSelectedNode(siteNode);
     },
     [project.nodes]
   );
 
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
-  }, []);
+    onExternalSelectClear?.();
+  }, [onExternalSelectClear]);
 
   const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 0.9 }), []);
 
   if (!layoutReady) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-          <span className="text-sm text-label-muted">Chargement…</span>
+      <div className="w-full h-full flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
+        <div className="flex flex-col items-center gap-4 animate-fade-in-up">
+          <div className="relative">
+            <div
+              className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: "var(--line-strong)", borderTopColor: "transparent" }}
+            />
+            <div
+              className="absolute inset-0 w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+              style={{
+                borderColor: "transparent",
+                borderTopColor: "var(--accent)",
+                animationDuration: "0.8s",
+                animationDirection: "reverse",
+              }}
+            />
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              Calcul du layout…
+            </span>
+            <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+              {project.nodes.length} pages
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -100,8 +138,8 @@ export default function Canvas({ project }: CanvasProps) {
         defaultViewport={defaultViewport}
         fitView
         fitViewOptions={{ padding: 0.15, maxZoom: 1.2 }}
-        minZoom={0.1}
-        maxZoom={2}
+        minZoom={0.08}
+        maxZoom={2.5}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
@@ -115,6 +153,7 @@ export default function Canvas({ project }: CanvasProps) {
         <Controls
           showInteractive={false}
           position="bottom-left"
+          style={{ bottom: 16, left: 16 }}
         />
         <MiniMap
           nodeStrokeWidth={0}
@@ -124,20 +163,38 @@ export default function Canvas({ project }: CanvasProps) {
           style={{
             width: 140,
             height: 90,
+            bottom: 16,
+            right: 16,
+            borderRadius: 8,
+            border: "1px solid var(--line)",
+            background: "var(--surface)",
           }}
+          maskColor="rgba(0,0,0,0.5)"
         />
       </ReactFlow>
 
-      {/* Theme toggle — bottom left, above controls */}
-      <div className="absolute bottom-[140px] left-[10px] z-10">
+      {/* Theme toggle */}
+      <div className="absolute bottom-[120px] left-4 z-10">
         <ThemeToggle />
       </div>
 
       <DetailPanel
         node={selectedNode}
         project={project}
-        onClose={() => setSelectedNode(null)}
+        onClose={() => {
+          setSelectedNode(null);
+          onExternalSelectClear?.();
+        }}
       />
     </div>
+  );
+}
+
+// Wrap with ReactFlowProvider to expose useReactFlow hook
+export default function Canvas(props: CanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner {...props} />
+    </ReactFlowProvider>
   );
 }

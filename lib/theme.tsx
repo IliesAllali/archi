@@ -26,12 +26,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggle = useCallback(() => {
+    // Add transition class for smooth color change
+    document.documentElement.classList.add("theme-transition");
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
       localStorage.setItem("arbo-theme", next);
       document.documentElement.setAttribute("data-theme", next);
       return next;
     });
+    // Remove transition class after animation
+    setTimeout(() => {
+      document.documentElement.classList.remove("theme-transition");
+    }, 350);
   }, []);
 
   return (

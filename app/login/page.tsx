@@ -62,18 +62,29 @@ function LoginForm() {
           autoComplete="current-password"
           className={`
             w-full h-10 pl-4 pr-10 rounded-lg text-sm
-            transition-all duration-150
-            focus:outline-none focus:ring-1
+            transition-all duration-200
+            focus:outline-none
             ${
               error
-                ? "border-red-500/40 focus:ring-red-500/20 shake"
-                : "focus:ring-[var(--text-muted)]/10"
+                ? "shake"
+                : ""
             }
           `}
           style={{
             background: "var(--elevated)",
             color: "var(--text-primary)",
-            border: error ? undefined : "1px solid var(--line-strong)",
+            border: error ? "1px solid rgba(239,68,68,0.4)" : "1px solid var(--line-strong)",
+            boxShadow: error ? "0 0 0 3px rgba(239,68,68,0.1)" : undefined,
+          }}
+          onFocus={(e) => {
+            if (!error) {
+              e.currentTarget.style.borderColor = "var(--accent)";
+              e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)";
+            }
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = error ? "rgba(239,68,68,0.4)" : "var(--line-strong)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         />
         <button
@@ -122,8 +133,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
       <div className="w-full max-w-[300px] mx-4">
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
+        {/* Logo — scale in */}
+        <div className="flex justify-center mb-8 animate-scale-fade-in">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{
@@ -135,11 +146,16 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Suspense fallback={<div className="h-[120px]" />}>
-          <LoginForm />
-        </Suspense>
+        <div className="animate-fade-in-up" style={{ animationDelay: "100ms", opacity: 0 }}>
+          <Suspense fallback={<div className="h-[120px]" />}>
+            <LoginForm />
+          </Suspense>
+        </div>
 
-        <p className="text-2xs text-center mt-8 select-none" style={{ color: "var(--text-faint)" }}>
+        <p
+          className="text-2xs text-center mt-8 select-none animate-fade-in"
+          style={{ color: "var(--text-faint)", animationDelay: "300ms", opacity: 0 }}
+        >
           Accès protégé
         </p>
       </div>
