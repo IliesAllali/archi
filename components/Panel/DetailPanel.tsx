@@ -60,6 +60,26 @@ interface DetailPanelProps {
   onClose: () => void;
 }
 
+function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
+  const parentMap = new Map<string, string>();
+  for (const n of allNodes) {
+    for (const childId of n.children) {
+      if (!parentMap.has(childId)) parentMap.set(childId, n.id);
+    }
+  }
+  const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+  const path: SiteNode[] = [];
+  let cur: string | undefined = node.id;
+  const visited = new Set<string>();
+  while (cur && !visited.has(cur)) {
+    visited.add(cur);
+    const n = nodeMap.get(cur);
+    if (n) path.unshift(n);
+    cur = parentMap.get(cur);
+  }
+  return path;
+}
+
 export default function DetailPanel({ node, project, onClose }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -98,6 +118,7 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
   };
 
   const Icon = node ? ICON_MAP[node.type] : FileText;
+  const nodePath = node ? getNodePath(node, project.nodes) : [];
 
   return (
     <AnimatePresence>
@@ -131,6 +152,18 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
           >
           {/* Header */}
           <div className="px-5 pt-5 pb-4 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
+            {/* Breadcrumb path */}
+            {nodePath.length > 1 && (
+              <div className="flex items-center gap-1 mb-3 flex-wrap">
+                {nodePath.slice(0, -1).map((ancestor, i) => (
+                  <span key={ancestor.id} className="flex items-center gap-1">
+                    <span className="text-2xs" style={{ color: "var(--text-faint)" }}>{ancestor.label}</span>
+                    <span className="text-2xs" style={{ color: "var(--text-faint)" }}>›</span>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <motion.div

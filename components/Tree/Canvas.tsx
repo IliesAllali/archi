@@ -156,6 +156,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
         elementsSelectable={true}
         panOnDrag={true}
         panOnScroll={true}
+        zoomOnScroll={false}
         zoomOnPinch={true}
         proOptions={{ hideAttribution: true }}
       >

@@ -1,6 +1,7 @@
 import { getAllProjects } from "@/lib/project-loader";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function HomePage() {
   const projects = getAllProjects();
@@ -20,9 +21,12 @@ export default function HomePage() {
             arbo
           </span>
         </div>
-        <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
-          {projects.length} projet{projects.length !== 1 ? "s" : ""}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
+            {projects.length} projet{projects.length !== 1 ? "s" : ""}
+          </span>
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Content */}
