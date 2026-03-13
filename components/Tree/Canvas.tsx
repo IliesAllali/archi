@@ -169,7 +169,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
             border: "1px solid var(--line)",
             background: "var(--surface)",
           }}
-          maskColor="rgba(0,0,0,0.5)"
+          maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
 

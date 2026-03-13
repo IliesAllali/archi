@@ -133,7 +133,8 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 bg-black/50 z-50 backdrop-blur-[2px]"
+            className="fixed inset-0 z-50 backdrop-blur-[2px]"
+            style={{ backgroundColor: "var(--overlay-bg)" }}
             onClick={close}
           />
 
@@ -144,7 +145,7 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
             exit={{ opacity: 0, scale: 0.98, y: -6 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
             className="fixed left-1/2 top-[18%] -translate-x-1/2 w-[520px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50 overflow-hidden"
-            style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}
+            style={{ boxShadow: "var(--modal-shadow)" }}
           >
             {/* Search input */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-line">
@@ -197,7 +198,7 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
                       >
                         <Icon
                           className="w-3 h-3"
-                          style={{ color: isActive ? "var(--accent)" : "#56565E" }}
+                          style={{ color: isActive ? "var(--accent)" : "var(--text-muted)" }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">

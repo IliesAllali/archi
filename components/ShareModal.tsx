@@ -34,7 +34,8 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 bg-black/50 z-50 backdrop-blur-[2px]"
+            className="fixed inset-0 z-50 backdrop-blur-[2px]"
+            style={{ backgroundColor: "var(--overlay-bg)" }}
             onClick={onClose}
           />
           <motion.div
@@ -43,7 +44,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
             exit={{ opacity: 0, scale: 0.97, y: 4 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[440px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50"
-            style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}
+            style={{ boxShadow: "var(--modal-shadow)" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-line">
@@ -75,8 +76,8 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                     onClick={copy}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 shrink-0"
                     style={{
-                      backgroundColor: copied ? "rgba(34,197,94,0.15)" : "var(--accent)",
-                      color: copied ? "rgb(134,239,172)" : "white",
+                      backgroundColor: copied ? "var(--success-bg)" : "var(--accent)",
+                      color: copied ? "var(--success-text)" : "white",
                     }}
                   >
                     {copied ? (

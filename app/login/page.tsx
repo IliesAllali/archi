@@ -73,8 +73,8 @@ function LoginForm() {
           style={{
             background: "var(--elevated)",
             color: "var(--text-primary)",
-            border: error ? "1px solid rgba(239,68,68,0.4)" : "1px solid var(--line-strong)",
-            boxShadow: error ? "0 0 0 3px rgba(239,68,68,0.1)" : undefined,
+            border: error ? "1px solid var(--error-border)" : "1px solid var(--line-strong)",
+            boxShadow: error ? "0 0 0 3px var(--error-glow)" : undefined,
           }}
           onFocus={(e) => {
             if (!error) {
@@ -83,7 +83,7 @@ function LoginForm() {
             }
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = error ? "rgba(239,68,68,0.4)" : "var(--line-strong)";
+            e.currentTarget.style.borderColor = error ? "var(--error-border)" : "var(--line-strong)";
             e.currentTarget.style.boxShadow = "none";
           }}
         />
@@ -99,7 +99,7 @@ function LoginForm() {
 
       <div className="h-4 flex items-center justify-center">
         {error && (
-          <p className="text-2xs text-red-400 animate-fade-in">
+          <p className="text-2xs animate-fade-in" style={{ color: "var(--error-text)" }}>
             {error}
           </p>
         )}

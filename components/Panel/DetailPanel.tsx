@@ -62,6 +62,7 @@ interface DetailPanelProps {
 
 export default function DetailPanel({ node, project, onClose }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,6 +71,13 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  // Scroll to top when node changes
+  useEffect(() => {
+    if (node && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [node?.id]);
 
   const Icon = node ? ICON_MAP[node.type] : FileText;
 
@@ -132,7 +140,7 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
           </div>
 
           {/* Content — staggered sections */}
-          <div className="flex-1 overflow-y-auto detail-scroll">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scroll">
             <SectionAnimated index={0} title="Description">
               <p className="text-sm text-label-secondary leading-relaxed">
                 {node.description}
