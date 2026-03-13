@@ -40,6 +40,7 @@ export interface SiteNode {
   estimate?: number;
   cta?: string[];
   tags?: string[];
+  group?: string; // branch color: "metiers" | "formations" | "orientation" | "ressources" | "utility"
   children: string[];
   entryPoints?: EntryPoint[];
   links?: string[]; // cross-references to other pages (dashed arrows)

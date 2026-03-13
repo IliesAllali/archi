@@ -2,7 +2,7 @@
   "id": "serce-2026",
   "name": "Refonte metiers-electricite.com",
   "client": "SERCE x NéNo",
-  "version": "v3",
+  "version": "v5",
   "date": "2026-03-13",
   "accent": "#5E6AD2",
   "password": "serce2026",
@@ -12,428 +12,225 @@
       "label": "Accueil",
       "type": "home",
       "priority": "primary",
-      "description": "Point d'entrée : deux chemins principaux (métiers / formations) pour ceux qui savent, quiz pour les indécis. Vidéo dans le hero.",
-      "rationale": "La majorité des jeunes sait si elle cherche un métier ou une formation. Le quiz capte les indécis sans polluer le parcours principal.",
-      "cta": [
-        "Explorer les métiers",
-        "Trouver ma formation",
-        "Faire le quiz"
-      ],
-      "tags": [
-        "mobile-first",
-        "hero-grille",
-        "double-entree"
-      ],
-      "children": [
-        "metiers",
-        "formations",
-        "trouver-mon-metier"
-      ],
+      "description": "Trois entrées immédiates visibles dès l'arrivée : Métiers, Formations, Quiz. Vidéo secteur positionnée sous le hero, visible au scroll, lancement manuel.",
+      "rationale": "La majorité des jeunes sait si elle cherche un métier ou une formation. Le quiz capte les indécis sans polluer le parcours principal. Trouver mon métier est accessible depuis la nav, pas depuis le hero.",
+      "cta": ["Explorer les métiers", "Trouver ma formation", "Faire le quiz"],
+      "tags": ["mobile-first", "hero-grille", "triple-entree"],
+      "children": ["metiers", "formations", "trouver-mon-metier", "ressources", "faq"],
       "entryPoints": [
-        {
-          "type": "google",
-          "label": "métiers transition énergétique"
-        },
-        {
-          "type": "google",
-          "label": "formation électricité après bac"
-        },
-        {
-          "type": "social",
-          "label": "LinkedIn SERCE"
-        }
+        { "type": "google", "label": "quels métiers dans l'électricité" },
+        { "type": "google", "label": "formation après 3ème technique" },
+        { "type": "social", "label": "Réseaux sociaux" },
+        { "type": "qrcode", "label": "Flyer lycée / Salon orientation" }
       ],
-      "notes": "Hero : 2 CTA primaires (Métiers / Formations) + 1 secondaire (Quiz). Vidéo : bloc dédié avec son si la vidéo porte un discours, fond silencieux si ambiance terrain."
+      "notes": "Hero : 3 CTA visibles à l'arrivée (Métiers / Formations / Quiz). Vidéo : sous les entrées, visible au scroll, bouton play manuel — pas d'autoplay avec son. La vidéo présente le secteur et ses domaines d'activité."
     },
     {
       "id": "metiers",
       "label": "Les Métiers",
       "type": "listing",
+      "group": "metiers",
       "priority": "primary",
-      "description": "Catalogue des métiers, entrée par secteur économique (8 secteurs) ou par niveau d'études.",
-      "notes": "Les 8 secteurs SERCE sont renommés en langage accessible. La filière interne (Études/Affaires/Travaux) reste visible en badge sur les fiches, pas en navigation principale.",
-      "cta": [
-        "Voir tous les métiers",
-        "Filtrer par secteur",
-        "Filtrer par niveau"
-      ],
-      "tags": [
-        "filtres",
-        "8-secteurs",
-        "mobile-first"
-      ],
-      "children": [
-        "secteur-energie",
-        "secteur-villes",
-        "secteur-industrie",
-        "secteur-numerique",
-        "secteur-climat",
-        "secteur-transport",
-        "secteur-maintenance",
-        "secteur-batiments"
-      ],
-      "entryPoints": [
-        {
-          "type": "nav",
-          "label": "Accueil > Explorer les métiers"
-        },
-        {
-          "type": "google",
-          "label": "métier électricien salaire"
-        }
-      ]
+      "description": "Catalogue des métiers, entrée par filière professionnelle : Conception/Études, Installation, Maintenance/Réparation.",
+      "notes": "Organisation validée par le client. Chaque filière liste les métiers associés avec fiches détaillées et liens vers les formations. Filtres secondaires par niveau d'études disponibles sur les pages filières.",
+      "cta": ["Voir tous les métiers", "Filtrer par filière", "Filtrer par niveau"],
+      "tags": ["filtres", "filieres", "mobile-first"],
+      "children": ["filiere-conception", "filiere-installation", "filiere-maintenance"]
     },
     {
-      "id": "secteur-energie",
-      "label": "Énergie et réseaux",
+      "id": "filiere-conception",
+      "label": "Conception / Études",
       "type": "listing",
+      "group": "metiers",
       "priority": "primary",
-      "description": "Réseaux électriques, énergies renouvelables, smart grid.",
-      "notes": "Renommé depuis 'Énergie et réseaux électriques'.",
-      "tags": [
-        "reseaux",
-        "renouvelables",
-        "smart-grid"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
+      "description": "Métiers de conception et ingénierie : chargés d'études, ingénieurs, projeteurs, dessinateurs. Travail en bureau.",
+      "notes": "Filière validée par le client. Axe conception, calcul, plans. Métiers souvent sédentaires, profil technique et analytique.",
+      "tags": ["conception", "ingenierie", "bureau"],
+      "children": ["fiche-metier"]
     },
     {
-      "id": "secteur-villes",
-      "label": "Villes et bâtiments connectés",
+      "id": "filiere-installation",
+      "label": "Installation",
       "type": "listing",
+      "group": "metiers",
       "priority": "primary",
-      "description": "Ville intelligente, smart building, domotique, BIM.",
-      "notes": "Renommé depuis 'Ville intelligente et durable'.",
-      "tags": [
-        "smart-city",
-        "domotique",
-        "BIM"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
+      "description": "Métiers de terrain et réalisation : chefs de chantier, techniciens, électriciens, monteurs. Travail sur site.",
+      "notes": "Filière validée par le client. Exécution, installation, mise en service. Profil terrain, polyvalent.",
+      "tags": ["terrain", "chantier", "installation"],
+      "children": ["fiche-metier"]
     },
     {
-      "id": "secteur-industrie",
-      "label": "Industrie et automatisation",
+      "id": "filiere-maintenance",
+      "label": "Maintenance / Réparation",
       "type": "listing",
+      "group": "metiers",
       "priority": "primary",
-      "description": "Usine 4.0, automatisme, robotique industrielle.",
-      "notes": "Renommé depuis 'Usine 4.0'.",
-      "tags": [
-        "usine",
-        "automatisme",
-        "robotique"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
-    },
-    {
-      "id": "secteur-numerique",
-      "label": "Numérique et télécom",
-      "type": "listing",
-      "priority": "primary",
-      "description": "Réseaux numériques, fibre optique, data centers.",
-      "notes": "Renommé depuis 'Territoires connectés'.",
-      "tags": [
-        "fibre",
-        "telecom",
-        "data-center"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
-    },
-    {
-      "id": "secteur-climat",
-      "label": "Génie climatique",
-      "type": "listing",
-      "priority": "secondary",
-      "description": "CVC, qualité de l'air intérieur, pompes à chaleur.",
-      "tags": [
-        "CVC",
-        "climatisation",
-        "PAC"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
-    },
-    {
-      "id": "secteur-transport",
-      "label": "Transport et mobilité",
-      "type": "listing",
-      "priority": "secondary",
-      "description": "Véhicule électrique, bornes de recharge, infrastructure routière.",
-      "tags": [
-        "vehicule-electrique",
-        "bornes",
-        "mobilite"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
-    },
-    {
-      "id": "secteur-maintenance",
-      "label": "Maintenance et exploitation",
-      "type": "listing",
-      "priority": "secondary",
-      "description": "Maintenance préventive et corrective des installations électriques.",
-      "tags": [
-        "maintenance",
-        "exploitation",
-        "terrain"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
-    },
-    {
-      "id": "secteur-batiments",
-      "label": "Bâtiments performants",
-      "type": "listing",
-      "priority": "secondary",
-      "description": "Construction et rénovation énergétique, RT2020, BBC.",
-      "notes": "Renommé depuis 'Bâtiments performants et connectés'.",
-      "tags": [
-        "renovation",
-        "RT2020",
-        "BBC"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
+      "description": "Métiers de maintenance préventive et corrective : techniciens de maintenance, dépanneurs, agents de service.",
+      "notes": "Filière validée par le client. Suivi d'installations existantes, diagnostic, interventions correctives.",
+      "tags": ["maintenance", "depannage", "terrain"],
+      "children": ["fiche-metier"]
     },
     {
       "id": "fiche-metier",
       "label": "Fiche Métier",
       "type": "detail",
+      "group": "metiers",
       "priority": "primary",
       "description": "Détail complet : niveau d'accès, salaire débutant, durée des études, missions, débouchés, vidéo témoignage, formations associées.",
-      "cta": [
-        "Trouver une formation",
-        "Partager cette fiche",
-        "Voir des métiers proches"
-      ],
-      "tags": [
-        "salaire",
-        "niveau-acces",
-        "duree-etudes",
-        "debouches",
-        "video",
-        "share"
-      ],
+      "cta": ["Trouver une formation", "Partager cette fiche", "Voir des métiers proches"],
+      "tags": ["salaire", "niveau-acces", "duree-etudes", "debouches", "video", "share", "tags"],
       "children": [],
       "estimate": 2,
-      "links": [
-        "formations"
-      ],
-      "notes": "Lien bidirectionnel : la fiche liste les formations qui y mènent, et les pages formation listent les métiers accessibles."
+      "notes": "La fiche liste les formations qui y mènent, et les pages formation listent les métiers accessibles. Témoignages vidéo reliés via système de tags (secteur, spécialité, territoire)."
     },
     {
       "id": "formations",
       "label": "Les Formations",
       "type": "listing",
+      "group": "formations",
       "priority": "primary",
-      "description": "Parcours de formation par niveau scolaire actuel : après 3e, bac, supérieur, reconversion.",
-      "notes": "Carte des établissements confirmée V1 (mentionnée dans la restitution ateliers). Bench UI/UX ONISEP avant intégration. Filtre région + alternance. Lien bidirectionnel avec les fiches métiers.\nProposition : séparer Études supérieures et Reconversion en deux entrées distinctes plutôt qu'un sous-menu unique.\nRaison : ce sont deux audiences très différentes (18 ans en poursuite d'études vs 35 ans en reconversion active via CPF).",
-      "cta": [
-        "Trouver une formation",
-        "Voir la carte des établissements"
-      ],
-      "tags": [
-        "par-niveau",
-        "carte-ecoles",
-        "alternance",
-        "filtre-region"
-      ],
-      "children": [
-        "formation-3e",
-        "formation-bac",
-        "formation-superieur",
-        "formation-reconversion"
-      ],
-      "entryPoints": [
-        {
-          "type": "nav",
-          "label": "Accueil > Trouver ma formation"
-        },
-        {
-          "type": "nav",
-          "label": "Fiche métier > Formations qui y mènent"
-        },
-        {
-          "type": "google",
-          "label": "BTS électrotechnique alternance Lille"
-        }
-      ]
+      "description": "Parcours de formation structurés par niveau scolaire : après la 3ème, après le bac, bac +3 et plus. Formation continue en page dédiée.",
+      "notes": "Structure retenue : niveaux d'entrée lisibles pour la cible jeune. Filtres alternance et région. Lien bidirectionnel avec les fiches métiers. Reconversion supprimée en tant que catégorie autonome.",
+      "cta": ["Trouver une formation", "Voir la carte des établissements"],
+      "tags": ["par-niveau", "carte-ecoles", "alternance", "filtre-region"],
+      "children": ["formation-3e", "formation-bac", "formation-superieur", "formation-continue"]
     },
     {
       "id": "formation-3e",
       "label": "Après la 3ème",
       "type": "listing",
+      "group": "formations",
       "priority": "primary",
-      "description": "CAP, Bac Pro. Carte des CFA et lycées professionnels.",
-      "tags": [
-        "CAP",
-        "bac-pro",
-        "alternance",
-        "CFA"
-      ],
+      "description": "CAP, Bac Pro. Carte des CFA et lycées professionnels. Prérequis et parcours détaillés.",
+      "tags": ["CAP", "bac-pro", "alternance", "CFA", "prerequis"],
       "children": []
     },
     {
       "id": "formation-bac",
       "label": "Après le Bac",
       "type": "listing",
+      "group": "formations",
       "priority": "primary",
-      "description": "BTS, BUT (bac+2). Carte des établissements, filtres alternance/initial.",
-      "tags": [
-        "BTS",
-        "BUT",
-        "alternance"
-      ],
+      "description": "BTS, BUT (bac+2). Carte des établissements, filtres alternance/initial. Prérequis et parcours détaillés.",
+      "tags": ["BTS", "BUT", "alternance", "prerequis"],
       "children": []
     },
     {
       "id": "formation-superieur",
       "label": "Bac +3 et plus",
       "type": "listing",
+      "group": "formations",
       "priority": "secondary",
-      "description": "Licence Pro, Licence, Master, Écoles d'ingénieurs.",
-      "tags": [
-        "licence-pro",
-        "ecole-ingenieur",
-        "master"
-      ],
+      "description": "Licence Pro, Licence, Master, Écoles d'ingénieurs. Prérequis et parcours détaillés.",
+      "tags": ["licence-pro", "ecole-ingenieur", "master", "prerequis"],
       "children": [],
-      "notes": "Proposition : dédier une page aux parcours bac +3 et plus, distincte de la page Reconversion.\nRaison : l'audience ici est étudiante (post-BTS/BUT, parcours continu), à ne pas mélanger avec les adultes en reconversion CPF."
+      "notes": "Audience étudiante (post-BTS/BUT, parcours continu). Distincte de la Formation continue."
     },
     {
-      "id": "formation-reconversion",
-      "label": "Reconversion",
+      "id": "formation-continue",
+      "label": "Formation continue",
       "type": "landing",
+      "group": "formations",
       "priority": "primary",
-      "description": "Formations continues, CQP SERCE, CPF.",
-      "tags": [
-        "CPF",
-        "CQP",
-        "formation-continue"
-      ],
+      "description": "Formations professionnelles, CQP SERCE, CPF éligibles. Pour les salariés et adultes en évolution de carrière.",
+      "tags": ["CPF", "CQP", "formation-continue", "salarie"],
       "children": [],
-      "notes": "Audience distincte (adultes, démarche CPF active). Mérite une entrée visible dans la nav formations, pas seulement un onglet."
+      "notes": "Page dédiée distincte des parcours jeunes. Audience adultes en poste ou en transition professionnelle."
     },
     {
       "id": "trouver-mon-metier",
       "label": "Trouver mon métier",
       "type": "hub",
+      "group": "orientation",
       "priority": "primary",
-      "description": "Section pour les indécis : témoignages de jeunes, quiz d'orientation, métiers qui recrutent. Reprend la structure proposée dans les ateliers.",
-      "cta": [
-        "Découvrir des témoignages",
-        "Faire le quiz",
-        "Voir les métiers qui recrutent"
-      ],
-      "tags": [
-        "orientation",
-        "temoignages",
-        "quiz",
-        "metiers-qui-recrutent"
-      ],
-      "children": [
-        "temoignages",
-        "quiz",
-        "metiers-qui-recrutent"
-      ],
-      "notes": "Proposition : regrouper témoignages, quiz et métiers qui recrutent dans une section dédiée « Trouver mon métier ».\nRaison : plutôt que de disperser ces contenus dans des sous-menus différents, une section unique crée un parcours cohérent pour les jeunes qui ne savent pas encore ce qu'ils veulent."
-    },
-    {
-      "id": "le-serce",
-      "label": "Le SERCE",
-      "type": "landing",
-      "priority": "secondary",
-      "description": "Présentation du syndicat : missions, chiffres clés du secteur, entreprises membres.",
-      "cta": [
-        "Découvrir les entreprises membres",
-        "Voir les chiffres du secteur"
-      ],
-      "tags": [
-        "institutionnel",
-        "syndicat",
-        "chiffres-cles"
-      ],
-      "children": [],
-      "notes": "Accessible depuis le footer uniquement."
+      "description": "Section pour les indécis : quiz d'orientation, témoignages de jeunes, métiers qui recrutent.",
+      "cta": ["Faire le quiz", "Découvrir des témoignages", "Voir les métiers qui recrutent"],
+      "tags": ["orientation", "temoignages", "quiz", "metiers-qui-recrutent"],
+      "children": ["temoignages", "quiz", "metiers-qui-recrutent"],
+      "notes": "Accessible depuis la navigation principale. Non positionné dans le hero de l'accueil — les 3 entrées hero sont Métiers, Formations, Quiz."
     },
     {
       "id": "temoignages",
       "label": "Témoignages",
       "type": "listing",
+      "group": "orientation",
       "priority": "primary",
-      "description": "Vidéos et portraits de jeunes en formation ou en poste, filtrables par secteur et niveau.",
-      "notes": "Tags sur 3 niveaux (secteur, spécialité, territoire) pour remontée dynamique dans les fiches métiers.\nProposition : lier témoignages et ressources.\nPrévoir une FAQ, à intégrer dans la section Ressources.",
-      "cta": [
-        "Voir tous les témoignages",
-        "Filtrer par secteur"
-      ],
-      "tags": [
-        "video",
-        "tags-secteur",
-        "tags-metier",
-        "cross-linking"
-      ],
+      "description": "Vidéos et portraits de jeunes en formation ou en poste, filtrables par filière et niveau.",
+      "notes": "Tags sur 3 niveaux (secteur, spécialité, territoire) pour remontée dynamique dans les fiches métiers et la page Ressources.",
+      "cta": ["Voir tous les témoignages", "Filtrer par filière"],
+      "tags": ["video", "tags-secteur", "tags-metier", "cross-linking"],
+      "children": []
+    },
+    {
+      "id": "quiz",
+      "label": "Quiz d'orientation",
+      "type": "quiz",
+      "group": "orientation",
+      "priority": "primary",
+      "description": "5 questions sur les centres d'intérêt, résultat : 3 métiers suggérés avec liens vers les fiches.",
+      "notes": "Accessible depuis le hero de l'accueil, depuis Trouver mon métier, les fiches métiers et les pages formations.",
+      "cta": ["Commencer le quiz", "Voir mes résultats"],
+      "tags": ["orientation", "5-questions", "personnalisation", "custom-dev", "framer"],
       "children": []
     },
     {
       "id": "metiers-qui-recrutent",
       "label": "Métiers qui recrutent",
       "type": "listing",
+      "group": "orientation",
       "priority": "secondary",
       "description": "Sélection de métiers avec fort besoin de recrutement, mis à jour régulièrement.",
-      "notes": "Vue filtrée du catalogue métiers (tag 'fort-recrutement'). Pas de contenu dupliqué : c'est un filtre affiché comme page dédiée pour l'impact.",
-      "tags": [
-        "recrutement",
-        "debouches",
-        "filtre"
-      ],
-      "children": [
-        "fiche-metier"
-      ]
+      "notes": "Vue filtrée du catalogue métiers (tag 'fort-recrutement'). Pas de contenu dupliqué.",
+      "tags": ["recrutement", "debouches", "filtre"],
+      "children": ["fiche-metier"]
     },
     {
-      "id": "quiz",
-      "label": "Quiz d'orientation",
-      "type": "quiz",
-      "priority": "primary",
-      "description": "5 questions sur les centres d'intérêt, résultat : 3 métiers suggérés avec liens vers les fiches.",
-      "notes": "Développement custom intégré à Framer. Sous-page de Trouver mon métier, mais accessible aussi depuis l'accueil (CTA secondaire hero), les fiches métiers et les pages formations.",
-      "cta": [
-        "Commencer le quiz",
-        "Voir mes résultats"
-      ],
-      "tags": [
-        "orientation",
-        "5-questions",
-        "personnalisation",
-        "custom-dev",
-        "framer"
-      ],
+      "id": "ressources",
+      "label": "Ressources",
+      "type": "hub",
+      "group": "ressources",
+      "priority": "secondary",
+      "description": "Hub de contenus utiles : témoignages vidéo, conseils pratiques (stage, orientation, entretien), partenaires, contacts utiles.",
+      "notes": "Intégrée au menu principal. Contenus reliés aux fiches métiers via système de tags. Permet d'éviter la multiplication de pages isolées.",
+      "cta": ["Voir les témoignages", "Trouver un partenaire", "Obtenir un conseil"],
+      "tags": ["video", "conseils", "partenaires", "contacts", "tags", "cross-linking"],
+      "children": []
+    },
+    {
+      "id": "faq",
+      "label": "FAQ",
+      "type": "landing",
+      "group": "ressources",
+      "priority": "secondary",
+      "description": "Questions fréquentes sur les métiers, les formations, l'alternance et les débouchés dans le secteur.",
+      "notes": "Accessible directement depuis le menu principal.",
+      "cta": ["Voir toutes les questions"],
+      "tags": ["orientation", "questions", "aide"],
+      "children": []
+    },
+    {
+      "id": "le-serce",
+      "label": "Le SERCE",
+      "type": "landing",
+      "group": "utility",
+      "priority": "utility",
+      "description": "Présentation du syndicat : missions, chiffres clés du secteur, entreprises membres.",
+      "cta": ["Découvrir les entreprises membres", "Voir les chiffres du secteur"],
+      "tags": ["institutionnel", "syndicat", "chiffres-cles"],
       "children": [],
-      "entryPoints": [
-        {
-          "type": "nav",
-          "label": "Accueil > Faire le quiz"
-        },
-        {
-          "type": "nav",
-          "label": "Fiche métier > Tu hésites ? Fais le quiz"
-        }
-      ]
+      "notes": "Page standalone, accessible depuis le footer uniquement."
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "type": "form",
+      "group": "utility",
+      "priority": "utility",
+      "description": "Formulaire de contact pour les jeunes, les établissements et les entreprises membres.",
+      "tags": ["contact", "formulaire"],
+      "children": [],
+      "notes": "Page standalone, accessible depuis le footer uniquement."
     }
   ],
-  "notes": "URL actuelle metiers-electricite.com jugée trop associée au seul métier d'électricien. Nouvelle URL à définir avec le client."
+  "notes": "v5 — Réunion 13/03/2026 (Misscouvie/NéNo). Filières métiers validées par le client : Conception/Études, Installation, Maintenance/Réparation. Structure formations par niveau (3e, bac, bac+3+). Ressources et FAQ au menu principal. Système de tags pour relier témoignages et ressources aux fiches métiers."
 }

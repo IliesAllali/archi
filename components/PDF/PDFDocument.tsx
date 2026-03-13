@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   /* Tree page */
   treePage: {
-    backgroundColor: "#09090b",
+    backgroundColor: "#f5f5f7",
     padding: 0,
     flexDirection: "column",
   },
@@ -166,23 +166,24 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1f23",
+    borderBottomColor: "#e5e5e8",
+    backgroundColor: "#ffffff",
   },
   treeHeaderTitle: {
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#a1a1aa",
+    color: "#3a3a42",
     letterSpacing: 1,
   },
   treeHeaderMeta: {
     fontSize: 9,
-    color: "#52525b",
+    color: "#6b6b73",
     fontFamily: "Helvetica",
   },
   treeImage: {
     flex: 1,
     objectFit: "contain",
-    margin: 24,
+    margin: 12,
   },
   /* Node page */
   nodePage: {

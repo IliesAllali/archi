@@ -8,6 +8,8 @@ import Logo from "@/components/Logo";
 import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import { Share2, ChevronLeft, Command } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
+import ExportButton from "@/components/ExportButton";
 
 interface Props {
   project: Project;
@@ -113,6 +115,9 @@ export default function CanvasPage({ project }: Props) {
             <Command className="w-3 h-3" />
             <span className="font-mono">F</span>
           </button>
+
+          <ThemeToggle />
+          <ExportButton project={project} />
 
           <div className="w-px h-4 bg-line mx-1 hidden sm:block" />
 

@@ -11,6 +11,7 @@ import ReactFlow, {
   ReactFlowProvider,
   type Node,
   BackgroundVariant,
+  type Viewport,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { computeLayout } from "@/lib/elk-layout";
@@ -68,6 +69,19 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, [fitView]);
+
+  // Export preparation — force zoom ≤ 1 so html2canvas positions correctly
+  useEffect(() => {
+    const handler = () => {
+      // maxZoom: 1 ensures scale never exceeds 1.0 (html2canvas breaks at scale > 1)
+      fitView({ padding: 0.05, maxZoom: 1, duration: 600 });
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("arbo:export-ready"));
+      }, 720);
+    };
+    window.addEventListener("arbo:prepare-export", handler);
+    return () => window.removeEventListener("arbo:prepare-export", handler);
   }, [fitView]);
 
   // Handle external spotlight selection — center on node

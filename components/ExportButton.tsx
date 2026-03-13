@@ -25,21 +25,22 @@ export default function ExportButton({ project }: ExportButtonProps) {
     if (state !== "idle") return;
 
     try {
-      // Step 1 — fit view then capture the tree with html2canvas
+      // Step 1 — fit view (zoom ≤ 1) then capture the tree with html2canvas
       setState("capturing");
 
-      // Fit view so the full tree is visible
-      const fitEvent = new KeyboardEvent("keydown", {
-        key: "f",
-        metaKey: true,
-        bubbles: true,
+      // Ask Canvas to fit+reset zoom, wait for confirmation
+      await new Promise<void>((resolve) => {
+        const onReady = () => {
+          window.removeEventListener("arbo:export-ready", onReady);
+          resolve();
+        };
+        window.addEventListener("arbo:export-ready", onReady);
+        window.dispatchEvent(new CustomEvent("arbo:prepare-export"));
+        // Safety fallback — resolve after 1.5s even if event never fires
+        setTimeout(resolve, 1500);
       });
-      window.dispatchEvent(fitEvent);
 
-      // Wait for fitView animation (500ms duration + margin)
-      await new Promise((r) => setTimeout(r, 800));
-
-      const html2canvas = (await import("html2canvas")).default;
+      const { toPng } = await import("html-to-image");
 
       const rfContainer = document.querySelector(".react-flow") as HTMLElement;
       if (!rfContainer) {
@@ -48,16 +49,30 @@ export default function ExportButton({ project }: ExportButtonProps) {
         return;
       }
 
-      const canvas = await html2canvas(rfContainer, {
-        backgroundColor: "#09090b",
-        scale: 1.5,
-        useCORS: true,
-        logging: false,
-        width: rfContainer.offsetWidth,
-        height: rfContainer.offsetHeight,
+      // Inline computed styles on SVG edges so they survive serialization
+      const cleanups: (() => void)[] = [];
+      rfContainer.querySelectorAll(".react-flow__edge path, .react-flow__edge line, .react-flow__edge polyline, .react-flow__edge circle").forEach((el) => {
+        const computed = window.getComputedStyle(el);
+        const prev = (el as HTMLElement).getAttribute("style") || "";
+        const inlined = `stroke: ${computed.stroke}; stroke-width: ${computed.strokeWidth}; fill: ${computed.fill}; opacity: ${computed.opacity};`;
+        (el as HTMLElement).setAttribute("style", prev + ";" + inlined);
+        cleanups.push(() => (el as HTMLElement).setAttribute("style", prev));
       });
 
-      const treeImageDataUrl = canvas.toDataURL("image/png", 0.95);
+      const treeImageDataUrl = await toPng(rfContainer, {
+        backgroundColor: "#f5f5f7",
+        pixelRatio: 3,
+        filter: (el: HTMLElement) => {
+          if (!(el instanceof HTMLElement)) return true;
+          return (
+            !el.classList.contains("react-flow__controls") &&
+            !el.classList.contains("react-flow__minimap") &&
+            !el.classList.contains("react-flow__panel")
+          );
+        },
+      });
+
+      cleanups.forEach((fn) => fn());
 
       // Step 2 — build PDF document
       setState("rendering");
