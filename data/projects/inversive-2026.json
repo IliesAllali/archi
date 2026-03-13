@@ -1,0 +1,158 @@
+{
+  "id": "inversive-2026",
+  "name": "Refonte site Inversive XR",
+  "client": "Inversive x NéNo",
+  "version": "v1",
+  "date": "2026-03-18",
+  "accent": "#F97316",
+  "password": "inversive2026",
+  "nodes": [
+    {
+      "id": "home",
+      "label": "Accueil",
+      "type": "home",
+      "priority": "primary",
+      "description": "Hero vidéo immersif — accroche sur la formation par la réalité virtuelle, double CTA vers Formations et Démo.",
+      "notes": "Le premier écran doit provoquer une réaction émotionnelle. La VR est difficile à montrer en 2D — vidéo courte en autoplay (muet), casque en action. Accroche : 'Apprenez en faisant, pas en regardant.'",
+      "rationale": "Inversive vend une expérience difficile à décrire par des mots. La page d'accueil doit provoquer la curiosité, pas expliquer la technologie.",
+      "zoning": "home",
+      "cta": ["Voir les formations", "Demander une démo"],
+      "tags": ["video-autoplay", "immersif", "B2B-B2C"],
+      "children": ["formations", "secteurs", "demo", "a-propos"],
+      "entryPoints": [
+        { "type": "google", "label": "formation réalité virtuelle entreprise" },
+        { "type": "google", "label": "formation VR professionnelle" },
+        { "type": "direct", "label": "inversive.fr" },
+        { "type": "social", "label": "LinkedIn Inversive" }
+      ]
+    },
+    {
+      "id": "formations",
+      "label": "Catalogue Formations",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Toutes les formations VR/XR disponibles — filtrables par secteur, durée, niveau, format présentiel/distanciel.",
+      "notes": "Chaque card doit montrer : durée, secteur, niveau, disponibilité présentiel/distanciel. Badge 'Certifiant' si applicable. Filtre rapide en haut.",
+      "rationale": "Page principale de conversion. Un acheteur B2B qui arrive de LinkedIn doit trouver la bonne formation en moins de 30 secondes.",
+      "zoning": "listing",
+      "cta": ["Voir le programme", "Demander un devis"],
+      "tags": ["filtres", "certifiant", "B2B", "catalogue"],
+      "children": [
+        "formation-securite",
+        "formation-industrie",
+        "formation-sante",
+        "formation-soft-skills"
+      ],
+      "entryPoints": [
+        { "type": "nav", "label": "Accueil → Voir les formations" },
+        { "type": "google", "label": "formation VR sécurité travail" }
+      ]
+    },
+    {
+      "id": "formation-securite",
+      "label": "Sécurité & Prévention",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Formations VR pour la prévention des risques professionnels — travail en hauteur, incendie, gestes & postures.",
+      "notes": "Secteur le plus mature pour la VR. ROI démontrable : réduction des accidents, traçabilité des habilitations. Argument phare.",
+      "zoning": "listing",
+      "tags": ["prevention-risques", "habilitations", "ROI"],
+      "children": ["fiche-formation"]
+    },
+    {
+      "id": "formation-industrie",
+      "label": "Industrie & Maintenance",
+      "type": "listing",
+      "priority": "primary",
+      "description": "Formations VR pour la maintenance industrielle — procédures complexes, gestes critiques, équipements coûteux.",
+      "notes": "Argument clé : former sans immobiliser la ligne de production. Zéro risque sur équipements réels.",
+      "zoning": "listing",
+      "tags": ["maintenance", "industrie-4.0", "zero-risque"],
+      "children": ["fiche-formation"]
+    },
+    {
+      "id": "formation-sante",
+      "label": "Santé & Médical",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Simulations médicales VR — gestes techniques, annonce de diagnostic, gestion du stress.",
+      "notes": "Secteur réglementé — certifications spécifiques. Mettre en avant les partenariats hospitaliers si existants.",
+      "zoning": "listing",
+      "tags": ["simulation-medicale", "certifiant", "CHU"],
+      "children": ["fiche-formation"]
+    },
+    {
+      "id": "formation-soft-skills",
+      "label": "Management & Soft Skills",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Prise de parole, leadership, gestion de conflits — en immersion VR.",
+      "notes": "Différenciant fort : personne ne fait ça bien encore. Argument : se tromper sans conséquences réelles.",
+      "zoning": "listing",
+      "tags": ["leadership", "soft-skills", "nouveau-marche"],
+      "children": ["fiche-formation"]
+    },
+    {
+      "id": "fiche-formation",
+      "label": "Fiche Formation",
+      "type": "detail",
+      "priority": "primary",
+      "description": "Détail complet : objectifs, durée, public cible, prérequis, contenu du module VR, tarif, modalités.",
+      "notes": "Section clé : 'Ce que vous verrez dans le casque' avec screenshots. Témoignage client (DRH ou manager). Bouton devis direct. Badge certifiant si applicable.",
+      "rationale": "Page de conversion finale. Le DRH qui arrive ici est déjà convaincu par la VR — il doit convaincre sa direction avec des arguments concrets.",
+      "zoning": "detail",
+      "cta": ["Demander un devis", "Télécharger le programme", "Voir la démo VR"],
+      "tags": ["devis", "programme-pdf", "temoignage-client", "certifiant"],
+      "children": ["demo"],
+      "estimate": 3
+    },
+    {
+      "id": "secteurs",
+      "label": "Nos Secteurs",
+      "type": "listing",
+      "priority": "secondary",
+      "description": "Vue par secteur d'activité — chaque secteur présente les cas d'usage VR spécifiques.",
+      "notes": "Alternative d'entrée pour un prospect qui ne cherche pas une formation précise mais un cas d'usage dans son secteur.",
+      "zoning": "listing",
+      "cta": ["Voir les cas d'usage"],
+      "tags": ["cas-usage", "secteurs", "B2B"],
+      "children": [],
+      "entryPoints": [
+        { "type": "nav", "label": "Accueil → Nav" },
+        { "type": "google", "label": "cas usage VR formation industrie" }
+      ]
+    },
+    {
+      "id": "demo",
+      "label": "Demander une Démo",
+      "type": "form",
+      "priority": "primary",
+      "description": "Formulaire de demande de démo — secteur, effectif, besoin, coordonnées. RDV calé sous 48h.",
+      "notes": "Formulaire court = conversion plus haute. Max 5 champs. Promesse de rappel sous 48h affichée clairement. Pas de calendly public — trop froid pour du B2B premium.",
+      "rationale": "L'objectif final du site. Pas de vente directe en ligne — la démo est le premier pas du cycle de vente.",
+      "zoning": "form",
+      "cta": ["Envoyer ma demande"],
+      "tags": ["conversion", "B2B", "court"],
+      "children": [],
+      "entryPoints": [
+        { "type": "nav", "label": "Accueil → Demander une démo" },
+        { "type": "nav", "label": "Fiche formation → Demander un devis" }
+      ]
+    },
+    {
+      "id": "a-propos",
+      "label": "À propos",
+      "type": "landing",
+      "priority": "secondary",
+      "description": "Équipe, mission, technologie — rassurer sur la légitimité et l'expertise d'Inversive.",
+      "notes": "Pas une page 'qui sommes-nous' générique. Angle : pourquoi la VR en 2026 ? Qu'est-ce qu'on a appris depuis X ans ? Chiffres clés : formations dispensées, apprenants, taux de satisfaction.",
+      "zoning": "landing",
+      "tags": ["credibilite", "chiffres-cles", "equipe"],
+      "children": [],
+      "entryPoints": [
+        { "type": "nav", "label": "Footer → À propos" },
+        { "type": "google", "label": "Inversive formation VR avis" }
+      ]
+    }
+  ]
+}

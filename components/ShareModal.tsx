@@ -43,7 +43,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 4 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[440px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[440px] max-h-[90vh] overflow-y-auto bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50"
             style={{ boxShadow: "var(--modal-shadow)" }}
           >
             {/* Header */}

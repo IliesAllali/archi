@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -63,6 +63,8 @@ interface DetailPanelProps {
 export default function DetailPanel({ node, project, onClose }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [dragX, setDragX] = useState(0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -79,29 +81,49 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
     }
   }, [node?.id]);
 
+  // Swipe to close (right swipe)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+    setDragX(0);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const diff = e.touches[0].clientX - touchStartX;
+    if (diff > 0) setDragX(diff);
+  };
+  const handleTouchEnd = () => {
+    if (dragX > 100) onClose();
+    setTouchStartX(null);
+    setDragX(0);
+  };
+
   const Icon = node ? ICON_MAP[node.type] : FileText;
 
   return (
     <AnimatePresence>
       {node && (
         <>
-          {/* Subtle backdrop overlay */}
+          {/* Backdrop — tappable to close on mobile */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="absolute inset-0 z-40 pointer-events-none"
+            className="absolute inset-0 z-40 sm:pointer-events-none"
             style={{ background: "linear-gradient(to left, var(--canvas-bg), transparent 60%)", opacity: 0.5 }}
+            onClick={onClose}
           />
 
           <motion.div
             ref={panelRef}
             initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
+            animate={{ x: dragX, opacity: 1 }}
             exit={{ x: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 30, stiffness: 350 }}
-            className="absolute top-0 right-0 h-full w-[380px] z-50 flex flex-col glass"
+            transition={dragX > 0 ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 350 }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="absolute top-0 right-0 h-full w-full sm:w-[380px] z-50 flex flex-col glass"
             style={{
               background: "var(--elevated)",
               borderLeft: "1px solid var(--line)",

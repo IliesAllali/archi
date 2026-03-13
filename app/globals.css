@@ -342,3 +342,18 @@ html.theme-transition *::after {
   backdrop-filter: blur(12px) saturate(1.8);
   -webkit-backdrop-filter: blur(12px) saturate(1.8);
 }
+
+/* ─── Mobile responsive ─── */
+@media (max-width: 640px) {
+  .react-flow__minimap { display: none !important; }
+  .react-flow__controls {
+    bottom: 12px !important;
+    left: 12px !important;
+  }
+  .react-flow__controls-button {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 8px !important;
+  }
+  [data-tooltip]::after { display: none; }
+}

@@ -8,6 +8,7 @@ import Logo from "@/components/Logo";
 import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import ExportButton from "@/components/ExportButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Share2, ChevronLeft, Command } from "lucide-react";
 
 interface Props {
@@ -29,26 +30,26 @@ export default function CanvasPage({ project }: Props) {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: "var(--canvas-bg)" }}>
+    <div className="flex flex-col h-[100dvh]" style={{ background: "var(--canvas-bg)" }}>
       {/* Top bar */}
       <header
-        className="flex items-center justify-between px-3 h-11 shrink-0 z-20"
+        className="flex items-center justify-between px-2 sm:px-3 h-11 shrink-0 z-20"
         style={{
           background: "var(--surface)",
           borderBottom: "1px solid var(--line)",
         }}
       >
         {/* Left — breadcrumb */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
           <Link
             href="/"
-            className="p-1.5 rounded-md hover:bg-bg-hover transition-colors duration-100 text-label-faint hover:text-label-muted active:scale-95"
+            className="p-2 sm:p-1.5 rounded-md hover:bg-bg-hover transition-colors duration-100 text-label-faint hover:text-label-muted active:scale-95 shrink-0"
             data-tooltip="Retour"
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <ChevronLeft className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
           </Link>
           <div
-            className="w-5 h-5 rounded-md flex items-center justify-center"
+            className="w-5 h-5 rounded-md items-center justify-center shrink-0 hidden sm:flex"
             style={{
               background: "var(--card-title-bg)",
               border: "1px solid var(--card-ring)",
@@ -56,17 +57,17 @@ export default function CanvasPage({ project }: Props) {
           >
             <Logo size={12} />
           </div>
-          <span style={{ color: "var(--text-faint)" }} className="select-none text-xs">/</span>
+          <span style={{ color: "var(--text-faint)" }} className="select-none text-xs hidden sm:block">/</span>
           <span
-            className="text-sm font-medium truncate max-w-[280px]"
+            className="text-xs sm:text-sm font-medium truncate max-w-[140px] sm:max-w-[280px]"
             style={{ color: "var(--text-primary)" }}
           >
             {project.name}
           </span>
         </div>
 
-        {/* Center — meta */}
-        <div className="flex items-center gap-3 text-2xs absolute left-1/2 -translate-x-1/2">
+        {/* Center — meta (hidden on mobile) */}
+        <div className="hidden md:flex items-center gap-3 text-2xs absolute left-1/2 -translate-x-1/2">
           <span className="font-mono" style={{ color: "var(--text-muted)" }}>
             {project.client}
           </span>
@@ -88,41 +89,55 @@ export default function CanvasPage({ project }: Props) {
         </div>
 
         {/* Right — actions */}
-        <div className="flex items-center gap-1">
-          {/* Cmd+K hint */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Cmd+K hint (desktop only) */}
           <button
             onClick={() => {
               const e = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
               window.dispatchEvent(e);
             }}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Rechercher"
+            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
+            data-tooltip="Rechercher une page"
           >
             <Command className="w-3 h-3" />
             <span className="font-mono">K</span>
           </button>
 
-          <div className="w-px h-4 bg-line mx-1" />
+          {/* Cmd+F hint (desktop only) */}
+          <button
+            onClick={() => {
+              const e = new KeyboardEvent("keydown", { key: "f", metaKey: true, bubbles: true });
+              window.dispatchEvent(e);
+            }}
+            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
+            data-tooltip="Ajuster la vue"
+          >
+            <Command className="w-3 h-3" />
+            <span className="font-mono">F</span>
+          </button>
 
-          {/* Export */}
+          <ThemeToggle />
+
+          <div className="w-px h-4 bg-line mx-1 hidden sm:block" />
+
           <ExportButton project={project} />
 
           {/* Share */}
           <button
             onClick={() => setShareOpen(true)}
-            className="share-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all duration-150 hover:brightness-125 active:scale-95"
+            className="share-btn flex items-center gap-1.5 px-2.5 py-2 sm:py-1.5 rounded-md text-xs sm:text-2xs font-medium transition-all duration-150 hover:brightness-125 active:scale-95"
             style={{
               backgroundColor: `${project.accent}20`,
               color: project.accent,
             }}
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>Partager</span>
+            <span className="hidden sm:inline">Partager</span>
           </button>
         </div>
       </header>
 
-      {/* Canvas — pass selectedNode state for external control */}
+      {/* Canvas */}
       <div className="flex-1 relative overflow-hidden">
         <Canvas
           project={project}

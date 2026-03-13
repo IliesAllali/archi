@@ -144,7 +144,7 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -6 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-[18%] -translate-x-1/2 w-[520px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50 overflow-hidden"
+            className="fixed left-1/2 top-[12%] sm:top-[18%] -translate-x-1/2 w-[calc(100%-24px)] sm:w-[520px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50 overflow-hidden"
             style={{ boxShadow: "var(--modal-shadow)" }}
           >
             {/* Search input */}
@@ -158,7 +158,7 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
                 placeholder="Rechercher une page…"
                 className="flex-1 bg-transparent text-sm text-label-primary placeholder:text-label-faint outline-none caret-accent"
               />
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 <kbd className="text-2xs text-label-faint border border-line rounded px-1.5 py-0.5 font-mono leading-none">
                   ↑↓
                 </kbd>

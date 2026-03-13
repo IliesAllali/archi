@@ -58,6 +58,18 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
     });
   }, [project.nodes, setNodes, setEdges]);
 
+  // Cmd+F → fit view
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        fitView({ padding: 0.15, duration: 500 });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [fitView]);
+
   // Handle external spotlight selection — center on node
   useEffect(() => {
     if (!externalSelectedNode || !layoutReady) return;
@@ -137,11 +149,14 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
         defaultViewport={defaultViewport}
         fitView
         fitViewOptions={{ padding: 0.15, maxZoom: 1.2 }}
-        minZoom={0.08}
+        minZoom={0.05}
         maxZoom={2.5}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
+        panOnDrag={true}
+        panOnScroll={true}
+        zoomOnPinch={true}
         proOptions={{ hideAttribution: true }}
       >
         <Background
@@ -183,6 +198,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
     </div>
   );
 }
+
 
 // Wrap with ReactFlowProvider to expose useReactFlow hook
 export default function Canvas(props: CanvasProps) {

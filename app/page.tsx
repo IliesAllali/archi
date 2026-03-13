@@ -26,7 +26,7 @@ export default function HomePage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-2xl mx-auto px-6 py-12">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {projects.length === 0 ? (
           <div className="text-center py-24 animate-fade-in-up">
             <div

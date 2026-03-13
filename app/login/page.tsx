@@ -61,7 +61,7 @@ function LoginForm() {
           autoFocus
           autoComplete="current-password"
           className={`
-            w-full h-10 pl-4 pr-10 rounded-lg text-sm
+            w-full h-11 pl-4 pr-12 rounded-lg text-sm
             transition-all duration-200
             focus:outline-none
             ${
@@ -109,7 +109,7 @@ function LoginForm() {
         type="submit"
         disabled={loading || !password.trim()}
         className="
-          w-full h-10 rounded-lg text-sm font-medium
+          w-full h-11 rounded-lg text-sm font-medium
           transition-all duration-150
           active:scale-[0.98]
           disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100
