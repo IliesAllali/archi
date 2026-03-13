@@ -177,7 +177,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
         <Background
           variant={BackgroundVariant.Dots}
           gap={24}
-          size={1}
+          size={1.2}
+          color="var(--text-faint)"
         />
         <Controls
           showInteractive={false}
