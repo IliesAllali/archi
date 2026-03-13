@@ -42,7 +42,8 @@ export default function CanvasPage({ project }: Props) {
         <div className="flex items-center gap-1.5">
           <Link
             href="/"
-            className="p-1.5 rounded-md hover:bg-bg-hover transition-colors duration-100 text-label-faint hover:text-label-muted"
+            className="p-1.5 rounded-md hover:bg-bg-hover transition-colors duration-100 text-label-faint hover:text-label-muted active:scale-95"
+            data-tooltip="Retour"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </Link>
@@ -94,8 +95,8 @@ export default function CanvasPage({ project }: Props) {
               const e = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
               window.dispatchEvent(e);
             }}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100"
-            title="Rechercher (⌘K)"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
+            data-tooltip="Rechercher"
           >
             <Command className="w-3 h-3" />
             <span className="font-mono">K</span>

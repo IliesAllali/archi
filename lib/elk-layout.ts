@@ -141,7 +141,6 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       style: {
         strokeDasharray: "3 4",
         strokeWidth: 0.75,
-        stroke: "rgba(255,255,255,0.10)",
       },
     });
   });
