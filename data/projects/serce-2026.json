@@ -2,8 +2,8 @@
   "id": "serce-2026",
   "name": "Refonte metiers-electricite.com",
   "client": "SERCE x NéNo",
-  "version": "v5",
-  "date": "2026-03-13",
+  "version": "v6",
+  "date": "2026-03-16",
   "accent": "#5E6AD2",
   "password": "serce2026",
   "nodes": [
@@ -13,17 +13,17 @@
       "type": "home",
       "priority": "primary",
       "description": "Trois entrées immédiates visibles dès l'arrivée : Métiers, Formations, Quiz. Vidéo secteur positionnée sous le hero, visible au scroll, lancement manuel.",
-      "rationale": "La majorité des jeunes sait si elle cherche un métier ou une formation. Le quiz capte les indécis sans polluer le parcours principal. Trouver mon métier est accessible depuis la nav, pas depuis le hero.",
+      "rationale": "La majorité des jeunes sait si elle cherche un métier ou une formation. Le quiz capte les indécis sans polluer le parcours principal.",
       "cta": ["Explorer les métiers", "Trouver ma formation", "Faire le quiz"],
       "tags": ["mobile-first", "hero-grille", "triple-entree"],
-      "children": ["metiers", "formations", "trouver-mon-metier", "ressources", "faq"],
+      "children": ["metiers", "formations", "trouver-une-ecole", "trouver-mon-metier", "quiz", "ressources", "actualites", "faq"],
       "entryPoints": [
         { "type": "google", "label": "quels métiers dans l'électricité" },
         { "type": "google", "label": "formation après 3ème technique" },
         { "type": "social", "label": "Réseaux sociaux" },
         { "type": "qrcode", "label": "Flyer lycée / Salon orientation" }
       ],
-      "notes": "Hero : 3 CTA visibles à l'arrivée (Métiers / Formations / Quiz). Vidéo : sous les entrées, visible au scroll, bouton play manuel — pas d'autoplay avec son. La vidéo présente le secteur et ses domaines d'activité."
+      "notes": "Hero : 3 CTA visibles à l'arrivée (Métiers / Formations / Quiz). Vidéo : sous les entrées, visible au scroll, bouton play manuel — pas d'autoplay avec son. Nav principale : Accueil · Les Métiers · Formations · Quiz · Actualités · Trouver une école."
     },
     {
       "id": "metiers",
@@ -32,7 +32,7 @@
       "group": "metiers",
       "priority": "primary",
       "description": "Catalogue des métiers, entrée par filière professionnelle : Conception/Études, Installation, Maintenance/Réparation.",
-      "notes": "Organisation validée par le client. Chaque filière liste les métiers associés avec fiches détaillées et liens vers les formations. Filtres secondaires par niveau d'études disponibles sur les pages filières.",
+      "notes": "Organisation validée par le client. Chaque filière liste les métiers associés avec fiches détaillées et liens vers les formations. Filtres secondaires par niveau d'études disponibles.",
       "cta": ["Voir tous les métiers", "Filtrer par filière", "Filtrer par niveau"],
       "tags": ["filtres", "filieres", "mobile-first"],
       "children": ["filiere-conception", "filiere-installation", "filiere-maintenance"]
@@ -89,15 +89,16 @@
       "type": "listing",
       "group": "formations",
       "priority": "primary",
-      "description": "Parcours de formation structurés par niveau scolaire : après la 3ème, après le bac, bac +3 et plus. Formation continue en page dédiée.",
-      "notes": "Structure retenue : niveaux d'entrée lisibles pour la cible jeune. Filtres alternance et région. Lien bidirectionnel avec les fiches métiers. Reconversion supprimée en tant que catégorie autonome.",
-      "cta": ["Trouver une formation", "Voir la carte des établissements"],
+      "description": "Parcours de formation structurés par niveau scolaire : après le collège, après le bac, études supérieures. Formation continue en page dédiée.",
+      "notes": "Structure retenue : niveaux d'entrée lisibles pour la cible jeune. Filtres alternance et région. Lien bidirectionnel avec les fiches métiers.",
+      "cta": ["Trouver une formation", "Trouver une école"],
       "tags": ["par-niveau", "carte-ecoles", "alternance", "filtre-region"],
-      "children": ["formation-3e", "formation-bac", "formation-superieur", "formation-continue"]
+      "children": ["formation-3e", "formation-bac", "formation-superieur", "formation-continue"],
+      "links": ["trouver-une-ecole"]
     },
     {
       "id": "formation-3e",
-      "label": "Après la 3ème",
+      "label": "Après le collège",
       "type": "listing",
       "group": "formations",
       "priority": "primary",
@@ -117,7 +118,7 @@
     },
     {
       "id": "formation-superieur",
-      "label": "Bac +3 et plus",
+      "label": "Études supérieures",
       "type": "listing",
       "group": "formations",
       "priority": "secondary",
@@ -128,7 +129,7 @@
     },
     {
       "id": "formation-continue",
-      "label": "Formation continue",
+      "label": "Formations continues",
       "type": "landing",
       "group": "formations",
       "priority": "primary",
@@ -136,6 +137,42 @@
       "tags": ["CPF", "CQP", "formation-continue", "salarie"],
       "children": [],
       "notes": "Page dédiée distincte des parcours jeunes. Audience adultes en poste ou en transition professionnelle."
+    },
+    {
+      "id": "trouver-une-ecole",
+      "label": "Trouver une école",
+      "type": "search",
+      "group": "formations",
+      "priority": "primary",
+      "description": "Moteur de recherche géolocalisé pour trouver un CFA, lycée pro ou école d'ingénieur par région, niveau et filière.",
+      "cta": ["Rechercher par région", "Filtrer par niveau", "Voir sur la carte"],
+      "tags": ["carte", "geolocalisation", "ecoles", "CFA", "recherche"],
+      "children": [],
+      "notes": "Accessible depuis la nav principale et depuis le menu Formations (lien croisé). Page clé pour les jeunes en recherche de lieu de formation."
+    },
+    {
+      "id": "quiz",
+      "label": "Quiz orientation",
+      "type": "quiz",
+      "group": "orientation",
+      "priority": "primary",
+      "description": "5 questions sur les centres d'intérêt, résultat : 3 métiers suggérés avec liens vers les fiches.",
+      "notes": "Accessible depuis la nav principale, le hero de l'accueil, Trouver mon métier, les fiches métiers et les pages formations.",
+      "cta": ["Commencer le quiz", "Voir mes résultats"],
+      "tags": ["orientation", "5-questions", "personnalisation", "custom-dev", "framer"],
+      "children": []
+    },
+    {
+      "id": "actualites",
+      "label": "Actualités",
+      "type": "listing",
+      "group": "ressources",
+      "priority": "primary",
+      "description": "Articles, événements et actualités du secteur électrique. Salons, offres de formation, news employeurs.",
+      "cta": ["Voir toutes les actualités", "Filtrer par thème"],
+      "tags": ["blog", "evenements", "news", "secteur"],
+      "children": [],
+      "notes": "Accessible depuis la nav principale et depuis la section Ressources (lien croisé)."
     },
     {
       "id": "trouver-mon-metier",
@@ -146,7 +183,8 @@
       "description": "Section pour les indécis : quiz d'orientation, témoignages de jeunes, métiers qui recrutent.",
       "cta": ["Faire le quiz", "Découvrir des témoignages", "Voir les métiers qui recrutent"],
       "tags": ["orientation", "temoignages", "quiz", "metiers-qui-recrutent"],
-      "children": ["temoignages", "quiz", "metiers-qui-recrutent"],
+      "children": ["temoignages", "metiers-qui-recrutent"],
+      "links": ["quiz"],
       "notes": "Accessible depuis la navigation principale. Non positionné dans le hero de l'accueil — les 3 entrées hero sont Métiers, Formations, Quiz."
     },
     {
@@ -159,18 +197,6 @@
       "notes": "Tags sur 3 niveaux (secteur, spécialité, territoire) pour remontée dynamique dans les fiches métiers et la page Ressources.",
       "cta": ["Voir tous les témoignages", "Filtrer par filière"],
       "tags": ["video", "tags-secteur", "tags-metier", "cross-linking"],
-      "children": []
-    },
-    {
-      "id": "quiz",
-      "label": "Quiz d'orientation",
-      "type": "quiz",
-      "group": "orientation",
-      "priority": "primary",
-      "description": "5 questions sur les centres d'intérêt, résultat : 3 métiers suggérés avec liens vers les fiches.",
-      "notes": "Accessible depuis le hero de l'accueil, depuis Trouver mon métier, les fiches métiers et les pages formations.",
-      "cta": ["Commencer le quiz", "Voir mes résultats"],
-      "tags": ["orientation", "5-questions", "personnalisation", "custom-dev", "framer"],
       "children": []
     },
     {
@@ -190,11 +216,36 @@
       "type": "hub",
       "group": "ressources",
       "priority": "secondary",
-      "description": "Hub de contenus utiles : témoignages vidéo, conseils pratiques (stage, orientation, entretien), partenaires, contacts utiles.",
-      "notes": "Intégrée au menu principal. Contenus reliés aux fiches métiers via système de tags. Permet d'éviter la multiplication de pages isolées.",
-      "cta": ["Voir les témoignages", "Trouver un partenaire", "Obtenir un conseil"],
-      "tags": ["video", "conseils", "partenaires", "contacts", "tags", "cross-linking"],
-      "children": []
+      "description": "Hub de contenus : actualités du secteur, exploration des filières, ressources pédagogiques pour enseignants et prescripteurs.",
+      "notes": "Intégrée au menu principal. Contenus reliés aux fiches métiers via système de tags.",
+      "cta": ["Voir les actualités", "Explorer nos secteurs", "Ressources pédagogiques", "Contact"],
+      "tags": ["video", "conseils", "partenaires", "tags", "cross-linking"],
+      "children": ["explorer-nos-secteurs", "ressources-pedagogiques", "contact"],
+      "links": ["actualites"]
+    },
+    {
+      "id": "explorer-nos-secteurs",
+      "label": "Explorer nos secteurs",
+      "type": "listing",
+      "group": "ressources",
+      "priority": "secondary",
+      "description": "Présentation des grands secteurs d'activité de l'électricité : tertiaire, industrie, énergie, numérique. Entrée par secteur pour découvrir les métiers associés.",
+      "cta": ["Choisir un secteur", "Voir les métiers associés"],
+      "tags": ["secteurs", "industrie", "energie", "tertiaire", "numerique"],
+      "children": [],
+      "notes": "Complément au catalogue métiers. Permet une approche par secteur plutôt que par filière."
+    },
+    {
+      "id": "ressources-pedagogiques",
+      "label": "Ressources pédagogiques",
+      "type": "listing",
+      "group": "ressources",
+      "priority": "secondary",
+      "description": "Fiches, vidéos et supports téléchargeables destinés aux enseignants, conseillers d'orientation et prescripteurs.",
+      "cta": ["Télécharger des ressources", "Voir tous les supports"],
+      "tags": ["enseignants", "orientation", "telechargement", "PDF", "supports"],
+      "children": [],
+      "notes": "Audience secondaire : professionnels de l'orientation. Contenus distincts des ressources grand public."
     },
     {
       "id": "faq",
@@ -209,28 +260,16 @@
       "children": []
     },
     {
-      "id": "le-serce",
-      "label": "Le SERCE",
-      "type": "landing",
-      "group": "utility",
-      "priority": "utility",
-      "description": "Présentation du syndicat : missions, chiffres clés du secteur, entreprises membres.",
-      "cta": ["Découvrir les entreprises membres", "Voir les chiffres du secteur"],
-      "tags": ["institutionnel", "syndicat", "chiffres-cles"],
-      "children": [],
-      "notes": "Page standalone, accessible depuis le footer uniquement."
-    },
-    {
       "id": "contact",
       "label": "Contact",
       "type": "form",
-      "group": "utility",
-      "priority": "utility",
+      "group": "ressources",
+      "priority": "secondary",
       "description": "Formulaire de contact pour les jeunes, les établissements et les entreprises membres.",
       "tags": ["contact", "formulaire"],
       "children": [],
-      "notes": "Page standalone, accessible depuis le footer uniquement."
+      "notes": "Accessible depuis la section Ressources et le footer."
     }
   ],
-  "notes": "v5 — Réunion 13/03/2026 (Misscouvie/NéNo). Filières métiers validées par le client : Conception/Études, Installation, Maintenance/Réparation. Structure formations par niveau (3e, bac, bac+3+). Ressources et FAQ au menu principal. Système de tags pour relier témoignages et ressources aux fiches métiers."
+  "notes": "v6 — Mise à jour 16/03/2026. Nav principale : Accueil · Les Métiers · Formations · Quiz · Actualités · Trouver une école. Ajouts : Actualités, Trouver une école, Explorer nos secteurs, Ressources pédagogiques. Renommages : Après le collège, Études supérieures, Formations continues, Quiz orientation. Quiz déplacé au niveau racine (lien croisé depuis Trouver mon métier)."
 }
