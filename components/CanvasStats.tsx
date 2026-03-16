@@ -70,18 +70,6 @@ export default function CanvasStats({ project, visible }: CanvasStatsProps) {
               <span style={{ color: "var(--text-muted)" }}>{stats.secondary}</span>
             </Pill>
 
-            {/* Estimate if any */}
-            {stats.totalEstimate > 0 && (
-              <>
-                <Divider />
-                <Pill>
-                  <span style={{ color: "var(--text-faint)" }}>⏱</span>
-                  <span style={{ color: "var(--text-muted)" }}>
-                    {stats.totalEstimate}h
-                  </span>
-                </Pill>
-              </>
-            )}
 
             <Divider />
 

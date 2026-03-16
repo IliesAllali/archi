@@ -80,7 +80,6 @@
       "cta": ["Trouver une formation", "Partager cette fiche", "Voir des métiers proches"],
       "tags": ["salaire", "niveau-acces", "duree-etudes", "debouches", "video", "share", "tags"],
       "children": [],
-      "estimate": 2,
       "notes": "La fiche liste les formations qui y mènent, et les pages formation listent les métiers accessibles. Témoignages vidéo reliés via système de tags (secteur, spécialité, territoire)."
     },
     {

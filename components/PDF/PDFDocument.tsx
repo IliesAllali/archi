@@ -483,12 +483,6 @@ function NodeDetailPage({
         </Section>
       )}
 
-      {/* Estimate */}
-      {node.estimate && (
-        <Section label="Estimation">
-          <Text style={styles.sectionText}>{node.estimate} heure{node.estimate > 1 ? "s" : ""} de design</Text>
-        </Section>
-      )}
 
       <NodeFooter project={project} node={node} pageNum={pageNum} totalPages={totalPages} />
     </Page>

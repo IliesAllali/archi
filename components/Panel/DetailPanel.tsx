@@ -264,13 +264,6 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
               </SectionAnimated>
             )}
 
-            {node.estimate && (
-              <SectionAnimated index={7} title="Estimation" icon={Clock}>
-                <span className="text-sm text-label-secondary">
-                  {node.estimate}h
-                </span>
-              </SectionAnimated>
-            )}
 
             <div className="h-8" />
           </div>
