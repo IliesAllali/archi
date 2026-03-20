@@ -1,6 +1,10 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 const FROM = process.env.EMAIL_FROM || 'Arbo <noreply@arbo.app>'
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 
@@ -9,7 +13,7 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 export async function sendVerificationEmail(email: string, name: string, token: string) {
   const link = `${BASE_URL}/api/auth/verify-email?token=${token}`
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: 'Confirmez votre adresse email — Arbo',
@@ -37,7 +41,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
 export async function sendPasswordResetEmail(email: string, name: string, token: string) {
   const link = `${BASE_URL}/reset-password?token=${token}`
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: 'Réinitialisation de votre mot de passe — Arbo',
@@ -76,7 +80,7 @@ export async function sendInvitationEmail(
     owner:  'propriétaire',
   }
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: email,
     subject: `${inviterName} vous invite à collaborer sur "${projectName}" — Arbo`,
