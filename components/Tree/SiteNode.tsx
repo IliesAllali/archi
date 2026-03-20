@@ -666,7 +666,6 @@ function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
           boxShadow: isDropTarget
             ? `0 0 0 2px var(--accent), 0 6px 24px rgba(0,0,0,0.18)`
             : selected ? selectedShadow : hovered ? hoverShadow : baseShadow,
-          ringColor: "var(--accent)",
           ...(isDropTarget ? { transform: "scale(1.05)", zIndex: 50 } : {}),
         }}
         onMouseEnter={() => setHovered(true)}
