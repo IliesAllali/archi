@@ -18,25 +18,16 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             set -e
-            cd /var/www/arbo
+            cd ~/arbo-tool
 
             echo "→ Pull latest code"
             git pull origin main
 
-            echo "→ Install dependencies"
-            npm ci --omit=dev
+            echo "→ Rebuild & restart container"
+            docker compose up -d --build
 
-            echo "→ Build Next.js"
-            npm run build
-
-            echo "→ Run DB migrations (idempotent)"
-            npm run migrate
-
-            echo "→ Reload PM2 (graceful — no downtime)"
-            pm2 reload arbo
+            echo "→ Wait for healthy container"
+            sleep 5
+            docker ps --format '{{.Names}} {{.Status}}' | grep arbo
 
             echo "✅ Deploy done — $(git log -1 --format='%h %s')"
-
-      - name: Notify on failure
-        if: failure()
-        run: echo "Deploy failed — check GitHub Actions logs"
