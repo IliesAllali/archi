@@ -123,7 +123,7 @@ Ma demande : `
     })
     if (res.ok) {
       const data = await res.json()
-      setRevealedToken(data.rawToken)
+      setRevealedToken(data.token)
       setTokens(prev => [{ id: data.id, name: data.name, lastUsedAt: null, createdAt: data.createdAt }, ...prev])
       setNewTokenName("")
       setShowCreate(false)
