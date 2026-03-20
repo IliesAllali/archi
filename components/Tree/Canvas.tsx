@@ -316,7 +316,12 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
   // Compute layout when store nodes change
   useEffect(() => {
-    if (nodes.length === 0) return;
+    if (nodes.length === 0) {
+      setRfNodes([]);
+      setRfEdges([]);
+      setLayoutReady(true);
+      return;
+    }
     if (isDraggingRef.current) return;
 
     const currentSelectedId = useCanvasStore.getState().selectedNodeId;
