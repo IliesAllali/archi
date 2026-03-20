@@ -17,6 +17,9 @@ COPY . .
 # Build Next.js
 RUN npm run build
 
+# Initialize database schema (before pruning devDeps since tsx is needed)
+RUN npx tsx scripts/init-db.ts
+
 # Remove devDependencies
 RUN npm prune --production
 
