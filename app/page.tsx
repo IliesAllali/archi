@@ -8,8 +8,9 @@ import UserMenu from "@/components/UserMenu";
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const projects = getAllProjects();
+  const allProjects = getAllProjects();
   const demo = getDemoProject();
+  const projects = allProjects.filter((p) => demo ? p.id !== demo.id : true);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
@@ -86,6 +87,18 @@ export default function HomePage() {
                 <ProjectCard key={project.id} project={project} index={i} />
               ))}
             </div>
+
+            {demo && (
+              <div className="mt-8">
+                <p
+                  className="text-2xs uppercase tracking-widest font-medium mb-3"
+                  style={{ color: "var(--text-faint)" }}
+                >
+                  Exemple
+                </p>
+                <ProjectCard project={demo} index={projects.length} />
+              </div>
+            )}
           </div>
         )}
       </main>

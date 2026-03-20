@@ -97,6 +97,8 @@ export default function CanvasPage({ project, currentUser }: Props) {
     [selectNode]
   );
 
+  const isDemo = project.slug === "demo-ecommerce";
+
   // Use nodes from store for the project passed to Canvas
   const liveProject = useMemo<Project>(() => ({
     ...project,
@@ -140,6 +142,14 @@ export default function CanvasPage({ project, currentUser }: Props) {
           >
             {project.name}
           </span>
+          {isDemo && (
+            <span
+              className="text-2xs font-medium px-1.5 py-0.5 rounded-full shrink-0"
+              style={{ background: "var(--surface-hover)", color: "var(--text-faint)" }}
+            >
+              Exemple
+            </span>
+          )}
 
           {/* Undo/Redo */}
           <div className="hidden sm:flex items-center gap-0.5 ml-2">
@@ -168,7 +178,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
         <div className="flex items-center gap-1 shrink-0">
           <PresenceAvatars users={otherUsers} />
 
-          <SaveStatusBadge />
+          {!isDemo && <SaveStatusBadge />}
 
           <span className="hidden lg:inline text-2xs tabular-nums font-mono ml-1" style={{ color: "var(--text-faint)" }}>
             {nodes.length}p
@@ -259,17 +269,19 @@ export default function CanvasPage({ project, currentUser }: Props) {
 
           <ThemeToggle />
 
-          <button
-            onClick={() => setShareOpen(true)}
-            className="share-btn flex items-center gap-1.5 px-2.5 py-2 sm:py-1.5 rounded-md text-xs sm:text-2xs font-medium transition-all duration-150 hover:brightness-125 active:scale-95"
-            style={{
-              backgroundColor: `${project.accent}20`,
-              color: project.accent,
-            }}
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Partager</span>
-          </button>
+          {!isDemo && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="share-btn flex items-center gap-1.5 px-2.5 py-2 sm:py-1.5 rounded-md text-xs sm:text-2xs font-medium transition-all duration-150 hover:brightness-125 active:scale-95"
+              style={{
+                backgroundColor: `${project.accent}20`,
+                color: project.accent,
+              }}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Partager</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -316,7 +328,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
       />
 
       {/* AI Bar */}
-      <AiBar projectId={project.id} />
+      {!isDemo && <AiBar projectId={project.id} />}
     </div>
   );
 }
