@@ -137,10 +137,13 @@ export async function POST(req: NextRequest) {
     console.error("AI generate error:", message);
 
     if (message.includes("401") || message.includes("authentication") || message.includes("Incorrect API key")) {
-      return NextResponse.json({ error: "Clé API invalide ou expirée." }, { status: 401 });
+      return NextResponse.json({ error: "Cl\u00e9 API invalide ou expir\u00e9e." }, { status: 401 });
     }
     if (message.includes("429") || message.includes("rate")) {
-      return NextResponse.json({ error: "Limite du fournisseur IA atteinte. Réessaie dans quelques secondes." }, { status: 429 });
+      return NextResponse.json({ error: "Limite du fournisseur IA atteinte. R\u00e9essaie dans quelques secondes." }, { status: 429 });
+    }
+    if (message.includes("credit") || message.includes("balance") || message.includes("billing")) {
+      return NextResponse.json({ error: "Cr\u00e9dits API \u00e9puis\u00e9s. Recharge ton compte sur le site du fournisseur IA ou utilise une autre cl\u00e9." }, { status: 402 });
     }
 
     return NextResponse.json({ error: "Erreur lors de la génération. Réessaie." }, { status: 500 });

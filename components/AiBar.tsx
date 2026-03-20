@@ -29,6 +29,8 @@ export default function AiBar({ projectId }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [statusMsg, setStatusMsg] = useState("");
+  const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
   const [needsKey, setNeedsKey] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [provider, setProvider] = useState<AiProvider>("anthropic");
@@ -69,13 +71,15 @@ export default function AiBar({ projectId }: Props) {
     const apiKey = getStoredApiKey(provider);
     if (!apiKey) {
       setNeedsKey(true);
-      setError("Clé API requise");
+      setError("Cl\u00e9 API requise");
       return;
     }
 
     setLoading(true);
     setError("");
     setSuccess("");
+    setStatusMsg("");
+    setActionLog([]);
 
     try {
       const csrf = getCsrfToken();
@@ -93,35 +97,73 @@ export default function AiBar({ projectId }: Props) {
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-
-        // Reload the project to reflect changes
-        const projectRes = await fetch(`/api/projects/${projectId}`);
-        if (projectRes.ok) {
-          const project = await projectRes.json();
-          initProject(project);
-        }
-
-        setSuccess(data.summary || `${data.applied?.length || 0} modification(s) appliquée(s)`);
-        setPrompt("");
-        Events.aiActionPerformed("edit_tree", "built-in");
-
-        // Auto-close success after 3s
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
+      // Non-SSE error (auth, rate limit, bad request)
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("text/event-stream")) {
         const data = await res.json().catch(() => ({}));
         if (res.status === 401 && data.error?.includes("Cl")) {
           setNeedsKey(true);
         }
         setError(data.error || "Erreur de modification");
+        setLoading(false);
+        return;
+      }
+
+      // Read SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) { setError("Erreur de connexion"); setLoading(false); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith("data: ") && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (currentEvent === "status") {
+                setStatusMsg(data.message);
+              } else if (currentEvent === "action") {
+                setActionLog((prev) => [...prev, { type: data.type, label: data.label }]);
+                setStatusMsg(`${data.index}/${data.index} ${data.type === "add" ? "+" : data.type === "delete" ? "-" : "\u270F"} ${data.label || data.id}`);
+              } else if (currentEvent === "done") {
+                // Reload project with final tree
+                const projectRes = await fetch(`/api/projects/${projectId}`);
+                if (projectRes.ok) {
+                  const project = await projectRes.json();
+                  initProject(project);
+                }
+                setSuccess(data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`);
+                setPrompt("");
+                setStatusMsg("");
+                Events.aiActionPerformed("edit_tree", "built-in");
+                setTimeout(() => setSuccess(""), 4000);
+              } else if (currentEvent === "error") {
+                setError(data.error);
+                if (data.error?.includes("Cl")) setNeedsKey(true);
+              }
+            } catch { /* ignore parse errors */ }
+            currentEvent = "";
+          }
+        }
       }
     } catch {
       setError("Erreur de connexion");
     } finally {
       setLoading(false);
+      setStatusMsg("");
     }
-  }, [prompt, projectId, initProject]);
+  }, [prompt, projectId, provider, initProject]);
 
   const handleSaveKey = () => {
     if (!keyInput.trim()) return;
@@ -238,6 +280,32 @@ export default function AiBar({ projectId }: Props) {
                     Obtenir une clé
                   </a>
                 </p>
+              </div>
+            )}
+
+            {/* Live status during AI processing */}
+            {loading && statusMsg && (
+              <div className="px-4 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "#8B5CF6" }} />
+                <p className="text-2xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{statusMsg}</p>
+              </div>
+            )}
+
+            {/* Action log during processing */}
+            {loading && actionLog.length > 0 && (
+              <div className="px-4 py-1.5 flex flex-wrap gap-1" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                {actionLog.map((a, i) => (
+                  <span
+                    key={i}
+                    className="text-2xs px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "rgba(139,92,246,0.1)",
+                      color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "#8B5CF6",
+                    }}
+                  >
+                    {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
+                  </span>
+                ))}
               </div>
             )}
 
