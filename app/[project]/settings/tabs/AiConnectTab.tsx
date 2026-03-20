@@ -167,31 +167,19 @@ Ma demande : `
         return
       }
 
-      const apiKey = getStoredApiKey()
-      if (!apiKey) {
-        setImportError("Clé API Anthropic requise pour appliquer les modifications. Configure-la dans la section \"IA intégrée\".")
-        return
-      }
-
-      // Apply via the edit endpoint with the actions directly
       const csrf = getCsrfToken()
       const headers: Record<string, string> = { "Content-Type": "application/json" }
       if (csrf) headers["x-csrf-token"] = csrf
 
-      // We'll use a simplified direct approach - apply actions via the same endpoint
-      const res = await fetch("/api/ai/edit", {
+      const res = await fetch("/api/ai/import", {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          prompt: `Applique exactement ces actions sans modification : ${JSON.stringify(actions)}`,
-          apiKey,
-          projectId,
-        }),
+        body: JSON.stringify({ actions, projectId }),
       })
 
       if (res.ok) {
         const data = await res.json()
-        setImportResult(`${data.applied?.length || 0} modification(s) appliquée(s). ${data.summary || ""}`)
+        setImportResult(`${data.applied?.length || 0} modification(s) appliquée(s).`)
         setJsonInput("")
       } else {
         const data = await res.json().catch(() => ({}))
