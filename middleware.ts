@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAccessToken, verifySession, ACCESS_COOKIE, COOKIE_NAME, CSRF_COOKIE, verifyCsrfToken } from '@/lib/auth-edge'
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/invite', '/reset-password', '/verify-email']
+const PUBLIC_ROUTES = ['/login', '/signup', '/invite', '/reset-password', '/verify-email']
 const PUBLIC_PREFIXES = ['/api/', '/_next/', '/fonts/', '/images/']
 
 // Mutation methods that require CSRF verification

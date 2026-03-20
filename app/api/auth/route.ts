@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSession, COOKIE_NAME } from "@/lib/auth";
+import { createSession, COOKIE_NAME, CSRF_COOKIE } from "@/lib/auth";
+import { nanoid } from "nanoid";
 import { getProject, getAllProjects } from "@/lib/project-loader";
 import fs from "fs";
 import path from "path";
@@ -41,9 +42,17 @@ export async function POST(req: NextRequest) {
   // Check admin password
   if (adminPassword && password === adminPassword) {
     const token = await createSession({ role: "admin" });
+    const csrfToken = nanoid(32);
     const res = NextResponse.json({ ok: true });
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+    res.cookies.set(CSRF_COOKIE, csrfToken, {
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7,

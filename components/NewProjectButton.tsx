@@ -30,7 +30,13 @@ export default function NewProjectButton({ variant }: { variant: "small" | "larg
       if (res.ok) {
         const data = await res.json()
         router.push(`/${data.id}`)
+      } else if (res.status === 401 || res.status === 403) {
+        router.push("/login?redirect=/")
+      } else {
+        console.error("Failed to create project:", res.status)
       }
+    } catch (err) {
+      console.error("Failed to create project:", err)
     } finally {
       setLoading(false)
     }
