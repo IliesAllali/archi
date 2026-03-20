@@ -158,7 +158,7 @@ function computeShiftsAndIndicator(
   previewEdgeTarget: { x: number; y: number };
 } {
   const shifts = new Map<string, number>();
-  let indicatorPos = { x: 0, y: 0, orientation: "vertical" as const };
+  let indicatorPos: { x: number; y: number; orientation: "vertical" | "horizontal" } = { x: 0, y: 0, orientation: "vertical" };
   let previewEdgeTarget = { x: 0, y: 0 };
 
   const targetRf = baseNodes.find((n) => n.id === intent.targetId);
