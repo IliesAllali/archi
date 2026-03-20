@@ -48,26 +48,31 @@ export function getProviderLabel(provider: AiProvider): string {
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 
-const GENERATE_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web.
+const GENERATE_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
 
-L'utilisateur va te décrire un site. Tu dois générer une arborescence complète et professionnelle.
+L'utilisateur va te décrire un site. Tu dois générer une arborescence complète, riche et professionnelle.
 
 Règles :
-- Génère entre 8 et 30 pages selon la complexité du site
-- La première page doit toujours être "Accueil" (type: "home", priority: "primary")
-- Utilise une hiérarchie logique (max 3 niveaux de profondeur)
-- Types disponibles : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priorités : primary (pages clés), secondary (contenu), utility (mentions légales, 404...)
+- Génère entre 10 et 30 pages selon la complexité du site
+- La première page est "Accueil" (type: "home", priority: "primary", parent_temp_id: null)
+- TOUTES les autres pages DOIVENT avoir un parent_temp_id valide. Crée une vraie hiérarchie :
+  - Niveau 1 : sections principales (enfants de "home")
+  - Niveau 2 : sous-pages (enfants de leurs sections)
+  - Niveau 3 max : pages détail
+- Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
+- Priorités : primary (pages clés du parcours), secondary (contenu), utility (légal, 404)
 - Inclus toujours : Accueil, Contact, Mentions légales, 404
-- Chaque page doit avoir une description courte et un rationale
+- CHAQUE page doit avoir : description (2-3 phrases), rationale, cta, tags
 - Pense SEO, parcours utilisateur, et conversion
 
-Champs optionnels enrichis (utilise-les sur les pages clés) :
-- "cta": ["Texte bouton"] — appels à l'action de la page
-- "tags": ["SEO", "conversion"] — tags pour catégoriser
+Champs enrichis (utilise-les sur TOUTES les pages clés, soit au moins 50% des pages) :
+- "cta": ["Texte bouton 1", "Texte bouton 2"] — appels à l'action
+- "tags": ["SEO", "conversion"] — catégorisation
+- "entryPoints": [{"type": "google", "label": "Recherche Google"}] — sources de trafic. Types: google, direct, nav, social, email, ads, qrcode
+- "zoningBlocks": wireframe layout de la page. Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown.
-Format :
+Exemple de node complet :
 {
   "nodes": [
     {
@@ -76,42 +81,98 @@ Format :
       "label": "Accueil",
       "type": "home",
       "priority": "primary",
-      "description": "Page d'entrée principale",
-      "rationale": "Oriente les visiteurs",
-      "cta": ["Découvrir", "Commencer"],
-      "tags": ["SEO", "conversion"]
+      "description": "Page d'entrée principale du site. Présente la proposition de valeur, les features clés et oriente les visiteurs.",
+      "rationale": "Point d'entrée principal, doit convertir les visiteurs en utilisateurs",
+      "cta": ["Commencer gratuitement", "Voir la démo"],
+      "tags": ["SEO", "conversion", "branding"],
+      "entryPoints": [{"type": "direct", "label": "URL directe"}, {"type": "google", "label": "Recherche Google"}],
+      "zoningBlocks": [
+        {"id": "z1", "label": "Navigation", "skin": "nav", "height": 8},
+        {"id": "z2", "label": "Hero", "skin": "hero", "height": 25},
+        {"id": "z3", "label": "Features", "skin": "cards", "height": 30},
+        {"id": "z4", "label": "Social proof", "skin": "social-proof", "height": 15},
+        {"id": "z5", "label": "CTA", "skin": "cta", "height": 12},
+        {"id": "z6", "label": "Footer", "skin": "footer", "height": 10}
+      ]
+    },
+    {
+      "temp_id": "pricing",
+      "parent_temp_id": "home",
+      "label": "Tarifs",
+      "type": "detail",
+      "priority": "primary",
+      "description": "Grille tarifaire Free vs Pro avec FAQ billing.",
+      "rationale": "Les visiteurs doivent voir les prix pour décider",
+      "cta": ["Commencer gratuitement"],
+      "tags": ["conversion", "pricing"]
     }
   ]
 }
 
-Les temp_id : snake_case courts. Les parent_temp_id : null = racine (seul "home").`;
+temp_id : snake_case courts. parent_temp_id : null UNIQUEMENT pour "home".`;
 
-const EDIT_SYSTEM = `Tu es un architecte UX/UI expert. L'utilisateur te donne l'arborescence actuelle de son site et te demande une modification.
+const EDIT_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
+
+L'utilisateur te donne l'arborescence actuelle de son site (avec les IDs réels) et te demande une modification.
 
 Tu dois répondre avec une liste d'actions à effectuer sur l'arbre.
 
 Actions possibles :
-- "add" : ajouter une page (temp_id + parent_id ou parent_temp_id + label + type + priority + description)
+- "add" : ajouter une page. TOUJOURS rattacher à un parent existant via parent_id (ID réel) ou parent_temp_id (si le parent est aussi un ajout). Seule la homepage peut avoir parent_id: null.
 - "update" : modifier une page existante (node_id + champs à modifier)
 - "delete" : supprimer une page (node_id)
 - "move" : déplacer une page (node_id + nouveau parent_id)
 
-Règles :
-- Sois chirurgical : ne modifie que ce qui est demandé
-- Si l'utilisateur demande une réorganisation globale, propose les mouvements nécessaires
-- Garde la cohérence de l'arbre (pas d'orphelins)
-- Pour les ajouts, utilise des temp_id en snake_case
-- Les parent_id référencent des IDs réels existants dans l'arbre
+Règles CRITIQUES :
+- CHAQUE page ajoutée DOIT avoir un parent_id valide (un ID existant dans l'arbre fourni) ou un parent_temp_id (si son parent est aussi un "add" dans la même réponse). Ne jamais créer de pages orphelines.
+- Crée des arborescences hiérarchiques réalistes : les sous-pages sont enfants de leur section parente.
+- Sois généreux en contenu : description complète, rationale, cta, tags sur chaque page.
+- Types disponibles : home, listing, detail, form, landing, quiz, search, hub, error, legal
+- Priorités : primary (pages clés du parcours), secondary (contenu), utility (légal, 404)
+- Si l'utilisateur demande d'ajouter un site complet ou une section, crée une vraie hiérarchie (8-25 pages) avec des sous-sections.
 
-Réponds UNIQUEMENT avec un JSON valide :
+Champs disponibles pour "add" et "update" :
+- label (string) : nom de la page
+- type (string) : type de page
+- priority (string) : primary/secondary/utility
+- description (string) : description du contenu et du rôle de la page (2-3 phrases)
+- rationale (string) : pourquoi cette page existe dans l'arborescence
+- cta (string[]) : textes des boutons d'appel à l'action
+- tags (string[]) : catégorisation (ex: "SEO", "conversion", "support", "onboarding")
+- entryPoints ({type, label}[]) : sources de trafic. Types: google, direct, nav, social, email, ads, qrcode
+- zoningBlocks ({id, label, skin, height}[]) : wireframe layout. Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
+
+Utilise entryPoints et zoningBlocks sur les pages clés (homepage, landing, listing au minimum).
+
+Réponds UNIQUEMENT avec un JSON valide, sans markdown :
 {
   "actions": [
-    { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID_HERE", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
-    { "action": "update", "node_id": "REAL_ID", "label": "Nouveau nom" },
+    {
+      "action": "add",
+      "temp_id": "pricing",
+      "parent_id": "REAL_ID_OF_HOME",
+      "label": "Tarifs",
+      "type": "detail",
+      "priority": "primary",
+      "description": "Grille tarifaire avec les plans Free et Pro, FAQ billing",
+      "rationale": "Essentiel pour la conversion, les visiteurs doivent voir les prix avant de s'inscrire",
+      "cta": ["Commencer gratuitement", "Passer Pro"],
+      "tags": ["conversion", "pricing"],
+      "entryPoints": [{"type": "nav", "label": "Menu principal"}, {"type": "google", "label": "Google 'arbo pricing'"}],
+      "zoningBlocks": [
+        {"id": "z1", "label": "Navigation", "skin": "nav", "height": 8},
+        {"id": "z2", "label": "Hero tarifs", "skin": "hero", "height": 15},
+        {"id": "z3", "label": "Grille plans", "skin": "cards", "height": 40},
+        {"id": "z4", "label": "FAQ", "skin": "contenu", "height": 25},
+        {"id": "z5", "label": "CTA final", "skin": "cta", "height": 7},
+        {"id": "z6", "label": "Footer", "skin": "footer", "height": 5}
+      ]
+    },
+    { "action": "update", "node_id": "REAL_ID", "label": "Nouveau nom", "description": "..." },
     { "action": "delete", "node_id": "REAL_ID" },
     { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_REAL_ID" }
   ],
-  "summary": "Courte explication de ce qui a été fait (1-2 phrases)"
+  "summary": "Courte explication de ce qui a été fait"
 }`;
 
 // ─── Unified LLM call ───────────────────────────────────────────────────────

@@ -43,24 +43,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get current tree
+    // Get current tree with rich data for AI context
     const dbNodes = getActiveNodes(projectId);
     const currentTree = dbNodes.map((n) => {
       const data = JSON.parse(n.data);
-      return {
+      const node: Record<string, unknown> = {
         id: n.id,
         label: data.label,
         type: data.type || "detail",
+        priority: data.priority || "secondary",
         parent_id: n.parent_id,
         children: dbNodes
           .filter((c) => c.parent_id === n.id)
           .sort((a, b) => a.position - b.position)
           .map((c) => c.id),
       };
+      if (data.description) node.description = data.description;
+      if (data.cta?.length) node.cta = data.cta;
+      if (data.tags?.length) node.tags = data.tags;
+      return node;
     });
 
-    // Call AI
-    const result = await editSitemap(apiKey, prompt, currentTree, provider);
+    // Call AI — cast to expected type (extra fields are fine, they enrich context)
+    const result = await editSitemap(apiKey, prompt, currentTree as { id: string; label: string; type: string; parent_id: string | null; children: string[] }[], provider);
     const aiLabel = getProviderLabel(provider);
 
     // Apply actions
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
             )
             .get(projectId, parentId) as { next_pos: number };
 
-          const data = JSON.stringify({
+          const nodeData: Record<string, unknown> = {
             label: action.label || "Nouvelle page",
             type: action.type || "detail",
             priority: action.priority || "secondary",
@@ -94,7 +99,17 @@ export async function POST(req: NextRequest) {
             rationale: action.rationale || undefined,
             lastModifiedBy: "ai",
             lastModifiedByName: aiLabel,
-          });
+          };
+          // Rich fields from AI
+          const raw = action as unknown as Record<string, unknown>;
+          if (raw.cta) nodeData.cta = raw.cta;
+          if (raw.tags) nodeData.tags = raw.tags;
+          if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
+          if (raw.zoningBlocks) {
+            nodeData.zoningBlocks = raw.zoningBlocks;
+            nodeData.zoningExpanded = raw.zoningExpanded ?? false;
+          }
+          const data = JSON.stringify(nodeData);
 
           db.prepare(
             `INSERT INTO nodes (id, project_id, parent_id, position, archived, data, created_at, updated_at)
@@ -113,13 +128,21 @@ export async function POST(req: NextRequest) {
 
           if (existing) {
             const data = JSON.parse(existing.data);
+            const raw = action as unknown as Record<string, unknown>;
             if (action.label !== undefined) data.label = action.label;
             if (action.type !== undefined) data.type = action.type;
             if (action.priority !== undefined) data.priority = action.priority;
-            if (action.description !== undefined)
-              data.description = action.description;
+            if (action.description !== undefined) data.description = action.description;
+            if (raw.rationale !== undefined) data.rationale = raw.rationale;
+            if (raw.cta !== undefined) data.cta = raw.cta;
+            if (raw.tags !== undefined) data.tags = raw.tags;
+            if (raw.entryPoints !== undefined) data.entryPoints = raw.entryPoints;
+            if (raw.zoningBlocks !== undefined) {
+              data.zoningBlocks = raw.zoningBlocks;
+              data.zoningExpanded = raw.zoningExpanded ?? data.zoningExpanded ?? false;
+            }
             data.lastModifiedBy = "ai";
-            data.lastModifiedByName = "Claude";
+            data.lastModifiedByName = aiLabel;
 
             db.prepare(
               "UPDATE nodes SET data = ?, updated_at = ? WHERE id = ?"

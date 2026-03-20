@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           )
           .get(projectId, parentId) as { next_pos: number };
 
-        const data = JSON.stringify({
+        const nodeData: Record<string, unknown> = {
           label: node.label,
           type: node.type || "detail",
           priority: node.priority || "secondary",
@@ -103,7 +103,16 @@ export async function POST(req: NextRequest) {
           rationale: node.rationale || undefined,
           lastModifiedBy: "ai",
           lastModifiedByName: aiLabel,
-        });
+        };
+        const raw = node as unknown as Record<string, unknown>;
+        if (raw.cta) nodeData.cta = raw.cta;
+        if (raw.tags) nodeData.tags = raw.tags;
+        if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
+        if (raw.zoningBlocks) {
+          nodeData.zoningBlocks = raw.zoningBlocks;
+          nodeData.zoningExpanded = raw.zoningExpanded ?? false;
+        }
+        const data = JSON.stringify(nodeData);
 
         insertStmt.run(
           realId,
