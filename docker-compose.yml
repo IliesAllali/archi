@@ -1,0 +1,11 @@
+services:
+  arbo:
+    build: .
+    container_name: arbo-tool
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env

@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env*.local
+*.pdf
+*.docx
+Scratchpad.md
+.github
+data/*.db
