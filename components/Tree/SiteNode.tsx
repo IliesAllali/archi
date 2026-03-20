@@ -1,14 +1,15 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, useRef, useEffect, useCallback } from "react";
 import { Handle, Position, type NodeProps } from "reactflow";
-import type { SiteNode, ZoningType } from "@/lib/types";
+import type { SiteNode, ZoningType, ZoningBlock } from "@/lib/types";
+import { useCanvasStore } from "@/store/canvas-store";
+import { usePresenceStore } from "@/hooks/usePresenceStore";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 
 /* ─────────────────────────────────────────────
    Section definitions per zoning type
-   Each section has a label and a height in px.
-   The card grows proportionally to its sections.
    ───────────────────────────────────────────── */
 
 interface Section {
@@ -17,7 +18,7 @@ interface Section {
   skin: string;
 }
 
-export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
+export const ZONING_SECTIONS: Partial<Record<ZoningType, Section[]>> = {
   home: [
     { label: "Métiers — Formations", h: 28, skin: "double-cta" },
     { label: "Bloc vidéo", h: 42, skin: "image" },
@@ -77,36 +78,49 @@ export const ZONING_SECTIONS: Record<ZoningType, Section[]> = {
 const SECTION_GAP = 2;
 const CARD_PAD = 5;
 const TITLE_HEIGHT = 32;
-const LABEL_H = 18; // height for section label row
-export const CARD_WIDTH = 110;       // compact non-home cards
-export const HOME_CARD_WIDTH = 200;  // home card with zoning
+const LABEL_H = 18;
+export const CARD_WIDTH = 110;
+export const HOME_CARD_WIDTH = 200;
 
-export function getCardWidth(type: string): number {
-  return type === "home" ? HOME_CARD_WIDTH : CARD_WIDTH;
+export function getCardWidth(type: string, zoningExpanded?: boolean): number {
+  if (type === "home" || zoningExpanded) return HOME_CARD_WIDTH;
+  return CARD_WIDTH;
 }
 
-export function getCardHeight(type: string, label = ""): number {
-  if (type === "home") {
-    const sections = ZONING_SECTIONS.home;
-    const totalH = sections.reduce((sum, s) => sum + s.h + LABEL_H, 0);
-    const gaps = (sections.length - 1) * SECTION_GAP;
-    return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
-  }
-  // Hug content: estimate lines based on label length
-  const usablePx = CARD_WIDTH - 38; // 7px pad × 2 + ~24px for children counter
+function sectionsHeight(sections: Section[]): number {
+  const totalH = sections.reduce((sum, s) => s.h + LABEL_H + sum, 0);
+  const gaps = Math.max(0, sections.length - 1) * SECTION_GAP;
+  return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
+}
+
+function blocksHeight(blocks: ZoningBlock[]): number {
+  const totalH = blocks.reduce((sum, b) => sum + b.height + LABEL_H, 0);
+  const gaps = Math.max(0, blocks.length - 1) * SECTION_GAP;
+  return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
+}
+
+function resolveExpandedSections(type: string, zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): { blocks?: ZoningBlock[]; sections?: Section[] } | null {
+  if (zoningExpanded && zoningBlocks && zoningBlocks.length > 0) return { blocks: zoningBlocks };
+  const typeSections = ZONING_SECTIONS[type as ZoningType];
+  if (zoningExpanded && typeSections) return { sections: typeSections };
+  if (type === "home" && ZONING_SECTIONS.home) return { sections: ZONING_SECTIONS.home };
+  return null;
+}
+
+export function getCardHeight(type: string, label = "", zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): number {
+  const resolved = resolveExpandedSections(type, zoningExpanded, zoningBlocks);
+  if (resolved?.blocks) return blocksHeight(resolved.blocks);
+  if (resolved?.sections) return sectionsHeight(resolved.sections);
+  const usablePx = CARD_WIDTH - 38;
   const charsPerLine = Math.max(1, Math.floor(usablePx / 8));
   const lines = Math.max(1, Math.ceil((label || " ").length / charsPerLine));
-  return 9 + lines * 17 + 9; // top-pad + (lines × line-height) + bottom-pad
+  return 9 + lines * 17 + 9;
 }
 
-/* ─────────────────────────────────────────────
-   Wireframe skins — tiny structural previews
-   Each renders inside its section block to give
-   a distinct visual identity at a glance.
-   ───────────────────────────────────────────── */
+/* ─── Wireframe skin components ─── */
 
-const b = "wf-strong"; // wireframe element — styled via CSS
-const bf = "wf-faint"; // wireframe faint — styled via CSS
+const b = "wf-strong";
+const bf = "wf-faint";
 
 function SkinNav() {
   return (
@@ -171,9 +185,9 @@ function SkinBreadcrumb() {
   return (
     <div className="flex items-center gap-[2px] h-full px-[5px]">
       <div className={cn(bf, "w-[6px] h-[2px] rounded-sm")} />
-      <span className="wf-text text-[4px]">›</span>
+      <span className="wf-text text-[4px]">&rsaquo;</span>
       <div className={cn(bf, "w-[12px] h-[2px] rounded-sm")} />
-      <span className="wf-text text-[4px]">›</span>
+      <span className="wf-text text-[4px]">&rsaquo;</span>
       <div className={cn(b, "w-[8px] h-[2px] rounded-sm")} />
     </div>
   );
@@ -183,11 +197,7 @@ function SkinFiltres() {
   return (
     <div className="flex items-center gap-[2px] h-full px-[5px]">
       {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className={cn(i === 0 ? b : bf, "h-[4px] rounded-full")}
-          style={{ width: i === 0 ? 18 : 14 }}
-        />
+        <div key={i} className={cn(i === 0 ? b : bf, "h-[4px] rounded-full")} style={{ width: i === 0 ? 18 : 14 }} />
       ))}
     </div>
   );
@@ -378,25 +388,9 @@ function SkinPagination() {
 function SkinImage() {
   return (
     <div className="flex items-center justify-center h-full p-[3px]">
-      <div
-        className="w-full h-full rounded-sm flex items-center justify-center"
-        style={{ background: "rgba(0,0,0,0.07)" }}
-      >
-        {/* Play button */}
-        <div
-          className="flex items-center justify-center rounded-full"
-          style={{ width: 16, height: 16, background: "rgba(0,0,0,0.18)" }}
-        >
-          <div
-            style={{
-              width: 0,
-              height: 0,
-              borderTop: "4px solid transparent",
-              borderBottom: "4px solid transparent",
-              borderLeft: "6px solid rgba(255,255,255,0.9)",
-              marginLeft: 2,
-            }}
-          />
+      <div className="w-full h-full rounded-sm flex items-center justify-center" style={{ background: "rgba(0,0,0,0.07)" }}>
+        <div className="flex items-center justify-center rounded-full" style={{ width: 16, height: 16, background: "rgba(0,0,0,0.18)" }}>
+          <div style={{ width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: "6px solid rgba(255,255,255,0.9)", marginLeft: 2 }} />
         </div>
       </div>
     </div>
@@ -406,19 +400,11 @@ function SkinImage() {
 function SkinDoubleCta() {
   return (
     <div className="flex gap-[4px] h-full p-[4px]">
-      {/* Filled CTA — Métiers */}
-      <div
-        className="flex-1 rounded flex items-center justify-center gap-[3px]"
-        style={{ background: "var(--accent)", opacity: 0.9 }}
-      >
+      <div className="flex-1 rounded flex items-center justify-center gap-[3px]" style={{ background: "var(--accent)", opacity: 0.9 }}>
         <div style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.85)", flexShrink: 0 }} />
         <div style={{ width: "42%", height: 2, borderRadius: 1, background: "rgba(255,255,255,0.85)" }} />
       </div>
-      {/* Outlined CTA — Formations */}
-      <div
-        className="flex-1 rounded flex items-center justify-center gap-[3px]"
-        style={{ border: "1px solid var(--accent)", opacity: 0.75 }}
-      >
+      <div className="flex-1 rounded flex items-center justify-center gap-[3px]" style={{ border: "1px solid var(--accent)", opacity: 0.75 }}>
         <div style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
         <div style={{ width: "42%", height: 2, borderRadius: 1, background: "var(--accent)" }} />
       </div>
@@ -444,120 +430,192 @@ function SkinDefault() {
   );
 }
 
-const SKIN_MAP: Record<string, React.FC> = {
-  nav: SkinNav,
-  hero: SkinHero,
-  cards: SkinCards,
-  cta: SkinCta,
-  footer: SkinFooter,
-  breadcrumb: SkinBreadcrumb,
-  filtres: SkinFiltres,
-  grille: SkinGrille,
-  contenu: SkinContenu,
-  sidebar: SkinSidebar,
-  form: SkinForm,
-  submit: SkinSubmit,
-  titre: SkinTitre,
-  arguments: SkinArguments,
-  "social-proof": SkinSocialProof,
-  progression: SkinProgression,
-  question: SkinQuestion,
-  reponses: SkinReponses,
-  "nav-quiz": SkinNavQuiz,
-  "search-bar": SkinSearchBar,
-  resultats: SkinResultats,
-  pagination: SkinPagination,
-  image: SkinImage,
-  dots: SkinDots,
-  "double-cta": SkinDoubleCta,
+export const SKIN_MAP: Record<string, React.FC> = {
+  nav: SkinNav, hero: SkinHero, cards: SkinCards, cta: SkinCta, footer: SkinFooter,
+  breadcrumb: SkinBreadcrumb, filtres: SkinFiltres, grille: SkinGrille,
+  contenu: SkinContenu, sidebar: SkinSidebar, form: SkinForm, submit: SkinSubmit,
+  titre: SkinTitre, arguments: SkinArguments, "social-proof": SkinSocialProof,
+  progression: SkinProgression, question: SkinQuestion, reponses: SkinReponses,
+  "nav-quiz": SkinNavQuiz, "search-bar": SkinSearchBar, resultats: SkinResultats,
+  pagination: SkinPagination, image: SkinImage, dots: SkinDots, "double-cta": SkinDoubleCta,
 };
 
-/* ─── Section colors — tuned for white background ─── */
-const SECTION_COLORS: Record<string, string> = {
-  nav:            "rgba(139,147,165,0.10)",
-  hero:           "rgba(124,93,250,0.09)",
-  cards:          "rgba(67,140,245,0.09)",
-  cta:            "rgba(187,109,244,0.09)",
-  footer:         "rgba(100,116,139,0.08)",
-  breadcrumb:     "rgba(139,147,165,0.07)",
-  filtres:        "rgba(88,137,255,0.09)",
-  grille:         "rgba(76,142,245,0.09)",
-  contenu:        "rgba(79,150,255,0.09)",
-  sidebar:        "rgba(85,182,241,0.08)",
-  form:           "rgba(255,100,130,0.09)",
-  submit:         "rgba(168,111,247,0.09)",
-  titre:          "rgba(91,142,255,0.09)",
-  arguments:      "rgba(255,120,80,0.09)",
-  "social-proof": "rgba(100,140,255,0.08)",
-  progression:    "rgba(70,180,255,0.09)",
-  question:       "rgba(95,141,253,0.09)",
-  reponses:       "rgba(78,139,255,0.09)",
-  "nav-quiz":     "rgba(115,147,255,0.08)",
-  "search-bar":   "rgba(32,195,170,0.09)",
-  resultats:      "rgba(74,143,247,0.09)",
-  pagination:     "rgba(153,170,197,0.08)",
-  image:          "rgba(85,170,255,0.08)",
-  dots:           "rgba(139,147,165,0.05)",
-  "double-cta":   "rgba(94,106,210,0.08)",
+export const SECTION_COLORS: Record<string, string> = {
+  nav: "rgba(139,147,165,0.10)", hero: "rgba(124,93,250,0.09)", cards: "rgba(67,140,245,0.09)",
+  cta: "rgba(187,109,244,0.09)", footer: "rgba(100,116,139,0.08)", breadcrumb: "rgba(139,147,165,0.07)",
+  filtres: "rgba(88,137,255,0.09)", grille: "rgba(76,142,245,0.09)", contenu: "rgba(79,150,255,0.09)",
+  sidebar: "rgba(85,182,241,0.08)", form: "rgba(255,100,130,0.09)", submit: "rgba(168,111,247,0.09)",
+  titre: "rgba(91,142,255,0.09)", arguments: "rgba(255,120,80,0.09)", "social-proof": "rgba(100,140,255,0.08)",
+  progression: "rgba(70,180,255,0.09)", question: "rgba(95,141,253,0.09)", reponses: "rgba(78,139,255,0.09)",
+  "nav-quiz": "rgba(115,147,255,0.08)", "search-bar": "rgba(32,195,170,0.09)", resultats: "rgba(74,143,247,0.09)",
+  pagination: "rgba(153,170,197,0.08)", image: "rgba(85,170,255,0.08)", dots: "rgba(139,147,165,0.05)",
+  "double-cta": "rgba(94,106,210,0.08)",
 };
 
-const SECTION_BORDER_COLORS: Record<string, string> = {
-  nav:            "rgba(139,147,165,0.45)",
-  hero:           "rgba(124,93,250,0.55)",
-  cards:          "rgba(67,140,245,0.50)",
-  cta:            "rgba(187,109,244,0.55)",
-  footer:         "rgba(100,116,139,0.35)",
-  breadcrumb:     "rgba(139,147,165,0.30)",
-  filtres:        "rgba(88,137,255,0.50)",
-  grille:         "rgba(76,142,245,0.45)",
-  contenu:        "rgba(79,150,255,0.45)",
-  sidebar:        "rgba(85,182,241,0.40)",
-  form:           "rgba(255,100,130,0.50)",
-  submit:         "rgba(168,111,247,0.55)",
-  titre:          "rgba(91,142,255,0.45)",
-  arguments:      "rgba(255,120,80,0.50)",
-  "social-proof": "rgba(100,140,255,0.40)",
-  progression:    "rgba(70,180,255,0.45)",
-  question:       "rgba(95,141,253,0.50)",
-  reponses:       "rgba(78,139,255,0.45)",
-  "nav-quiz":     "rgba(115,147,255,0.42)",
-  "search-bar":   "rgba(32,195,170,0.50)",
-  resultats:      "rgba(74,143,247,0.45)",
-  pagination:     "rgba(153,170,197,0.38)",
-  image:          "rgba(85,170,255,0.55)",
-  dots:           "rgba(139,147,165,0.28)",
-  "double-cta":   "rgba(94,106,210,0.70)",
+export const SECTION_BORDER_COLORS: Record<string, string> = {
+  nav: "rgba(139,147,165,0.45)", hero: "rgba(124,93,250,0.55)", cards: "rgba(67,140,245,0.50)",
+  cta: "rgba(187,109,244,0.55)", footer: "rgba(100,116,139,0.35)", breadcrumb: "rgba(139,147,165,0.30)",
+  filtres: "rgba(88,137,255,0.50)", grille: "rgba(76,142,245,0.45)", contenu: "rgba(79,150,255,0.45)",
+  sidebar: "rgba(85,182,241,0.40)", form: "rgba(255,100,130,0.50)", submit: "rgba(168,111,247,0.55)",
+  titre: "rgba(91,142,255,0.45)", arguments: "rgba(255,120,80,0.50)", "social-proof": "rgba(100,140,255,0.40)",
+  progression: "rgba(70,180,255,0.45)", question: "rgba(95,141,253,0.50)", reponses: "rgba(78,139,255,0.45)",
+  "nav-quiz": "rgba(115,147,255,0.42)", "search-bar": "rgba(32,195,170,0.50)", resultats: "rgba(74,143,247,0.45)",
+  pagination: "rgba(153,170,197,0.38)", image: "rgba(85,170,255,0.55)", dots: "rgba(139,147,165,0.28)",
+  "double-cta": "rgba(94,106,210,0.70)",
 };
-
-/* ─────────────────────────────────────────────
-   Group color scheme
-   Each nav branch gets a distinct border color.
-   ───────────────────────────────────────────── */
 
 const GROUP_COLORS: Record<string, string> = {
-  metiers:     "#5B8AF0", // blue
-  formations:  "#2DB8A0", // teal
-  orientation: "#E8922A", // orange
-  ressources:  "#A87FD4", // purple
+  metiers: "#5B8AF0", formations: "#2DB8A0", orientation: "#E8922A", ressources: "#A87FD4",
+  rouge: "#E5534B", rose: "#D946A8", jaune: "#CA8A04", gris: "#6B7280",
 };
 
-function getGroupColor(group?: string, type?: string): string {
-  if (type === "home") return "var(--accent)";
-  if (!group || group === "utility") return "var(--card-ring)";
-  return GROUP_COLORS[group] || "var(--accent)";
+function getGroupColor(group?: string): string {
+  if (group && GROUP_COLORS[group]) return GROUP_COLORS[group];
+  return "var(--accent)";
 }
 
-/* ─────────────────────────────────────────────
-   Main site node component
-   ───────────────────────────────────────────── */
+/* ─── Inline Label Editor ─── */
 
-function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
+function InlineLabelEditor({ nodeId, initialLabel }: { nodeId: string; initialLabel: string }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateNodeLabel = useCanvasStore((s) => s.updateNodeLabel);
+  const stopEditing = useCanvasStore((s) => s.stopEditing);
+  const [value, setValue] = useState(initialLabel);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }, []);
+
+  const commit = useCallback(() => {
+    const trimmed = value.trim();
+    if (trimmed && trimmed !== initialLabel) {
+      updateNodeLabel(nodeId, trimmed);
+    }
+    stopEditing();
+  }, [value, initialLabel, nodeId, updateNodeLabel, stopEditing]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      stopEditing();
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={handleKeyDown}
+      className="font-bold flex-1 bg-transparent outline-none border-none p-0 m-0"
+      style={{
+        fontSize: "13px",
+        lineHeight: "18px",
+        color: "var(--title-selected)",
+        caretColor: "var(--accent)",
+        width: "100%",
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    />
+  );
+}
+
+/* ─── Add Node Buttons (hover-reveal) ─── */
+
+function AddNodeButtons({ nodeId, isHome }: { nodeId: string; isHome: boolean }) {
+  const addNode = useCanvasStore((s) => s.addNode);
+
+  const handleAddChild = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addNode(nodeId, "child");
+  };
+
+  const handleAddSibling = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addNode(nodeId, "sibling");
+  };
+
+  return (
+    <>
+      {/* Bottom = add child */}
+      <button
+        onClick={handleAddChild}
+        className="add-node-btn absolute left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10"
+        style={{ bottom: -14 }}
+        title="Ajouter une sous-page (Tab)"
+      >
+        <div
+          className="w-5 h-5 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+          style={{
+            background: "var(--accent)",
+            color: "white",
+          }}
+        >
+          <Plus className="w-3 h-3" strokeWidth={2.5} />
+        </div>
+      </button>
+
+      {/* Right = add sibling */}
+      {!isHome && (
+        <button
+          onClick={handleAddSibling}
+          className="add-node-btn absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10"
+          style={{ right: -14 }}
+          title="Ajouter une page au même niveau (Enter)"
+        >
+          <div
+            className="w-5 h-5 rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+            style={{
+              background: "var(--surface)",
+              border: "1.5px solid var(--accent)",
+              color: "var(--accent)",
+            }}
+          >
+            <Plus className="w-3 h-3" strokeWidth={2.5} />
+          </div>
+        </button>
+      )}
+    </>
+  );
+}
+
+/* ─── Main site node component ─── */
+
+function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
   const isHome = data.type === "home";
-  const sections = isHome ? ZONING_SECTIONS.home : [];
-  const cardH = getCardHeight(data.type, data.label);
-  const cardW = getCardWidth(data.type);
-  const groupColor = getGroupColor(data.group, data.type);
+  const resolved = resolveExpandedSections(data.type, data.zoningExpanded, data.zoningBlocks);
+  const showExpanded = !!resolved;
+  const cardH = getCardHeight(data.type, data.label, data.zoningExpanded, data.zoningBlocks);
+  const cardW = getCardWidth(data.type, data.zoningExpanded);
+  const groupColor = getGroupColor(data.group);
   const isUtility = data.priority === "utility";
+  const [hovered, setHovered] = useState(false);
+
+  const presenceCount = usePresenceStore((s) =>
+    s.otherUsers.length === 0 ? 0 : s.otherUsers.reduce((n, u) => n + (u.activeNodeId === id ? 1 : 0), 0)
+  );
+  const presenceOnNode = presenceCount > 0
+    ? usePresenceStore.getState().otherUsers.filter((u) => u.activeNodeId === id)
+    : null;
+
+  const editingNodeId = useCanvasStore((s) => s.editingNodeId);
+  const isEditing = editingNodeId === id;
+  const isDropTarget = useCanvasStore((s) => {
+    const di = s.dropIntent;
+    if (!di) return false;
+    return di.type === "child" && di.targetId === id;
+  });
 
   const isAccentVar = groupColor.startsWith("var(");
 
@@ -595,102 +653,144 @@ function SiteNodeComponent({ data, selected }: NodeProps<SiteNode>) {
 
       <div
         className={cn(
-          "rounded overflow-hidden cursor-pointer",
+          "rounded overflow-visible cursor-pointer group relative",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-1px]",
           isUtility && !selected && "opacity-65",
+          isDropTarget && "ring-2 ring-offset-2 scale-105",
         )}
         style={{
           width: cardW,
-          ...(isHome ? { height: cardH } : {}),
-          background: "var(--card-bg)",
-          boxShadow: selected ? selectedShadow : baseShadow,
+          ...(showExpanded ? { height: cardH } : {}),
+          background: isDropTarget ? "var(--accent-muted)" : "var(--card-bg)",
+          boxShadow: isDropTarget
+            ? `0 0 0 2px var(--accent), 0 6px 24px rgba(0,0,0,0.18)`
+            : selected ? selectedShadow : hovered ? hoverShadow : baseShadow,
+          ringColor: "var(--accent)",
+          ...(isDropTarget ? { transform: "scale(1.05)", zIndex: 50 } : {}),
         }}
-        onMouseEnter={(e) => {
-          if (!selected) e.currentTarget.style.boxShadow = hoverShadow;
-        }}
-        onMouseLeave={(e) => {
-          if (!selected) e.currentTarget.style.boxShadow = baseShadow;
-        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
-        {/* ── Colored top strip ── */}
-        {isHome && (
-          <div style={{ height: 4, background: "var(--accent)" }} />
-        )}
-        {!isHome && (coloredStripBg
-          ? <div style={{ height: 3, background: coloredStripBg, opacity: data.priority === "secondary" ? 0.6 : 1 }} />
-          : isUtility && <div style={{ height: 3, background: "var(--line-strong)" }} />
-        )}
+        {/* Colored top strip */}
+        {showExpanded && <div style={{ height: 4, background: groupColor }} />}
+        {!showExpanded &&
+          (coloredStripBg ? (
+            <div style={{ height: 3, background: coloredStripBg, opacity: data.priority === "secondary" ? 0.6 : 1 }} />
+          ) : (
+            isUtility && <div style={{ height: 3, background: "var(--line-strong)" }} />
+          ))}
 
-        {/* ── Page title ── */}
+        {/* Page title */}
         <div
-          className={cn(
-            "flex justify-between gap-1 px-[7px]",
-            isHome ? "items-center" : "items-start",
-          )}
+          className={cn("flex justify-between gap-1 px-[7px]", showExpanded ? "items-center" : "items-start")}
           style={{
-            ...(isHome ? { height: TITLE_HEIGHT } : { padding: "7px 7px" }),
+            ...(showExpanded ? { height: TITLE_HEIGHT } : { padding: "7px 7px" }),
             background: isHome ? "var(--accent-muted)" : titleTint,
             borderBottom: isHome ? "1px solid var(--accent-strong)" : "1px solid var(--card-title-border)",
           }}
         >
-          <p
-            className="font-bold flex-1"
-            style={{
-              fontSize: "13px",
-              lineHeight: "18px",
-              color: selected ? "var(--title-selected)" : "var(--title-color)",
-            }}
-          >
-            {data.label}
-          </p>
-          {data.children.length > 0 && (
+          {isEditing ? (
+            <InlineLabelEditor nodeId={id} initialLabel={data.label} />
+          ) : (
+            <p
+              className="font-bold flex-1"
+              style={{
+                fontSize: "13px",
+                lineHeight: "18px",
+                color: selected ? "var(--title-selected)" : "var(--title-color)",
+              }}
+            >
+              {data.label}
+            </p>
+          )}
+          {!isEditing && data.children.length > 0 && (
             <span
               className="shrink-0 font-mono"
               style={{ fontSize: "9px", lineHeight: "18px", color: "var(--label-color)", opacity: 0.7 }}
             >
-              {data.children.length}↓
+              {data.children.length}&darr;
             </span>
           )}
         </div>
 
-        {/* ── Section bricks — home only ── */}
-        {isHome && (
+        {/* Section bricks — expanded wireframe (custom blocks or type-based) */}
+        {showExpanded && (
           <div className="flex flex-col" style={{ padding: CARD_PAD, gap: SECTION_GAP }}>
-            {sections.map((section, i) => {
-              const Skin = SKIN_MAP[section.skin] || SkinDefault;
-              const bg = SECTION_COLORS[section.skin] || "var(--wireframe-faint)";
-              const border = SECTION_BORDER_COLORS[section.skin] || "var(--wireframe-strong)";
-              return (
-                <div
-                  key={i}
-                  className="flex flex-col rounded-sm overflow-hidden"
-                  style={{
-                    background: bg,
-                    borderLeft: `3px solid ${border}`,
-                  }}
-                >
-                  {/* Label row */}
-                  <div
-                    className="flex items-center px-[4px] shrink-0"
-                    style={{ height: LABEL_H, paddingTop: 2 }}
-                  >
-                    <span
-                      className="select-none font-semibold truncate"
-                      style={{ fontSize: "8px", lineHeight: "14px", color: "var(--label-color)" }}
-                    >
-                      {section.label}
-                    </span>
-                  </div>
-                  {/* Wireframe skin */}
-                  <div style={{ height: section.h }}>
-                    <Skin />
-                  </div>
-                </div>
-              );
-            })}
+            {resolved!.blocks
+              ? resolved!.blocks.map((block) => {
+                  const Skin = SKIN_MAP[block.skin] || SkinDefault;
+                  const bg = SECTION_COLORS[block.skin] || "var(--wireframe-faint)";
+                  const border = SECTION_BORDER_COLORS[block.skin] || "var(--wireframe-strong)";
+                  return (
+                    <div key={block.id} className="flex flex-col rounded-sm overflow-hidden" style={{ background: bg, borderLeft: `3px solid ${border}` }}>
+                      <div className="flex items-center px-[4px] shrink-0" style={{ height: LABEL_H, paddingTop: 2 }}>
+                        <span className="select-none font-semibold truncate" style={{ fontSize: "8px", lineHeight: "14px", color: "var(--label-color)" }}>
+                          {block.label}
+                        </span>
+                      </div>
+                      <div style={{ height: block.height }}>
+                        <Skin />
+                      </div>
+                    </div>
+                  );
+                })
+              : resolved!.sections!.map((section, i) => {
+                  const Skin = SKIN_MAP[section.skin] || SkinDefault;
+                  const bg = SECTION_COLORS[section.skin] || "var(--wireframe-faint)";
+                  const border = SECTION_BORDER_COLORS[section.skin] || "var(--wireframe-strong)";
+                  return (
+                    <div key={i} className="flex flex-col rounded-sm overflow-hidden" style={{ background: bg, borderLeft: `3px solid ${border}` }}>
+                      <div className="flex items-center px-[4px] shrink-0" style={{ height: LABEL_H, paddingTop: 2 }}>
+                        <span className="select-none font-semibold truncate" style={{ fontSize: "8px", lineHeight: "14px", color: "var(--label-color)" }}>
+                          {section.label}
+                        </span>
+                      </div>
+                      <div style={{ height: section.h }}>
+                        <Skin />
+                      </div>
+                    </div>
+                  );
+                })}
           </div>
         )}
+
+        {/* Presence badges */}
+        {presenceOnNode && (
+          <div className="absolute -top-2 -right-2 flex -space-x-1 z-20">
+            {presenceOnNode.slice(0, 3).map((u) => (
+              <div
+                key={u.id}
+                className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold"
+                style={{
+                  fontSize: 8,
+                  backgroundColor: u.color,
+                  border: "2px solid var(--card-bg)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }}
+                title={`${u.displayName}${u.isAI ? " (IA)" : ""}`}
+              >
+                {u.isAI ? "IA" : u.displayName.charAt(0).toUpperCase()}
+              </div>
+            ))}
+            {presenceOnNode.length > 3 && (
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center font-bold"
+                style={{
+                  fontSize: 8,
+                  background: "var(--bg-hover)",
+                  color: "var(--text-muted)",
+                  border: "2px solid var(--card-bg)",
+                }}
+              >
+                +{presenceOnNode.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Add node buttons — hover-reveal */}
+        <AddNodeButtons nodeId={id} isHome={isHome} />
       </div>
     </>
   );

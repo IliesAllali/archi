@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Search,
   Globe,
@@ -8,8 +9,13 @@ import {
   Mail,
   Megaphone,
   QrCode,
+  X,
+  Plus,
+  ChevronDown,
 } from "lucide-react";
 import type { EntryPoint, EntryPointType } from "@/lib/types";
+
+const ENTRY_TYPES: EntryPointType[] = ["google", "direct", "nav", "social", "email", "ads", "qrcode"];
 
 const ENTRY_ICON: Record<EntryPointType, React.ElementType> = {
   google: Search,
@@ -43,10 +49,25 @@ const ENTRY_LABEL: Record<EntryPointType, string> = {
 
 interface EntryPointsBlockProps {
   entryPoints: EntryPoint[];
+  onChange: (entryPoints: EntryPoint[]) => void;
 }
 
-export default function EntryPointsBlock({ entryPoints }: EntryPointsBlockProps) {
-  if (!entryPoints.length) return null;
+export default function EntryPointsBlock({ entryPoints, onChange }: EntryPointsBlockProps) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [newType, setNewType] = useState<EntryPointType>("google");
+  const [newLabel, setNewLabel] = useState("");
+
+  const handleAdd = () => {
+    const trimmed = newLabel.trim();
+    if (!trimmed) return;
+    onChange([...entryPoints, { type: newType, label: trimmed }]);
+    setNewLabel("");
+    setShowAdd(false);
+  };
+
+  const handleRemove = (index: number) => {
+    onChange(entryPoints.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -60,19 +81,21 @@ export default function EntryPointsBlock({ entryPoints }: EntryPointsBlockProps)
               key={i}
               className="group flex items-center gap-0 rounded-lg border border-line bg-bg-base overflow-hidden transition-all duration-150 hover:border-line-strong"
             >
-              {/* Google icon area */}
               <div className="flex items-center gap-2 px-2.5 py-2 border-r border-line bg-bg-surface shrink-0">
                 <GoogleIcon className="w-3.5 h-3.5" />
               </div>
-              {/* Search query */}
               <div className="flex-1 px-3 py-2 flex items-center gap-2">
                 <span className="text-xs text-label-secondary group-hover:text-label-primary transition-colors">
                   {ep.label}
                 </span>
               </div>
-              <div className="pr-2.5">
-                <Search className="w-3 h-3 text-label-faint" />
-              </div>
+              <button
+                onClick={() => handleRemove(i)}
+                className="pr-2.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Supprimer"
+              >
+                <X className="w-3 h-3" style={{ color: "var(--error-text)" }} />
+              </button>
             </div>
           );
         }
@@ -88,7 +111,7 @@ export default function EntryPointsBlock({ entryPoints }: EntryPointsBlockProps)
             >
               <Icon className="w-3 h-3" style={{ color }} />
             </div>
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex-1 flex items-center gap-1.5 min-w-0">
               <span className="text-2xs font-medium text-label-muted shrink-0">
                 {ENTRY_LABEL[ep.type]}
               </span>
@@ -97,9 +120,78 @@ export default function EntryPointsBlock({ entryPoints }: EntryPointsBlockProps)
                 {ep.label}
               </span>
             </div>
+            <button
+              onClick={() => handleRemove(i)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              title="Supprimer"
+            >
+              <X className="w-3 h-3" style={{ color: "var(--error-text)" }} />
+            </button>
           </div>
         );
       })}
+
+      {/* Add form */}
+      {showAdd ? (
+        <div className="flex flex-col gap-2 p-2.5 rounded-lg border border-accent/30 bg-accent-muted/30">
+          <div className="flex items-center gap-2">
+            <div className="relative shrink-0">
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as EntryPointType)}
+                className="appearance-none bg-transparent text-2xs font-medium outline-none cursor-pointer pr-4"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {ENTRY_TYPES.map((t) => (
+                  <option key={t} value={t}>{ENTRY_LABEL[t]}</option>
+                ))}
+              </select>
+              <ChevronDown
+                className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ width: 10, height: 10, color: "var(--text-faint)" }}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <input
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleAdd(); }
+                if (e.key === "Escape") { setShowAdd(false); setNewLabel(""); }
+              }}
+              placeholder={newType === "google" ? "Requête de recherche..." : "Label..."}
+              autoFocus
+              className="flex-1 text-xs bg-transparent border-none outline-none"
+              style={{ color: "var(--text-secondary)", caretColor: "var(--accent)" }}
+            />
+            <button
+              onClick={handleAdd}
+              disabled={!newLabel.trim()}
+              className="px-2 py-1 rounded text-2xs font-medium transition-colors disabled:opacity-40"
+              style={{ background: "var(--accent)", color: "white" }}
+            >
+              Ajouter
+            </button>
+            <button
+              onClick={() => { setShowAdd(false); setNewLabel(""); }}
+              className="p-1 rounded hover:bg-bg-hover transition-colors"
+            >
+              <X className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-line hover:border-accent/40 hover:bg-accent-muted/20 transition-all duration-150 group"
+        >
+          <Plus className="w-3 h-3 text-label-faint group-hover:text-accent transition-colors" />
+          <span className="text-2xs text-label-faint group-hover:text-accent transition-colors">
+            Ajouter un point d'entrée
+          </span>
+        </button>
+      )}
     </div>
   );
 }

@@ -360,6 +360,15 @@ html.theme-transition *::after {
   opacity: 0.08;
 }
 
+/* ─── Smooth layout transitions after drag-drop ─── */
+.react-flow__node {
+  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.react-flow__node.dragging,
+.react-flow__node.draggable:active {
+  transition: none !important;
+}
+
 /* ─── Glass morphism utility ─── */
 .glass {
   backdrop-filter: blur(12px) saturate(1.8);

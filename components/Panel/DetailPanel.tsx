@@ -1,61 +1,117 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X,
-  Home,
-  LayoutGrid,
-  FileText,
-  PenLine,
-  Sparkles,
-  HelpCircle,
-  Search,
-  AlertTriangle,
-  Scale,
-  Layers,
-  Clock,
-  Tag,
-  MousePointerClick,
-  Lightbulb,
-  MessageSquare,
-  Globe,
+  X, Home, LayoutGrid, FileText, PenLine, Sparkles, HelpCircle,
+  Search, AlertTriangle, Scale, Layers, Tag, MousePointerClick,
+  Lightbulb, MessageSquare, Globe, Trash2,
 } from "lucide-react";
-import type { SiteNode, Project, PageType, Priority } from "@/lib/types";
-import ZoningPreview from "./ZoningPreview";
+import type { SiteNode, Project, NodeData } from "@/lib/types";
+import { useCanvasStore } from "@/store/canvas-store";
+import ZoningEditor from "./ZoningEditor";
 import EntryPointsBlock from "./EntryPointsBlock";
 
-const ICON_MAP: Record<PageType, React.ElementType> = {
-  home: Home,
-  listing: LayoutGrid,
-  detail: FileText,
-  form: PenLine,
-  landing: Sparkles,
-  quiz: HelpCircle,
-  search: Search,
-  hub: Layers,
-  error: AlertTriangle,
-  legal: Scale,
+const ICON_MAP: Record<string, React.ElementType> = {
+  home: Home, listing: LayoutGrid, detail: FileText, form: PenLine,
+  landing: Sparkles, quiz: HelpCircle, search: Search, hub: Layers,
+  error: AlertTriangle, legal: Scale,
 };
 
-const TYPE_LABEL: Record<PageType, string> = {
-  home: "Accueil",
-  listing: "Listing",
-  detail: "Détail",
-  form: "Formulaire",
-  landing: "Landing",
-  quiz: "Quiz",
-  search: "Recherche",
-  hub: "Hub",
-  error: "Erreur",
-  legal: "Légal",
-};
+const COLOR_PALETTE: { value: string; color: string; label: string }[] = [
+  { value: "",            color: "var(--accent)",  label: "Défaut" },
+  { value: "metiers",     color: "#5B8AF0",        label: "Bleu" },
+  { value: "formations",  color: "#2DB8A0",        label: "Vert" },
+  { value: "orientation",  color: "#E8922A",        label: "Orange" },
+  { value: "ressources",  color: "#A87FD4",        label: "Violet" },
+  { value: "rouge",       color: "#E5534B",        label: "Rouge" },
+  { value: "rose",        color: "#D946A8",        label: "Rose" },
+  { value: "jaune",       color: "#CA8A04",        label: "Jaune" },
+  { value: "gris",        color: "#6B7280",        label: "Gris" },
+];
 
-const PRIORITY_LABEL: Record<Priority, string> = {
-  primary: "Principale",
-  secondary: "Secondaire",
-  utility: "Utilitaire",
-};
+const GROUP_COLORS: Record<string, string> = Object.fromEntries(
+  COLOR_PALETTE.filter((c) => c.value).map((c) => [c.value, c.color])
+);
+
+function getNodeColor(group?: string): string {
+  if (group && GROUP_COLORS[group]) return GROUP_COLORS[group];
+  return "var(--accent)";
+}
+
+function getNodeColorTint(group?: string): string {
+  if (group && GROUP_COLORS[group]) return `${GROUP_COLORS[group]}18`;
+  return "var(--accent-muted)";
+}
+
+function ColorDot({ group, type, onChange }: { group?: string; type: string; onChange: (g: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const color = getNodeColor(group);
+  const label = type;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 mt-0.5 group cursor-pointer"
+      >
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform group-hover:scale-125"
+          style={{ background: color, boxShadow: `0 0 0 2px ${color}30` }}
+        />
+        <span className="text-2xs" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-1.5 z-50 p-1.5 rounded-lg border border-line bg-bg-surface shadow-lg"
+          style={{ minWidth: 140 }}
+        >
+          <div className="grid grid-cols-5 gap-1 mb-1.5">
+            {COLOR_PALETTE.map((c) => {
+              const isActive = (group || "") === c.value;
+              const resolvedColor = c.value ? c.color : "var(--accent)";
+              return (
+                <button
+                  key={c.value || "__default"}
+                  onClick={() => { onChange(c.value); setOpen(false); }}
+                  className="w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                  style={{
+                    background: `${resolvedColor}18`,
+                    border: isActive ? `2px solid ${resolvedColor}` : "2px solid transparent",
+                  }}
+                  title={c.label}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ background: resolvedColor }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-center">
+            <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+              {COLOR_PALETTE.find((c) => c.value === (group || ""))?.label || "Défaut"}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface DetailPanelProps {
   node: SiteNode | null;
@@ -89,6 +145,11 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [dragX, setDragX] = useState(0);
 
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const deleteNode = useCanvasStore((s) => s.deleteNode);
+  const nodes = useCanvasStore((s) => s.nodes);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -97,14 +158,13 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // Scroll to top when node changes
   useEffect(() => {
     if (node && scrollRef.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
+    setShowDeleteConfirm(false);
   }, [node?.id]);
 
-  // Swipe to close (right swipe)
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
     setDragX(0);
@@ -120,14 +180,23 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
     setDragX(0);
   };
 
-  const Icon = node ? ICON_MAP[node.type] : FileText;
-  const nodePath = node ? getNodePath(node, project.nodes) : [];
+  const handleFieldChange = useCallback(
+    (field: keyof NodeData, value: unknown) => {
+      if (!node) return;
+      updateNodeData(node.id, { [field]: value } as Partial<NodeData>);
+    },
+    [node, updateNodeData]
+  );
+
+  const Icon = node ? (ICON_MAP[node.type] || FileText) : FileText;
+  const nodePath = node ? getNodePath(node, nodes.length > 0 ? nodes : project.nodes) : [];
+  const nodeColor = node ? getNodeColor(node.group) : "var(--accent)";
+  const nodeColorTint = node ? getNodeColorTint(node.group) : "var(--accent-muted)";
 
   return (
     <AnimatePresence>
       {node && (
         <>
-          {/* Backdrop — tappable to close on mobile */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -153,137 +222,192 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
               borderLeft: "1px solid var(--line)",
             }}
           >
-          {/* Header */}
-          <div className="px-5 pt-5 pb-4 shrink-0" style={{ borderBottom: "1px solid var(--line)" }}>
-            {/* Breadcrumb path */}
-            {nodePath.length > 1 && (
-              <div className="flex items-center gap-1 mb-3 flex-wrap">
-                {nodePath.slice(0, -1).map((ancestor, i) => (
-                  <span key={ancestor.id} className="flex items-center gap-1">
-                    <span className="text-2xs" style={{ color: "var(--text-faint)" }}>{ancestor.label}</span>
-                    <span className="text-2xs" style={{ color: "var(--text-faint)" }}>›</span>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1, type: "spring", damping: 15 }}
-                  className="w-7 h-7 rounded-md bg-accent-muted flex items-center justify-center shrink-0"
-                >
-                  <Icon className="w-3.5 h-3.5 text-accent" />
-                </motion.div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-label-primary truncate">
-                    {node.label}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-2xs text-label-muted">{TYPE_LABEL[node.type]}</span>
-                    <span className="text-label-faint">·</span>
-                    <span className="text-2xs text-label-muted">{PRIORITY_LABEL[node.priority]}</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"
-              >
-                <X className="w-4 h-4 text-label-muted" />
-              </button>
-            </div>
-          </div>
-
-          {/* Content — staggered sections */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scroll">
-            <SectionAnimated index={0} title="Description">
-              <p className="text-sm text-label-secondary leading-relaxed">
-                {node.description}
-              </p>
-            </SectionAnimated>
-
-            {node.entryPoints && node.entryPoints.length > 0 && (
-              <SectionAnimated index={1} title="Points d'entrée" icon={Globe}>
-                <EntryPointsBlock entryPoints={node.entryPoints} />
-              </SectionAnimated>
-            )}
-
-            <SectionAnimated index={2} title="Zoning">
-              <div className="rounded-lg border border-line overflow-hidden bg-bg-base">
-                <ZoningPreview type={node.zoning} accent={project.accent} />
-              </div>
-            </SectionAnimated>
-
-            {node.rationale && (
-              <SectionAnimated index={3} title="Rationale" icon={Lightbulb}>
-                <p className="text-sm text-label-secondary leading-relaxed">
-                  {node.rationale}
-                </p>
-              </SectionAnimated>
-            )}
-
-            {node.notes && (
-              <SectionAnimated index={4} title="Notes" icon={MessageSquare}>
-                <p className="text-sm text-label-secondary leading-relaxed">
-                  {node.notes}
-                </p>
-              </SectionAnimated>
-            )}
-
-            {node.cta && node.cta.length > 0 && (
-              <SectionAnimated index={5} title="CTAs" icon={MousePointerClick}>
-                <div className="flex flex-col gap-1.5">
-                  {node.cta.map((cta, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-accent-muted border border-accent/10"
-                    >
-                      <MousePointerClick className="w-3 h-3 text-accent shrink-0" />
-                      <span className="text-sm text-accent">{cta}</span>
-                    </div>
-                  ))}
-                </div>
-              </SectionAnimated>
-            )}
-
-            {node.tags && node.tags.length > 0 && (
-              <SectionAnimated index={6} title="Tags" icon={Tag}>
-                <div className="flex flex-wrap gap-1.5">
-                  {node.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-2xs font-mono px-2 py-1 rounded bg-bg-hover border border-line text-label-muted"
-                    >
-                      {tag}
+            {/* Header */}
+            <div
+              className="px-5 pt-5 pb-4 shrink-0"
+              style={{ borderBottom: `2px solid ${nodeColor}`, borderTop: `3px solid ${nodeColor}` }}
+            >
+              {nodePath.length > 1 && (
+                <div className="flex items-center gap-1 mb-3 flex-wrap">
+                  {nodePath.slice(0, -1).map((ancestor) => (
+                    <span key={ancestor.id} className="flex items-center gap-1">
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>{ancestor.label}</span>
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>&rsaquo;</span>
                     </span>
                   ))}
                 </div>
+              )}
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1, type: "spring", damping: 15 }}
+                    className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                    style={{ background: nodeColorTint }}
+                  >
+                    <Icon className="w-3.5 h-3.5" style={{ color: nodeColor }} />
+                  </motion.div>
+                  <div className="min-w-0">
+                    <EditableText
+                      value={node.label}
+                      onChange={(v) => handleFieldChange("label", v)}
+                      className="text-base font-semibold text-label-primary"
+                      placeholder="Nom de la page"
+                    />
+                    <ColorDot
+                      group={node.group}
+                      type={node.type}
+                      onChange={(g) => handleFieldChange("group", g || undefined)}
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"
+                >
+                  <X className="w-4 h-4 text-label-muted" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scroll">
+              <SectionAnimated index={0} title="Description">
+                <EditableTextarea
+                  value={node.description || ""}
+                  onChange={(v) => handleFieldChange("description", v)}
+                  placeholder="Description de la page..."
+                  rows={2}
+                />
               </SectionAnimated>
-            )}
 
+              <SectionAnimated index={1} title="Points d'entrée" icon={Globe}>
+                <EntryPointsBlock
+                  entryPoints={node.entryPoints || []}
+                  onChange={(eps) => handleFieldChange("entryPoints", eps)}
+                />
+              </SectionAnimated>
 
-            <div className="h-8" />
-          </div>
-        </motion.div>
+              <SectionAnimated index={2} title="Zoning" icon={Layers}>
+                <ZoningEditor
+                  pageType={node.type}
+                  pageLabel={node.label}
+                  blocks={node.zoningBlocks || []}
+                  expanded={node.zoningExpanded ?? false}
+                  html={node.zoningHtml}
+                  accent={project.accent}
+                  onChange={handleFieldChange}
+                />
+              </SectionAnimated>
+
+              <SectionAnimated index={3} title="Rationale" icon={Lightbulb}>
+                <EditableTextarea
+                  value={node.rationale || ""}
+                  onChange={(v) => handleFieldChange("rationale", v)}
+                  placeholder="Pourquoi cette page existe..."
+                  rows={3}
+                />
+              </SectionAnimated>
+
+              <SectionAnimated index={4} title="Notes" icon={MessageSquare}>
+                <EditableTextarea
+                  value={node.notes || ""}
+                  onChange={(v) => handleFieldChange("notes", v)}
+                  placeholder="Notes internes, insights UX..."
+                  rows={3}
+                />
+              </SectionAnimated>
+
+              <SectionAnimated index={5} title="CTAs" icon={MousePointerClick}>
+                <EditableTagList
+                  values={node.cta || []}
+                  onChange={(v) => handleFieldChange("cta", v)}
+                  placeholder="Ajouter un CTA..."
+                  accentStyle
+                />
+              </SectionAnimated>
+
+              <SectionAnimated index={6} title="Tags" icon={Tag}>
+                <EditableTagList
+                  values={node.tags || []}
+                  onChange={(v) => handleFieldChange("tags", v)}
+                  placeholder="Ajouter un tag..."
+                />
+              </SectionAnimated>
+
+              {/* Delete zone */}
+              {node.type !== "home" && (
+                <div className="px-5 py-4">
+                  {showDeleteConfirm ? (
+                    <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "var(--error-border)", background: "var(--error-glow)" }}>
+                      <p className="text-xs font-medium" style={{ color: "var(--error-text)" }}>
+                        Supprimer « {node.label} » {node.children.length > 0 ? `et ses ${node.children.length} sous-page${node.children.length > 1 ? "s" : ""} ?` : "?"}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            deleteNode(node.id, "cascade");
+                            setShowDeleteConfirm(false);
+                            onClose();
+                          }}
+                          className="px-3 py-1.5 rounded text-xs font-medium text-white transition-colors"
+                          style={{ background: "var(--error-text)" }}
+                        >
+                          {node.children.length > 0 ? "Supprimer tout" : "Supprimer"}
+                        </button>
+                        {node.children.length > 0 && (
+                          <button
+                            onClick={() => {
+                              deleteNode(node.id, "reparent");
+                              setShowDeleteConfirm(false);
+                              onClose();
+                            }}
+                            className="px-3 py-1.5 rounded text-xs font-medium transition-colors border"
+                            style={{ color: "var(--text-secondary)", borderColor: "var(--line)" }}
+                          >
+                            Remonter les enfants
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          className="ml-auto p-1 rounded hover:bg-bg-hover transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed transition-all duration-150 hover:border-red-400/40 hover:bg-red-500/5 group"
+                      style={{ borderColor: "var(--line)" }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-label-faint group-hover:text-red-500 transition-colors" />
+                      <span className="text-xs text-label-faint group-hover:text-red-500 transition-colors">
+                        Supprimer cette page
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="h-8" />
+            </div>
+          </motion.div>
         </>
       )}
     </AnimatePresence>
   );
 }
 
+/* ─── Animated section wrapper ─── */
+
 function SectionAnimated({
-  title,
-  icon: SectionIcon,
-  children,
-  index,
+  title, icon: SectionIcon, children, index,
 }: {
-  title: string;
-  icon?: React.ElementType;
-  children: React.ReactNode;
-  index: number;
+  title: string; icon?: React.ElementType; children: React.ReactNode; index: number;
 }) {
   return (
     <motion.div
@@ -295,11 +419,154 @@ function SectionAnimated({
     >
       <div className="flex items-center gap-1.5 mb-2.5">
         {SectionIcon && <SectionIcon className="w-3 h-3 text-label-faint" />}
-        <h3 className="text-2xs font-medium text-label-muted uppercase tracking-wider">
-          {title}
-        </h3>
+        <h3 className="text-2xs font-medium text-label-muted uppercase tracking-wider">{title}</h3>
       </div>
       {children}
     </motion.div>
+  );
+}
+
+/* ─── Editable inline text ─── */
+
+function EditableText({
+  value, onChange, className, placeholder,
+}: {
+  value: string; onChange: (v: string) => void; className?: string; placeholder?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onChange(trimmed);
+    else setDraft(value);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+        className={`${className} bg-transparent border-none outline-none w-full`}
+        placeholder={placeholder}
+        style={{ color: "var(--text-primary)" }}
+      />
+    );
+  }
+
+  return (
+    <p
+      className={`${className} cursor-text truncate hover:opacity-80 transition-opacity`}
+      onClick={() => setEditing(true)}
+      style={{ color: value ? "var(--text-primary)" : "var(--text-faint)" }}
+    >
+      {value || placeholder}
+    </p>
+  );
+}
+
+/* ─── Editable textarea ─── */
+
+function EditableTextarea({
+  value, onChange, placeholder, rows = 2,
+}: {
+  value: string; onChange: (v: string) => void; placeholder?: string; rows?: number;
+}) {
+  const [draft, setDraft] = useState(value);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { setDraft(value); }, [value]);
+
+  const commit = () => {
+    if (draft !== value) onChange(draft);
+  };
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      rows={rows}
+      placeholder={placeholder}
+      className="w-full text-sm leading-relaxed bg-transparent border-none outline-none resize-none"
+      style={{
+        color: "var(--text-secondary)",
+        caretColor: "var(--accent)",
+      }}
+    />
+  );
+}
+
+/* ─── Editable tag list (CTAs / Tags) ─── */
+
+function EditableTagList({
+  values, onChange, placeholder, accentStyle,
+}: {
+  values: string[]; onChange: (v: string[]) => void; placeholder?: string; accentStyle?: boolean;
+}) {
+  const [inputValue, setInputValue] = useState("");
+
+  const addTag = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed && !values.includes(trimmed)) {
+      onChange([...values, trimmed]);
+      setInputValue("");
+    }
+  };
+
+  const removeTag = (idx: number) => {
+    onChange(values.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        {values.map((tag, i) => (
+          <div
+            key={`${tag}-${i}`}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-sm cursor-default group ${
+              accentStyle ? "bg-accent-muted border border-accent/10" : "bg-bg-hover border border-line"
+            }`}
+          >
+            {accentStyle && <MousePointerClick className="w-3 h-3 text-accent shrink-0" />}
+            <span className={accentStyle ? "text-accent" : "text-2xs font-mono text-label-muted"}>
+              {tag}
+            </span>
+            <button
+              onClick={() => removeTag(i)}
+              className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ color: "var(--text-faint)" }}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1">
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); addTag(); }
+          }}
+          onBlur={addTag}
+          placeholder={placeholder}
+          className="flex-1 text-2xs bg-transparent border-none outline-none"
+          style={{ color: "var(--text-secondary)", caretColor: "var(--accent)" }}
+        />
+      </div>
+    </div>
   );
 }

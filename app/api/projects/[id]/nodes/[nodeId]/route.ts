@@ -1,35 +1,101 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getProject, saveProject } from "@/lib/project-loader"
+import { NextRequest, NextResponse } from "next/server";
+import { db, getActiveNode } from "@/lib/db";
+import { getProject, getNode } from "@/lib/project-loader";
+import { sanitizeText, sanitizeTextArray } from "@/lib/sanitize";
+import { emitToProject } from "@/lib/socket";
 
 function checkApiKey(req: NextRequest) {
-  return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`
+  return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`;
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string; nodeId: string } }
+) {
+  const node = getNode(params.id, params.nodeId);
+  if (!node) return NextResponse.json({ error: "Node not found" }, { status: 404 });
+  return NextResponse.json(node);
 }
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string; nodeId: string } }
 ) {
-  if (!checkApiKey(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const project = getProject(params.id)
-  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  const idx = project.nodes.findIndex((n) => n.id === params.nodeId)
-  if (idx === -1) return NextResponse.json({ error: "Node not found" }, { status: 404 })
-  const body = await req.json()
-  project.nodes[idx] = { ...project.nodes[idx], ...body, id: params.nodeId }
-  saveProject(project)
-  return NextResponse.json(project.nodes[idx])
+  if (!checkApiKey(req))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const project = getProject(params.id);
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const existing = getActiveNode(project.id, params.nodeId);
+  if (!existing) return NextResponse.json({ error: "Node not found" }, { status: 404 });
+
+  const body = await req.json();
+  const existingData = JSON.parse(existing.data);
+  const now = Date.now();
+
+  const updatedData = {
+    ...existingData,
+    ...(body.label !== undefined && { label: sanitizeText(body.label) || existingData.label }),
+    ...(body.type !== undefined && { type: body.type }),
+    ...(body.priority !== undefined && { priority: body.priority }),
+    ...(body.description !== undefined && { description: sanitizeText(body.description) }),
+    ...(body.notes !== undefined && { notes: sanitizeText(body.notes) }),
+    ...(body.rationale !== undefined && { rationale: sanitizeText(body.rationale) }),
+    ...(body.zoningBlocks !== undefined && { zoningBlocks: body.zoningBlocks }),
+    ...(body.zoningExpanded !== undefined && { zoningExpanded: body.zoningExpanded }),
+    ...(body.zoningHtml !== undefined && { zoningHtml: body.zoningHtml }),
+    ...(body.cta !== undefined && { cta: sanitizeTextArray(body.cta) }),
+    ...(body.tags !== undefined && { tags: sanitizeTextArray(body.tags) }),
+  };
+
+  const updateFields: string[] = ["data = ?", "updated_at = ?"];
+  const updateValues: unknown[] = [JSON.stringify(updatedData), now];
+
+  if (body.parentId !== undefined) {
+    updateFields.push("parent_id = ?");
+    updateValues.push(body.parentId);
+  }
+  if (body.position !== undefined) {
+    updateFields.push("position = ?");
+    updateValues.push(body.position);
+  }
+
+  updateValues.push(params.nodeId, project.id);
+
+  db.prepare(
+    `UPDATE nodes SET ${updateFields.join(", ")} WHERE id = ? AND project_id = ?`
+  ).run(...updateValues);
+
+  emitToProject(project.id, "node-updated", {
+    nodeId: params.nodeId,
+    data: updatedData,
+  });
+
+  return NextResponse.json({ id: params.nodeId, ...updatedData });
 }
 
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string; nodeId: string } }
 ) {
-  if (!checkApiKey(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  const project = getProject(params.id)
-  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  const idx = project.nodes.findIndex((n) => n.id === params.nodeId)
-  if (idx === -1) return NextResponse.json({ error: "Node not found" }, { status: 404 })
-  project.nodes.splice(idx, 1)
-  saveProject(project)
-  return NextResponse.json({ deleted: true })
+  if (!checkApiKey(req))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const project = getProject(params.id);
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const existing = getActiveNode(project.id, params.nodeId);
+  if (!existing) return NextResponse.json({ error: "Node not found" }, { status: 404 });
+
+  const now = Date.now();
+
+  // Soft delete
+  db.prepare(
+    "UPDATE nodes SET archived = 1, updated_at = ? WHERE id = ? AND project_id = ?"
+  ).run(now, params.nodeId, project.id);
+
+  emitToProject(project.id, "node-deleted", { nodeId: params.nodeId });
+
+  return NextResponse.json({ deleted: true });
 }

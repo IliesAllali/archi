@@ -32,8 +32,8 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   const epOverhead: Record<string, number> = {};
 
   nodes.forEach((n) => {
-    pageHeight[n.id] = getCardHeight(n.type, n.label) + LABEL_HEIGHT;
-    pageWidth[n.id] = getCardWidth(n.type) + 20; // +20 for ELK padding
+    pageHeight[n.id] = getCardHeight(n.type, n.label, n.zoningExpanded, n.zoningBlocks) + LABEL_HEIGHT;
+    pageWidth[n.id] = getCardWidth(n.type, n.zoningExpanded) + 20;
     epOverhead[n.id] =
       n.entryPoints && n.entryPoints.length > 0
         ? getEntryPointGroupHeight(n.entryPoints) + EP_MARGIN

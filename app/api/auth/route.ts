@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, COOKIE_NAME } from "@/lib/auth";
 import { getProject, getAllProjects } from "@/lib/project-loader";
+import fs from "fs";
+import path from "path";
+
+/**
+ * Legacy auth route — simple password-based login.
+ * Checks admin password and per-project passwords from JSON files.
+ * Will be replaced by the multi-user auth system (POST /api/auth/login).
+ */
+
+interface JsonProject {
+  id: string;
+  password?: string;
+}
+
+function getJsonProjectPasswords(): JsonProject[] {
+  try {
+    const dir = path.join(process.cwd(), "data", "projects");
+    if (!fs.existsSync(dir)) return [];
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+    return files.map((f) => {
+      const data = JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
+      return { id: data.id, password: data.password };
+    });
+  } catch {
+    return [];
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { password: rawPassword, project: projectId } = await req.json();
@@ -25,10 +52,13 @@ export async function POST(req: NextRequest) {
     return res;
   }
 
+  // Read project passwords from JSON files (legacy — not in SQLite)
+  const jsonProjects = getJsonProjectPasswords();
+
   // Check per-project password
   if (projectId) {
-    const project = getProject(projectId);
-    if (project?.password && password === project.password) {
+    const jsonProject = jsonProjects.find((p) => p.id === projectId);
+    if (jsonProject?.password && password === jsonProject.password) {
       const token = await createSession({ role: "viewer", project: projectId });
       const res = NextResponse.json({ ok: true });
       res.cookies.set(`arbo_project_${projectId}`, token, {
@@ -44,8 +74,7 @@ export async function POST(req: NextRequest) {
 
   // No project specified — try matching password against all projects
   if (!projectId) {
-    const allProjects = getAllProjects();
-    const matched = allProjects.find((p) => p.password && password === p.password);
+    const matched = jsonProjects.find((p) => p.password && password === p.password);
     if (matched) {
       const token = await createSession({ role: "viewer", project: matched.id });
       const res = NextResponse.json({ ok: true, project: matched.id });
@@ -60,5 +89,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+  return NextResponse.json({ error: "Mot de passe incorrect" }, { status: 401 });
 }
