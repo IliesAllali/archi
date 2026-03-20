@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, ExternalLink } from "lucide-react"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -19,77 +19,26 @@ interface Props {
 export default function NewProjectModal({ open, onClose }: Props) {
   const router = useRouter()
   const [mode, setMode] = useState<"choice" | "ai" | "manual">("choice")
-  const [brief, setBrief] = useState("")
   const [name, setName] = useState("")
   const [client, setClient] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [aiStatus, setAiStatus] = useState("")
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const nameRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setMode("choice")
-      setBrief("")
       setName("")
       setClient("")
       setError("")
-      setAiStatus("")
     }
   }, [open])
 
   useEffect(() => {
-    if (mode === "ai" && textareaRef.current) {
-      textareaRef.current.focus()
-    }
     if (mode === "manual" && nameRef.current) {
       nameRef.current.focus()
     }
   }, [mode])
-
-  const headers = (): Record<string, string> => {
-    const h: Record<string, string> = { "Content-Type": "application/json" }
-    const csrf = getCsrfToken()
-    if (csrf) h["x-csrf-token"] = csrf
-    return h
-  }
-
-  const handleAiGenerate = async () => {
-    if (brief.trim().length < 10) {
-      setError("D\u00e9cris un peu plus ton projet (10 caract\u00e8res min.)")
-      return
-    }
-    setLoading(true)
-    setError("")
-    setAiStatus("G\u00e9n\u00e9ration de l'arborescence...")
-
-    try {
-      const res = await fetch("/api/projects/generate", {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify({ brief: brief.trim() }),
-      })
-
-      if (res.ok) {
-        const data = await res.json()
-        setAiStatus(`${data.nodeCount} pages g\u00e9n\u00e9r\u00e9es. Redirection...`)
-        setTimeout(() => {
-          router.push(`/${data.id}`)
-          onClose()
-        }, 600)
-      } else {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || "Erreur lors de la g\u00e9n\u00e9ration")
-        setAiStatus("")
-      }
-    } catch {
-      setError("Erreur de connexion")
-      setAiStatus("")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleManualCreate = async () => {
     if (!name.trim()) {
@@ -100,9 +49,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
     setError("")
 
     try {
+      const csrf = getCsrfToken()
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (csrf) headers["x-csrf-token"] = csrf
+
       const res = await fetch("/api/projects", {
         method: "POST",
-        headers: headers(),
+        headers,
         body: JSON.stringify({
           name: name.trim(),
           client: client.trim() || undefined,
@@ -115,6 +68,36 @@ export default function NewProjectModal({ open, onClose }: Props) {
         onClose()
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
+      } else {
+        setError("Erreur lors de la cr\u00e9ation")
+      }
+    } catch {
+      setError("Erreur de connexion")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Create empty project then redirect to settings > AI tab
+  const handleAiSetup = async () => {
+    setLoading(true)
+    setError("")
+
+    try {
+      const csrf = getCsrfToken()
+      const headers: Record<string, string> = { "Content-Type": "application/json" }
+      if (csrf) headers["x-csrf-token"] = csrf
+
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name: "Nouveau projet" }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        router.push(`/${data.id}/settings?tab=ai`)
+        onClose()
       } else {
         setError("Erreur lors de la cr\u00e9ation")
       }
@@ -169,9 +152,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
               {/* Choice screen */}
               {mode === "choice" && (
                 <div className="space-y-2.5 pt-1">
+                  {/* AI option */}
                   <button
-                    onClick={() => setMode("ai")}
-                    className="w-full flex items-start gap-3.5 p-4 rounded-lg text-left transition-all duration-150 hover:brightness-105 group"
+                    onClick={handleAiSetup}
+                    disabled={loading}
+                    className="w-full flex items-start gap-3.5 p-4 rounded-lg text-left transition-all duration-150 hover:brightness-105 group disabled:opacity-50"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
                   >
                     <div
@@ -180,17 +165,22 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     >
                       <Sparkles className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                        G{"\u00e9"}n{"\u00e9"}rer avec l'IA
+                        Demander {"\u00e0"} mon IA
                       </p>
                       <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        D{"\u00e9"}cris ton projet, l'IA g{"\u00e9"}n{"\u00e8"}re l'arborescence compl{"\u00e8"}te
+                        Connecte Claude, Cursor ou ChatGPT pour g{"\u00e9"}n{"\u00e9"}rer l'arborescence
                       </p>
                     </div>
-                    <ArrowRight className="w-4 h-4 mt-1 ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 mt-1 shrink-0 animate-spin" style={{ color: "var(--text-faint)" }} />
+                    ) : (
+                      <ArrowRight className="w-4 h-4 mt-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
+                    )}
                   </button>
 
+                  {/* Manual option */}
                   <button
                     onClick={() => setMode("manual")}
                     className="w-full flex items-start gap-3.5 p-4 rounded-lg text-left transition-all duration-150 hover:brightness-105 group"
@@ -212,75 +202,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     </div>
                     <ArrowRight className="w-4 h-4 mt-1 ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
                   </button>
-                </div>
-              )}
-
-              {/* AI mode */}
-              {mode === "ai" && (
-                <div className="space-y-3 pt-1">
-                  <div>
-                    <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                      D{"\u00e9"}cris le projet
-                    </label>
-                    <textarea
-                      ref={textareaRef}
-                      value={brief}
-                      onChange={(e) => { setBrief(e.target.value); if (error) setError("") }}
-                      placeholder={"Ex : Refonte du site vitrine d'une agence immobili\u00e8re \u00e0 Lyon. Cible : acheteurs et vendeurs. Pages cl\u00e9s : annonces, estimation en ligne, \u00e9quipe, blog..."}
-                      rows={4}
-                      className="w-full px-3 py-2.5 rounded-lg text-sm resize-none focus:outline-none transition-all"
-                      style={inputStyle}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "var(--accent)"
-                        e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)"
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "var(--line-strong)"
-                        e.currentTarget.style.boxShadow = "none"
-                      }}
-                    />
-                    <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-                      Plus c'est d{"\u00e9"}taill{"\u00e9"}, meilleure sera l'arborescence
-                    </p>
-                  </div>
-
-                  {aiStatus && (
-                    <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-2xs"
-                      style={{ background: "var(--accent-muted)", color: "var(--accent)", border: "1px solid var(--accent)" }}
-                    >
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      {aiStatus}
-                    </div>
-                  )}
 
                   {error && (
-                    <p className="text-2xs" style={{ color: "var(--error-text)" }}>{error}</p>
+                    <p className="text-2xs text-center" style={{ color: "var(--error-text)" }}>{error}</p>
                   )}
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => setMode("choice")}
-                      disabled={loading}
-                      className="px-3 h-10 rounded-lg text-xs transition-colors disabled:opacity-50"
-                      style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
-                    >
-                      Retour
-                    </button>
-                    <button
-                      onClick={handleAiGenerate}
-                      disabled={loading || brief.trim().length < 10}
-                      className="flex-1 flex items-center justify-center gap-2 h-10 rounded-lg text-xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                      style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "#fff" }}
-                    >
-                      {loading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-3.5 h-3.5" />
-                      )}
-                      G{"\u00e9"}n{"\u00e9"}rer l'arborescence
-                    </button>
-                  </div>
                 </div>
               )}
 

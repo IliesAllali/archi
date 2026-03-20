@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles } from "lucide-react"
 import Logo from "@/components/Logo"
 import GeneralTab from "./tabs/GeneralTab"
 import MembersTab from "./tabs/MembersTab"
 import ShareTab from "./tabs/ShareTab"
 import TokensTab from "./tabs/TokensTab"
 import DangerTab from "./tabs/DangerTab"
+import AiConnectTab from "./tabs/AiConnectTab"
 
 interface ProjectMeta {
   id: string
@@ -22,6 +24,7 @@ interface ProjectMeta {
 
 const TABS = [
   { id: "general", label: "G\u00e9n\u00e9ral", icon: Settings },
+  { id: "ai", label: "Connecter une IA", icon: Sparkles },
   { id: "members", label: "Membres", icon: Users },
   { id: "share", label: "Liens de partage", icon: Link2 },
   { id: "tokens", label: "Tokens IA", icon: Key },
@@ -37,7 +40,12 @@ export default function SettingsClient({
   project: ProjectMeta
   currentUserId: string
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("general")
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const tab = searchParams.get("tab")
+    if (tab && TABS.some(t => t.id === tab)) return tab as TabId
+    return "general"
+  })
   const [projectName, setProjectName] = useState(project.name)
 
   return (
@@ -117,6 +125,9 @@ export default function SettingsClient({
         {/* Tab content */}
         {activeTab === "general" && (
           <GeneralTab project={project} onNameChange={setProjectName} />
+        )}
+        {activeTab === "ai" && (
+          <AiConnectTab projectId={project.id} />
         )}
         {activeTab === "members" && (
           <MembersTab projectId={project.id} currentUserId={currentUserId} ownerId={project.ownerId} />

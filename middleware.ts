@@ -30,6 +30,7 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/v1/') &&
     !pathname.startsWith('/api/auth/') &&
     !pathname.startsWith('/api/health') &&
+    !pathname.startsWith('/api/mcp') &&
     MUTATION_METHODS.includes(method)
   ) {
     const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value
