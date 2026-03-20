@@ -117,6 +117,7 @@ interface DetailPanelProps {
   node: SiteNode | null;
   project: Project;
   onClose: () => void;
+  onOpenComments?: (nodeId: string) => void;
 }
 
 function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
@@ -139,7 +140,7 @@ function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
   return path;
 }
 
-export default function DetailPanel({ node, project, onClose }: DetailPanelProps) {
+export default function DetailPanel({ node, project, onClose, onOpenComments }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -263,12 +264,23 @@ export default function DetailPanel({ node, project, onClose }: DetailPanelProps
                     />
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"
-                >
-                  <X className="w-4 h-4 text-label-muted" />
-                </button>
+                <div className="flex items-center gap-0.5">
+                  {onOpenComments && (
+                    <button
+                      onClick={() => onOpenComments(node.id)}
+                      className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100"
+                      title="Commentaires"
+                    >
+                      <MessageSquare className="w-4 h-4 text-label-muted" />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"
+                  >
+                    <X className="w-4 h-4 text-label-muted" />
+                  </button>
+                </div>
               </div>
             </div>
 

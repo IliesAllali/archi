@@ -10,12 +10,13 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, Activity } from "lucide-react";
+import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, Activity, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import ActivityPanel from "@/components/ActivityPanel";
 import AiBar from "@/components/AiBar";
+import CommentsPanel from "@/components/CommentsPanel";
 import { usePresence } from "@/hooks/usePresence";
 import { usePresenceStore } from "@/hooks/usePresenceStore";
 
@@ -28,6 +29,9 @@ export default function CanvasPage({ project, currentUser }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsNodeId, setCommentsNodeId] = useState<string | null>(null);
+  const [commentsNodeLabel, setCommentsNodeLabel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +100,14 @@ export default function CanvasPage({ project, currentUser }: Props) {
     },
     [selectNode]
   );
+
+  const openComments = useCallback((nodeId: string | null) => {
+    if (!nodeId) return;
+    const node = nodes.find(n => n.id === nodeId);
+    setCommentsNodeId(nodeId);
+    setCommentsNodeLabel(node?.label || null);
+    setCommentsOpen(true);
+  }, [nodes]);
 
   const isDemo = project.slug === "demo-ecommerce";
 
@@ -251,6 +263,16 @@ export default function CanvasPage({ project, currentUser }: Props) {
                   <History className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
                   Historique
                 </button>
+                <button
+                  onClick={() => { openComments(selectedNodeId || nodes[0]?.id || null); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Commentaires
+                </button>
                 <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
                 <Link
                   href={`/${project.id}/settings`}
@@ -304,6 +326,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
           project={liveProject}
           externalSelectedNode={selectedNode}
           onExternalSelectClear={() => selectNode(null)}
+          onOpenComments={openComments}
         />
       </div>
 
@@ -325,6 +348,16 @@ export default function CanvasPage({ project, currentUser }: Props) {
         projectId={project.id}
         open={activityOpen}
         onClose={() => setActivityOpen(false)}
+      />
+
+      {/* Comments panel */}
+      <CommentsPanel
+        projectId={project.id}
+        nodeId={commentsNodeId}
+        nodeLabel={commentsNodeLabel}
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
       />
 
       {/* AI Bar */}

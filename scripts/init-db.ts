@@ -174,6 +174,20 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_snapshots_project ON version_snapshots(project_id, created_at);
 
+  -- ─── Comments ─────────────────────────────────────────────────────────────
+  CREATE TABLE IF NOT EXISTS comments (
+    id          TEXT PRIMARY KEY,
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    node_id     TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_id   TEXT, -- NULL for guests
+    content     TEXT NOT NULL,
+    resolved    INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
+  CREATE INDEX IF NOT EXISTS idx_comments_node    ON comments(node_id);
+
   -- ─── Async jobs (bulk imports > 45s for GPT Actions) ──────────────────────
   CREATE TABLE IF NOT EXISTS async_jobs (
     id           TEXT PRIMARY KEY,

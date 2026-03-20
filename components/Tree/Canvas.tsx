@@ -38,6 +38,7 @@ interface CanvasProps {
   project: Project;
   externalSelectedNode?: SiteNode | null;
   onExternalSelectClear?: () => void;
+  onOpenComments?: (nodeId: string) => void;
 }
 
 // ─── Helper: get parent of a node from store nodes ──────────────────────────
@@ -239,7 +240,7 @@ function computeShiftsAndIndicator(
 
 // ─── Main Canvas ────────────────────────────────────────────────────────────
 
-function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: CanvasProps) {
+function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments }: CanvasProps) {
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -692,6 +693,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear }: C
           selectNode(null);
           onExternalSelectClear?.();
         }}
+        onOpenComments={onOpenComments}
       />
 
       <DeleteNodeModal

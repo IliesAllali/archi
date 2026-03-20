@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     // Add user as project member (owner)
     db.prepare(
-      `INSERT OR IGNORE INTO project_members (project_id, user_id, role, joined_at)
+      `INSERT OR IGNORE INTO project_members (project_id, user_id, role, added_at)
        VALUES (?, ?, 'owner', ?)`
     ).run(projectId, payload.sub, now);
 
