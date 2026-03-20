@@ -325,21 +325,25 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
                       {/* Provider selector + API Key */}
                       <div>
-                        <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                        <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
                           Fournisseur IA
                         </label>
-                        <div className="relative">
-                          <select
-                            value={provider}
-                            onChange={(e) => handleProviderChange(e.target.value as AiProvider)}
-                            className="w-full h-9 px-3 pr-8 rounded-lg text-xs focus:outline-none transition-all appearance-none cursor-pointer"
-                            style={inputStyle}
-                          >
-                            {AI_PROVIDERS.map((p) => (
-                              <option key={p.id} value={p.id}>{p.label}</option>
-                            ))}
-                          </select>
-                          <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-faint)" }} />
+                        <div className="flex gap-1.5">
+                          {AI_PROVIDERS.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => handleProviderChange(p.id)}
+                              className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
+                              style={{
+                                background: provider === p.id ? "var(--accent)" : "var(--surface)",
+                                color: provider === p.id ? "#fff" : "var(--text-secondary)",
+                                border: `1px solid ${provider === p.id ? "var(--accent)" : "var(--line-strong)"}`,
+                              }}
+                            >
+                              {p.label.split(" (")[0]}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
