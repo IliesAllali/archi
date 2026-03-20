@@ -74,8 +74,9 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const tokenValue = revealedToken || "arbo_xxxxxxxxxxxxxxxx"
+  const tokenValue = revealedToken || "<TON_TOKEN>"
   const hasToken = revealedToken || tokens.length > 0
+  const hasRealToken = !!revealedToken
 
   const mcpConfig = JSON.stringify({
     mcpServers: {
@@ -240,6 +241,16 @@ ${tokenValue}`
               Configurer ton IA
             </p>
           </div>
+
+          {/* Warning if no fresh token */}
+          {!hasRealToken && (
+            <div
+              className="p-2.5 rounded-lg text-2xs"
+              style={{ background: "rgba(234,179,8,0.10)", border: "1px solid rgba(234,179,8,0.30)", color: "rgba(202,138,4,1)" }}
+            >
+              Crée un token ci-dessus pour obtenir une config prête à coller. Les exemples ci-dessous utilisent un token fictif.
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: "var(--surface)" }}>
