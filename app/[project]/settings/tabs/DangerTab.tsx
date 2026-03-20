@@ -29,7 +29,7 @@ export default function DangerTab({
         headers: csrfHeaders(),
       })
       if (res.ok) {
-        router.push("/")
+        window.location.href = "/"
       }
     } finally {
       setArchiving(false)
