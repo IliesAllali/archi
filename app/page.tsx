@@ -15,7 +15,7 @@ export default function HomePage() {
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
       {/* Top bar */}
       <header
-        className="px-5 h-11 flex items-center justify-between"
+        className="px-3 sm:px-5 h-11 flex items-center justify-between"
         style={{ borderBottom: "1px solid var(--line)" }}
       >
         <div className="flex items-center gap-2">
@@ -26,8 +26,8 @@ export default function HomePage() {
             arbo
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-2xs font-mono hidden sm:inline" style={{ color: "var(--text-faint)" }}>
             {projects.length} projet{projects.length !== 1 ? "s" : ""}
           </span>
           <ThemeToggle />

@@ -137,7 +137,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
-      <div className="w-full max-w-[320px] mx-4">
+      <div className="w-full max-w-[320px] sm:max-w-[380px] mx-4">
         <div className="flex justify-center mb-8 animate-scale-fade-in">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center"

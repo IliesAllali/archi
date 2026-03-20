@@ -257,7 +257,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
         }}
       >
         <Monitor className="w-3 h-3" />
-        Mode lecture \— édition sur desktop uniquement
+        Mode lecture — édition sur desktop uniquement
       </div>
 
       {/* Canvas */}

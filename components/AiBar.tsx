@@ -137,7 +137,7 @@ export default function AiBar({ projectId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 active:scale-95"
+          className="fixed bottom-4 sm:bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 active:scale-95"
           style={{
             background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
             color: "#fff",
@@ -146,7 +146,7 @@ export default function AiBar({ projectId }: Props) {
         >
           <Sparkles className="w-3.5 h-3.5" />
           Modifier avec l&apos;IA
-          <kbd className="ml-1 px-1.5 py-0.5 rounded text-2xs font-mono" style={{ background: "rgba(255,255,255,0.2)" }}>
+          <kbd className="ml-1 px-1.5 py-0.5 rounded text-2xs font-mono hidden sm:inline" style={{ background: "rgba(255,255,255,0.2)" }}>
             Ctrl+I
           </kbd>
         </motion.button>
@@ -160,7 +160,7 @@ export default function AiBar({ projectId }: Props) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-32px)] sm:w-[560px] rounded-xl overflow-hidden"
+            className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-24px)] sm:w-[560px] max-w-[560px] rounded-xl overflow-hidden"
             style={{
               background: "var(--elevated)",
               border: "1px solid var(--line-strong)",
@@ -168,7 +168,7 @@ export default function AiBar({ projectId }: Props) {
             }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5CF6" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
@@ -196,7 +196,7 @@ export default function AiBar({ projectId }: Props) {
 
             {/* API Key input (if needed) */}
             {needsKey && (
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+              <div className="px-3 sm:px-4 py-2.5 sm:py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
                   Clé API Anthropic
                 </label>
@@ -255,7 +255,7 @@ export default function AiBar({ projectId }: Props) {
             )}
 
             {/* Input area */}
-            <div className="px-4 py-3">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3">
               <div className="flex gap-2">
                 <textarea
                   ref={inputRef}
@@ -293,7 +293,7 @@ export default function AiBar({ projectId }: Props) {
                   )}
                 </button>
               </div>
-              <div className="flex items-center justify-between mt-2">
+              <div className="hidden sm:flex items-center justify-between mt-2">
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
                   Ctrl+Enter pour envoyer
                 </p>
