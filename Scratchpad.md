@@ -28,32 +28,40 @@
 9. ✅ Error states (SaveStatusBadge: saved/saving/unsaved/error + retry)
 10. ✅ Build vert
 
-### Prochain : Sprint 3 — Version History
+## Sprint 5 — Back office + auth + MCP + compte ✅ IMPLÉMENTÉ (2026-03-20)
 
-## Sprint 5 — Back office + onboarding ✅ IMPLÉMENTÉ (2026-03-20)
+### Auth multi-utilisateurs
+- `app/login/page.tsx` — email + password login
+- `app/signup/page.tsx` — inscription, premier user auto-admin
+- `app/api/auth/register/route.ts` — auto-verify premier user
+- `middleware.ts` — auth tri-couche + CSRF bypass `/api/mcp`
 
-### Fichiers créés
-- `app/[project]/settings/page.tsx` — Server component settings
-- `app/[project]/settings/SettingsClient.tsx` — Client shell avec 5 tabs
-- `app/[project]/settings/use-csrf.ts` — Helper CSRF partagé
-- `app/[project]/settings/tabs/GeneralTab.tsx` — Nom, client, version, accent
-- `app/[project]/settings/tabs/MembersTab.tsx` — Membres + invitations
-- `app/[project]/settings/tabs/ShareTab.tsx` — Liens de partage (mdp, permissions, expiration)
-- `app/[project]/settings/tabs/TokensTab.tsx` — Tokens IA (CRUD, reveal once)
-- `app/[project]/settings/tabs/DangerTab.tsx` — Archive + transfert ownership
-- `app/api/projects/[id]/members/route.ts` — GET/POST membres
-- `app/api/projects/[id]/members/[userId]/route.ts` — PATCH/DELETE membre
-- `app/api/projects/[id]/invitations/route.ts` — GET/POST/DELETE invitations
-- `app/api/projects/[id]/share/route.ts` — GET/POST share links
-- `app/api/projects/[id]/share/[linkId]/route.ts` — DELETE share link
-- `app/api/projects/[id]/tokens/route.ts` — GET/POST AI tokens
-- `app/api/projects/[id]/tokens/[tokenId]/route.ts` — DELETE (revoke) token
-- `components/NewProjectButton.tsx` — Bouton "+" création projet
+### Settings projet (6 onglets)
+- `app/[project]/settings/` — GeneralTab, AiConnectTab, MembersTab, ShareTab, TokensTab, DangerTab
+- SettingsClient lit `?tab=` depuis l'URL
 
-### Fichiers modifiés
-- `app/page.tsx` — NewProjectButton + empty state amélioré
-- `app/[project]/CanvasPage.tsx` — Icône settings dans header + bandeau mobile lecture seule
-- `app/api/projects/route.ts` — POST avec session auth + noeud racine par défaut
-- `app/api/projects/[id]/route.ts` — PUT/DELETE avec session auth
+### MCP Server
+- `app/api/mcp/route.ts` — Streamable HTTP stateless, 7 outils
+- Auth Bearer token (ai_tokens, SHA-256)
+- `@modelcontextprotocol/sdk` + `zod`
 
-### Prochain : Sprint 6 — API IA
+### Partage guest
+- `app/share/[token]/page.tsx` — accès lien + password
+- `app/api/share/resolve/route.ts` + `verify/route.ts`
+
+### Onboarding nouveau projet
+- `components/NewProjectModal.tsx` — "Demander à mon IA" ou "Projet vide", rendu via createPortal
+
+### Menu utilisateur + compte
+- `components/UserMenu.tsx` — avatar, dropdown, logout
+- `app/account/` — profil + clés API (OpenAI, Anthropic, Mistral)
+- `app/api/me/` — profil + CRUD clés API
+- Table `user_api_keys`
+
+### Fixes
+- Unicode escapes → UTF-8 dans tous les fichiers settings/components
+- Wireframe off par défaut (home inclus), uniquement quand zoningExpanded=true
+- Modal z-index via createPortal
+- Cookie CSRF ajouté sur auth legacy
+
+### Prochain : Sprint 6 — API REST publique /api/v1/
