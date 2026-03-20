@@ -45,16 +45,31 @@ export async function POST(req: NextRequest) {
   const passwordHash = hashSync(password, 12)
   const now          = Date.now()
 
+  // Auto-verify if first user (no email service needed for bootstrap)
+  const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c
+  const autoVerify = userCount === 0 ? 1 : 0
+  const role = userCount === 0 ? 'admin' : 'user'
+
   db.prepare(
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
-     VALUES (?, ?, 0, ?, ?, '#3B82F6', 'user', ?, ?)`
-  ).run(userId, email, passwordHash, name, now, now)
+     VALUES (?, ?, ?, ?, ?, '#3B82F6', ?, ?, ?)`
+  ).run(userId, email, autoVerify, passwordHash, name, role, now, now)
 
-  // Send verification email
+  // If auto-verified (first user), log them in directly
+  if (autoVerify) {
+    const res = NextResponse.json({
+      user: { id: userId, email, name, role },
+      redirect: '/',
+    })
+    await setAuthCookies(res, userId, { sub: userId, email, name, role })
+    return res
+  }
+
+  // Otherwise send verification email
   const token = createAuthToken(userId, 'verify_email')
   await sendVerificationEmail(email, name, token).catch(console.error)
 
   return NextResponse.json({
-    message: 'Si cette adresse est disponible, vous recevrez un email de confirmation.'
+    message: 'V\u00e9rifiez votre bo\u00eete mail pour confirmer votre compte.'
   })
 }

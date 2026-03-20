@@ -3,6 +3,7 @@ import { verifyAccessToken, verifySession, ACCESS_COOKIE, COOKIE_NAME, CSRF_COOK
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/signup', '/invite', '/reset-password', '/verify-email']
+const PUBLIC_DYNAMIC_PREFIXES = ['/share/']
 const PUBLIC_PREFIXES = ['/api/', '/_next/', '/fonts/', '/images/']
 
 // Mutation methods that require CSRF verification
@@ -40,7 +41,8 @@ export async function middleware(req: NextRequest) {
 
   // ─── Public page routes — no auth needed ─────────────────────────────────
 
-  if (isPublicRoute) return NextResponse.next()
+  const isPublicDynamic = PUBLIC_DYNAMIC_PREFIXES.some((p) => pathname.startsWith(p))
+  if (isPublicRoute || isPublicDynamic) return NextResponse.next()
 
   // ─── Auth check for app pages ─────────────────────────────────────────────
 
