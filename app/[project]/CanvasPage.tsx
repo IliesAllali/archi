@@ -10,10 +10,12 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Command, Undo2, Redo2, History, Settings, Monitor } from "lucide-react";
+import { Share2, ChevronLeft, Command, Undo2, Redo2, History, Settings, Monitor, Activity } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
+import ActivityPanel from "@/components/ActivityPanel";
+import AiBar from "@/components/AiBar";
 import { usePresence } from "@/hooks/usePresence";
 import { usePresenceStore } from "@/hooks/usePresenceStore";
 
@@ -25,6 +27,7 @@ interface Props {
 export default function CanvasPage({ project, currentUser }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   const initProject = useCanvasStore((s) => s.initProject);
   const nodes = useCanvasStore((s) => s.nodes);
@@ -202,6 +205,14 @@ export default function CanvasPage({ project, currentUser }: Props) {
           </button>
 
           <button
+            onClick={() => setActivityOpen(true)}
+            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
+            data-tooltip="Activité récente"
+          >
+            <Activity className="w-3.5 h-3.5" />
+          </button>
+
+          <button
             onClick={() => setHistoryOpen(true)}
             className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
             data-tooltip="Historique des versions"
@@ -270,6 +281,16 @@ export default function CanvasPage({ project, currentUser }: Props) {
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
       />
+
+      {/* Activity panel */}
+      <ActivityPanel
+        projectId={project.id}
+        open={activityOpen}
+        onClose={() => setActivityOpen(false)}
+      />
+
+      {/* AI Bar */}
+      <AiBar projectId={project.id} />
     </div>
   );
 }

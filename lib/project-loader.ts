@@ -69,6 +69,10 @@ export function getProject(idOrSlug: string): Project | null {
   return dbProjectToProject(proj, nodes)
 }
 
+export function getDemoProject(): Project | null {
+  return getProjectBySlug('demo-ecommerce')
+}
+
 export function getProjectBySlug(slug: string): Project | null {
   const proj = db
     .prepare('SELECT * FROM projects WHERE slug = ? AND archived = 0')

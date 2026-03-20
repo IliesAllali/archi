@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { FileDown, Loader2, Check } from "lucide-react";
 import type { Project } from "@/lib/types";
+import { Events } from "@/lib/posthog";
 
 interface ExportButtonProps {
   project: Project;
@@ -98,6 +99,7 @@ export default function ExportButton({ project }: ExportButtonProps) {
       URL.revokeObjectURL(url);
 
       setState("done");
+      Events.pdfExported(project.nodes.length);
       setTimeout(() => setState("idle"), 2500);
     } catch (err) {
       console.error("PDF export failed:", err);

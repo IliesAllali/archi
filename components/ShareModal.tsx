@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Link2, Lock, Check, Plus, Loader2, Trash2, Eye } from "lucide-react";
 import type { Project } from "@/lib/types";
+import { Events } from "@/lib/posthog";
 
 interface ShareLink {
   id: string;
@@ -67,6 +68,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
       setLinks((prev) => [link, ...prev]);
       setNewPassword("");
       setShowCreate(false);
+      Events.shareLinkCreated(!!newPassword.trim(), false);
     }
     setCreating(false);
   };

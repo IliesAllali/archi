@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
+import { Events } from "@/lib/posthog";
 
 function SignupForm() {
   const [name, setName] = useState("");
@@ -38,9 +39,11 @@ function SignupForm() {
 
       if (res.ok && data.redirect) {
         // First user — auto-verified, auto-logged in
+        Events.userSignedUp("direct");
         window.location.href = data.redirect;
         return;
       } else if (res.ok) {
+        Events.userSignedUp("direct");
         setSuccess(data.message || "Compte cr\u00e9\u00e9. V\u00e9rifiez votre email.");
       } else {
         setError(data.error || "Erreur lors de l'inscription");

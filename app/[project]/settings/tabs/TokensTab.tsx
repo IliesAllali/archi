@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Plus, Copy, Check, Loader2, Key, AlertTriangle } from "lucide-react"
 import { csrfHeaders } from "../use-csrf"
+import { Events } from "@/lib/posthog"
 
 interface Token {
   id: string
@@ -46,6 +47,7 @@ export default function TokensTab({ projectId }: { projectId: string }) {
         const data = await res.json()
         setNewToken(data.token)
         setTokenName("")
+        Events.aiTokenCreated(data.scope || "write:nodes")
         fetchTokens()
       }
     } finally {

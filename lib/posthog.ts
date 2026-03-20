@@ -10,7 +10,7 @@ export function initPostHog() {
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return
 
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.posthog.com',
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.posthog.com',
     capture_pageview: false, // handled manually for App Router
     disable_session_recording: process.env.NODE_ENV !== 'production',
     loaded: (ph) => {
@@ -54,4 +54,6 @@ export const Events = {
   versionRestored:    (triggeredByType: string) => track('version_restored', { triggered_by_type: triggeredByType }),
   premiumWallHit:     (feature: string, context?: string) => track('premium_wall_hit', { feature, context }),
   canvasOpened:       (nodeCount: number, memberCount: number) => track('canvas_opened', { node_count: nodeCount, member_count: memberCount }),
+  aiGenerated:        (nodeCount: number, mode: 'builtin' | 'mcp') => track('ai_generated', { node_count: nodeCount, mode }),
+  aiEdited:           (actionCount: number, mode: 'builtin' | 'copypaste') => track('ai_edited', { action_count: actionCount, mode }),
 }

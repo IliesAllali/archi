@@ -5,6 +5,7 @@ import { immer } from "zustand/middleware/immer";
 import { enableMapSet } from "immer";
 import type { SiteNode, Project, NodeData } from "@/lib/types";
 import { migrateNodeZoning } from "@/lib/types";
+import { Events } from "@/lib/posthog";
 
 enableMapSet();
 
@@ -159,6 +160,7 @@ export const useCanvasStore = create<CanvasState>()(
         state.saveStatus = "saved";
         state.saveError = null;
       });
+      Events.canvasOpened(migratedNodes.length, 0);
     },
 
     // ─── Selection ────────────────────────────────────────────────────────
@@ -253,6 +255,7 @@ export const useCanvasStore = create<CanvasState>()(
       });
 
       get().markDirty("create_node");
+      Events.nodeCreated("detail", "ui");
       return id;
     },
 
@@ -300,6 +303,7 @@ export const useCanvasStore = create<CanvasState>()(
         if (state.editingNodeId === nodeId) state.editingNodeId = null;
       });
       get().markDirty("delete_node");
+      Events.nodeDeleted(mode === "cascade", "ui");
     },
 
     reparentNode: (nodeId: string, newParentId: string | null) => {

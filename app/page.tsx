@@ -1,4 +1,4 @@
-import { getAllProjects } from "@/lib/project-loader";
+import { getAllProjects, getDemoProject } from "@/lib/project-loader";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default function HomePage() {
   const projects = getAllProjects();
+  const demo = getDemoProject();
 
   return (
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
@@ -37,23 +38,37 @@ export default function HomePage() {
       {/* Content */}
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {projects.length === 0 ? (
-          <div className="text-center py-24 animate-fade-in-up">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5"
-              style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-            >
-              <Logo size={20} />
+          <div className="animate-fade-in-up space-y-8">
+            <div className="text-center py-16">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5"
+                style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+              >
+                <Logo size={20} />
+              </div>
+              <h2
+                className="text-sm font-semibold mb-1"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Bienvenue sur arbo
+              </h2>
+              <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
+                Cr\u00e9ez votre premi\u00e8re arborescence de site pour commencer.
+              </p>
+              <NewProjectButton variant="large" />
             </div>
-            <h2
-              className="text-sm font-semibold mb-1"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Bienvenue sur arbo
-            </h2>
-            <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
-              Créez votre première arborescence de site pour commencer.
-            </p>
-            <NewProjectButton variant="large" />
+
+            {demo && (
+              <div>
+                <p
+                  className="text-2xs uppercase tracking-widest font-medium mb-3"
+                  style={{ color: "var(--text-faint)" }}
+                >
+                  Exemple
+                </p>
+                <ProjectCard project={demo} index={0} />
+              </div>
+            )}
           </div>
         ) : (
           <div>

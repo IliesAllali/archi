@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { LogOut, Settings } from "lucide-react"
+import { resetUser } from "@/lib/posthog"
 
 interface UserData {
   id: string
@@ -31,6 +32,7 @@ export default function UserMenu() {
   }, [])
 
   const handleLogout = async () => {
+    resetUser()
     await fetch("/api/auth/logout", { method: "POST" })
     router.push("/login")
   }

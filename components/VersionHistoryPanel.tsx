@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, History, RotateCcw, Plus, Trash2, GitBranch, Upload, Loader2 } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
+import { Events } from "@/lib/posthog";
 
 interface Snapshot {
   id: string;
@@ -93,6 +94,7 @@ export default function VersionHistoryPanel({ projectId, open, onClose }: Props)
 
       if (!res.ok) throw new Error("Erreur de restauration");
 
+      Events.versionRestored("human");
       window.location.reload();
     } catch {
       setError("Échec de la restauration");

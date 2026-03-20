@@ -4,12 +4,25 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, Terminal, Key, Copy } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2 } from "lucide-react"
+import { Events } from "@/lib/posthog"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
   const match = document.cookie.match(/arbo_csrf=([^;]+)/)
   return match ? match[1] : null
+}
+
+function getStoredApiKey(): string {
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("arbo_anthropic_key") || ""
+}
+
+function storeApiKey(key: string) {
+  if (typeof window === "undefined") return
+  if (key.trim()) {
+    localStorage.setItem("arbo_anthropic_key", key.trim())
+  }
 }
 
 interface Props {
@@ -26,23 +39,39 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const [error, setError] = useState("")
   const nameRef = useRef<HTMLInputElement>(null)
 
+  // AI mode state
+  const [aiPrompt, setAiPrompt] = useState("")
+  const [aiProjectName, setAiProjectName] = useState("")
+  const [apiKey, setApiKey] = useState("")
+  const [showKeyInput, setShowKeyInput] = useState(false)
+  const [aiStep, setAiStep] = useState<"prompt" | "generating">("prompt")
+  const promptRef = useRef<HTMLTextAreaElement>(null)
+
   useEffect(() => {
     if (open) {
       setMode("choice")
       setName("")
       setClient("")
+      setAiPrompt("")
+      setAiProjectName("")
       setError("")
       setLoading(false)
+      setAiStep("prompt")
+      const stored = getStoredApiKey()
+      setApiKey(stored)
+      setShowKeyInput(!stored)
     }
   }, [open])
 
   useEffect(() => {
-    if (mode === "manual" && nameRef.current) {
-      nameRef.current.focus()
-    }
+    if (mode === "manual" && nameRef.current) nameRef.current.focus()
+    if (mode === "ai" && promptRef.current) promptRef.current.focus()
   }, [mode])
 
-  const createProjectAndRedirect = async (redirectPath: (id: string) => string) => {
+  // ─── Manual create ────────────────────────────────────────────────────────
+
+  const handleManualCreate = async () => {
+    if (!name.trim()) { setError("Nom du projet requis"); return }
     setLoading(true)
     setError("")
     try {
@@ -53,17 +82,18 @@ export default function NewProjectModal({ open, onClose }: Props) {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers,
-        body: JSON.stringify({ name: name.trim() || "Nouveau projet" }),
+        body: JSON.stringify({ name: name.trim(), client: client.trim() || undefined }),
       })
 
       if (res.ok) {
         const data = await res.json()
-        router.push(redirectPath(data.id))
+        Events.projectCreated(!!client.trim())
+        router.push(`/${data.id}`)
         onClose()
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la création")
+        setError("Erreur lors de la cr\u00e9ation")
       }
     } catch {
       setError("Erreur de connexion")
@@ -72,38 +102,45 @@ export default function NewProjectModal({ open, onClose }: Props) {
     }
   }
 
-  const handleManualCreate = async () => {
-    if (!name.trim()) {
-      setError("Nom du projet requis")
-      return
-    }
+  // ─── AI generate ──────────────────────────────────────────────────────────
+
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) { setError("D\u00e9cris ton site"); return }
+    if (!apiKey.trim()) { setError("Cl\u00e9 API Anthropic requise"); setShowKeyInput(true); return }
+
+    storeApiKey(apiKey)
     setLoading(true)
     setError("")
+    setAiStep("generating")
+
     try {
       const csrf = getCsrfToken()
       const headers: Record<string, string> = { "Content-Type": "application/json" }
       if (csrf) headers["x-csrf-token"] = csrf
 
-      const res = await fetch("/api/projects", {
+      const res = await fetch("/api/ai/generate", {
         method: "POST",
         headers,
         body: JSON.stringify({
-          name: name.trim(),
-          client: client.trim() || undefined,
+          prompt: aiPrompt.trim(),
+          apiKey: apiKey.trim(),
+          projectName: aiProjectName.trim() || undefined,
         }),
       })
 
       if (res.ok) {
         const data = await res.json()
-        router.push(`/${data.id}`)
+        Events.projectCreated(false)
+        router.push(`/${data.projectId}`)
         onClose()
-      } else if (res.status === 401 || res.status === 403) {
-        router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la création")
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || "Erreur de g\u00e9n\u00e9ration")
+        setAiStep("prompt")
       }
     } catch {
       setError("Erreur de connexion")
+      setAiStep("prompt")
     } finally {
       setLoading(false)
     }
@@ -114,33 +151,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
     color: "var(--text-primary)",
     border: "1px solid var(--line-strong)",
   }
-
-  const aiOptions = [
-    {
-      id: "mcp",
-      icon: Terminal,
-      label: "Serveur MCP",
-      desc: "Claude Desktop, Claude Code, Cursor",
-      gradient: "linear-gradient(135deg, #8B5CF6, #6366F1)",
-      onClick: () => createProjectAndRedirect((id) => `/${id}/settings?tab=ai`),
-    },
-    {
-      id: "token",
-      icon: Key,
-      label: "Token API",
-      desc: "Accès REST pour scripts et agents custom",
-      gradient: "linear-gradient(135deg, #F59E0B, #D97706)",
-      onClick: () => createProjectAndRedirect((id) => `/${id}/settings?tab=tokens`),
-    },
-    {
-      id: "prompt",
-      icon: Copy,
-      label: "Copier-coller",
-      desc: "Copie les instructions pour n'importe quelle IA",
-      gradient: "linear-gradient(135deg, #10B981, #059669)",
-      onClick: () => createProjectAndRedirect((id) => `/${id}/settings?tab=ai`),
-    },
-  ]
 
   if (typeof document === "undefined") return null
 
@@ -162,13 +172,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[480px] rounded-xl overflow-hidden"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[520px] rounded-xl overflow-hidden"
             style={{ zIndex: 9999, background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--modal-shadow)" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "Connecter une IA" : "Projet vide"}
+                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "G\u00e9n\u00e9rer avec l\u2019IA" : "Projet vide"}
               </h3>
               <button
                 onClick={onClose}
@@ -182,7 +192,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
             </div>
 
             <div className="px-5 pb-5">
-              {/* Choice screen */}
+              {/* ─── Choice screen ─────────────────────────────────────────── */}
               {mode === "choice" && (
                 <div className="space-y-2 pt-1">
                   <button
@@ -200,10 +210,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                        Générer avec une IA
+                        G\u00e9n\u00e9rer avec l&apos;IA
                       </p>
                       <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                        MCP, token API ou copier-coller
+                        D\u00e9cris ton site, l&apos;IA cr\u00e9e l&apos;arborescence
                       </p>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
@@ -235,66 +245,140 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 </div>
               )}
 
-              {/* AI sub-choices */}
+              {/* ─── AI mode ───────────────────────────────────────────────── */}
               {mode === "ai" && (
                 <div className="space-y-3 pt-1">
-                  <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                    Choisis comment connecter ton IA. Un projet vide sera créé avec les instructions de connexion.
-                  </p>
+                  {aiStep === "generating" ? (
+                    <div className="flex flex-col items-center justify-center py-8 gap-3">
+                      <div className="relative">
+                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
+                        <Sparkles className="w-3.5 h-3.5 absolute -top-1 -right-1" style={{ color: "#8B5CF6" }} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                          G\u00e9n\u00e9ration en cours...
+                        </p>
+                        <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
+                          Claude analyse ton brief et construit l&apos;arborescence
+                        </p>
+                      </div>
+                      {error && (
+                        <p className="text-2xs text-center px-4" style={{ color: "var(--error-text)" }}>{error}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Project name (optional) */}
+                      <div>
+                        <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                          Nom du projet <span style={{ color: "var(--text-faint)" }}>(optionnel)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={aiProjectName}
+                          onChange={(e) => setAiProjectName(e.target.value)}
+                          placeholder="Ex : Refonte site ACME"
+                          className="w-full h-9 px-3 rounded-lg text-xs focus:outline-none transition-all"
+                          style={inputStyle}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    {aiOptions.map((opt) => {
-                      const Icon = opt.icon
-                      return (
+                      {/* Prompt */}
+                      <div>
+                        <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                          D\u00e9cris ton site
+                        </label>
+                        <textarea
+                          ref={promptRef}
+                          value={aiPrompt}
+                          onChange={(e) => { setAiPrompt(e.target.value); if (error) setError("") }}
+                          placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fid\u00e9lit\u00e9 et click & collect"
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none"
+                          style={inputStyle}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
+                          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAiGenerate() }}
+                        />
+                        <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
+                          Ctrl+Enter pour g\u00e9n\u00e9rer
+                        </p>
+                      </div>
+
+                      {/* API Key */}
+                      {showKeyInput ? (
+                        <div>
+                          <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                            Cl\u00e9 API Anthropic
+                          </label>
+                          <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => { setApiKey(e.target.value); if (error) setError("") }}
+                            placeholder="sk-ant-..."
+                            className="w-full h-9 px-3 rounded-lg text-xs font-mono focus:outline-none transition-all"
+                            style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
+                          />
+                          <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
+                            Stock\u00e9e localement uniquement.{" "}
+                            <a
+                              href="https://console.anthropic.com/settings/keys"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="underline"
+                              style={{ color: "var(--accent)" }}
+                            >
+                              Obtenir une cl\u00e9
+                            </a>
+                          </p>
+                        </div>
+                      ) : (
                         <button
-                          key={opt.id}
-                          onClick={opt.onClick}
-                          disabled={loading}
-                          className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-150 group disabled:opacity-50"
-                          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-                          onMouseEnter={e => { if (!loading) e.currentTarget.style.borderColor = "var(--line-strong)" }}
-                          onMouseLeave={e => e.currentTarget.style.borderColor = "var(--line)"}
+                          onClick={() => setShowKeyInput(true)}
+                          className="text-2xs transition-colors"
+                          style={{ color: "var(--text-faint)" }}
                         >
-                          <div
-                            className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-                            style={{ background: opt.gradient, color: "#fff" }}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                              {opt.label}
-                            </p>
-                            <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                              {opt.desc}
-                            </p>
-                          </div>
-                          {loading ? (
-                            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" style={{ color: "var(--text-faint)" }} />
-                          ) : (
-                            <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
-                          )}
+                          Changer la cl\u00e9 API
                         </button>
-                      )
-                    })}
-                  </div>
+                      )}
 
-                  {error && (
-                    <p className="text-2xs text-center" style={{ color: "var(--error-text)" }}>{error}</p>
+                      {error && (
+                        <p className="text-2xs" style={{ color: "var(--error-text)" }}>{error}</p>
+                      )}
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => setMode("choice")}
+                          disabled={loading}
+                          className="px-3 h-9 rounded-lg text-2xs transition-colors disabled:opacity-50"
+                          style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
+                        >
+                          Retour
+                        </button>
+                        <button
+                          onClick={handleAiGenerate}
+                          disabled={loading || !aiPrompt.trim()}
+                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                          style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "#fff" }}
+                        >
+                          {loading ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Wand2 className="w-3.5 h-3.5" />
+                          )}
+                          G\u00e9n\u00e9rer l&apos;arborescence
+                        </button>
+                      </div>
+                    </>
                   )}
-
-                  <button
-                    onClick={() => setMode("choice")}
-                    disabled={loading}
-                    className="text-2xs font-medium transition-colors disabled:opacity-50"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    ← Retour
-                  </button>
                 </div>
               )}
 
-              {/* Manual mode */}
+              {/* ─── Manual mode ───────────────────────────────────────────── */}
               {mode === "manual" && (
                 <div className="space-y-3 pt-1">
                   <div>
@@ -309,14 +393,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       placeholder="Ex : Refonte site ACME"
                       className="w-full h-9 px-3 rounded-lg text-xs focus:outline-none transition-all"
                       style={inputStyle}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "var(--accent)"
-                        e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)"
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "var(--line-strong)"
-                        e.currentTarget.style.boxShadow = "none"
-                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
                       onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) handleManualCreate() }}
                     />
                   </div>
@@ -332,14 +410,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       placeholder="Ex : ACME Corp"
                       className="w-full h-9 px-3 rounded-lg text-xs focus:outline-none transition-all"
                       style={inputStyle}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "var(--accent)"
-                        e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)"
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "var(--line-strong)"
-                        e.currentTarget.style.boxShadow = "none"
-                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
                       onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) handleManualCreate() }}
                     />
                   </div>
@@ -368,7 +440,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       ) : (
                         <FileText className="w-3.5 h-3.5" />
                       )}
-                      Créer le projet
+                      Cr\u00e9er le projet
                     </button>
                   </div>
                 </div>
