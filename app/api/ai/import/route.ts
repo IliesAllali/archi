@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
             )
             .get(projectId, parentId) as { next_pos: number };
 
-          const data = JSON.stringify({
+          const nodeData: Record<string, unknown> = {
             label: action.label || "Nouvelle page",
             type: action.type || "detail",
             priority: action.priority || "secondary",
@@ -69,7 +69,15 @@ export async function POST(req: NextRequest) {
             rationale: action.rationale || undefined,
             lastModifiedBy: "import",
             lastModifiedByName: "Import IA",
-          });
+          };
+          if (action.cta) nodeData.cta = action.cta;
+          if (action.tags) nodeData.tags = action.tags;
+          if (action.entryPoints) nodeData.entryPoints = action.entryPoints;
+          if (action.zoningBlocks) {
+            nodeData.zoningBlocks = action.zoningBlocks;
+            nodeData.zoningExpanded = action.zoningExpanded ?? false;
+          }
+          const data = JSON.stringify(nodeData);
 
           db.prepare(
             `INSERT INTO nodes (id, project_id, parent_id, position, archived, data, created_at, updated_at)

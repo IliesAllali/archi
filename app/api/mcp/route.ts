@@ -137,7 +137,7 @@ function createMcpServer() {
 
   server.tool(
     "create_node",
-    "Add a page to a project's sitemap. Use parent_id to create hierarchy.",
+    "Add a page to a project's sitemap. Use parent_id to create hierarchy. Supports rich data: zoning blocks (wireframe layout), entry points (traffic sources), CTAs, and tags.",
     {
       project_id: z.string().describe("The project ID"),
       label: z.string().describe("Page name (e.g. 'Accueil', 'Contact')"),
@@ -147,29 +147,48 @@ function createMcpServer() {
       parent_id: z.string().optional().nullable().describe("Parent node ID. Null = root page."),
       rationale: z.string().optional().describe("Why this page exists (UX insight)"),
       notes: z.string().optional().describe("Additional notes"),
+      cta: z.array(z.string()).optional().describe("Call-to-action button labels (e.g. ['Acheter', 'En savoir plus'])"),
+      tags: z.array(z.string()).optional().describe("Tags for categorization (e.g. ['SEO', 'conversion'])"),
+      entry_points: z.array(z.object({
+        type: z.enum(["google", "direct", "nav", "social", "email", "ads", "qrcode"]),
+        label: z.string(),
+      })).optional().describe("Traffic entry points for this page"),
+      zoning_blocks: z.array(z.object({
+        id: z.string().describe("Unique block ID (e.g. 'z1')"),
+        label: z.string().describe("Block label (e.g. 'Hero', 'Navigation')"),
+        skin: z.string().describe("Block skin: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots"),
+        height: z.number().describe("Visual height in px (e.g. 18 for nav, 64 for hero, 60 for contenu)"),
+      })).optional().describe("Wireframe zoning blocks (page layout structure)"),
+      zoning_expanded: z.boolean().optional().describe("If true, zoning is shown expanded by default on the canvas"),
     },
-    async ({ project_id, label, type, priority, description, parent_id, rationale, notes }) => {
+    async ({ project_id, label, type, priority, description, parent_id, rationale, notes, cta, tags, entry_points, zoning_blocks, zoning_expanded }) => {
       const nodeId = nanoid()
       const now = Date.now()
 
-      // Get next position
       const posRow = db.prepare(
         "SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM nodes WHERE project_id = ? AND parent_id IS ? AND archived = 0"
       ).get(project_id, parent_id || null) as { next_pos: number }
 
-      const data = JSON.stringify({
+      const nodeData: Record<string, unknown> = {
         label,
         type: type || "detail",
         priority: priority || "secondary",
         description: description || "",
         rationale: rationale || undefined,
         notes: notes || undefined,
-      })
+      }
+      if (cta) nodeData.cta = cta
+      if (tags) nodeData.tags = tags
+      if (entry_points) nodeData.entryPoints = entry_points
+      if (zoning_blocks) {
+        nodeData.zoningBlocks = zoning_blocks
+        nodeData.zoningExpanded = zoning_expanded ?? false
+      }
 
       db.prepare(
         `INSERT INTO nodes (id, project_id, parent_id, position, archived, data, created_at, updated_at)
          VALUES (?, ?, ?, ?, 0, ?, ?, ?)`
-      ).run(nodeId, project_id, parent_id || null, posRow.next_pos, data, now, now)
+      ).run(nodeId, project_id, parent_id || null, posRow.next_pos, JSON.stringify(nodeData), now, now)
 
       return {
         content: [{
@@ -278,7 +297,7 @@ function createMcpServer() {
 
   server.tool(
     "bulk_create_nodes",
-    "Create multiple pages at once from a tree structure. Ideal for generating a full sitemap.",
+    "Create multiple pages at once from a tree structure. Ideal for generating a full sitemap with zoning, entry points, CTAs and tags.",
     {
       project_id: z.string().describe("The project ID"),
       nodes: z.array(z.object({
@@ -290,6 +309,19 @@ function createMcpServer() {
         description: z.string().optional(),
         rationale: z.string().optional(),
         notes: z.string().optional(),
+        cta: z.array(z.string()).optional().describe("Call-to-action labels"),
+        tags: z.array(z.string()).optional().describe("Tags"),
+        entry_points: z.array(z.object({
+          type: z.enum(["google", "direct", "nav", "social", "email", "ads", "qrcode"]),
+          label: z.string(),
+        })).optional().describe("Traffic sources"),
+        zoning_blocks: z.array(z.object({
+          id: z.string(),
+          label: z.string(),
+          skin: z.string().describe("nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots"),
+          height: z.number(),
+        })).optional().describe("Wireframe zoning blocks"),
+        zoning_expanded: z.boolean().optional(),
       })).describe("Flat list of nodes with temp_id references for parent-child relationships"),
     },
     async ({ project_id, nodes }) => {
@@ -310,7 +342,6 @@ function createMcpServer() {
          VALUES (?, ?, ?, ?, 0, ?, ?, ?)`
       )
 
-      // Process in order (parents first)
       db.transaction(() => {
         for (const node of nodes) {
           const realId = nanoid()
@@ -322,16 +353,23 @@ function createMcpServer() {
             "SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM nodes WHERE project_id = ? AND parent_id IS ? AND archived = 0"
           ).get(project_id, parentId) as { next_pos: number }
 
-          const data = JSON.stringify({
+          const nodeData: Record<string, unknown> = {
             label: node.label,
             type: node.type || "detail",
             priority: node.priority || "secondary",
             description: node.description || "",
             rationale: node.rationale || undefined,
             notes: node.notes || undefined,
-          })
+          }
+          if (node.cta) nodeData.cta = node.cta
+          if (node.tags) nodeData.tags = node.tags
+          if (node.entry_points) nodeData.entryPoints = node.entry_points
+          if (node.zoning_blocks) {
+            nodeData.zoningBlocks = node.zoning_blocks
+            nodeData.zoningExpanded = node.zoning_expanded ?? false
+          }
 
-          insertStmt.run(realId, project_id, parentId, posRow.next_pos, data, now, now)
+          insertStmt.run(realId, project_id, parentId, posRow.next_pos, JSON.stringify(nodeData), now, now)
           created.push({ tempId: node.temp_id, realId, label: node.label })
         }
       })()

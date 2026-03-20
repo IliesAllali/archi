@@ -59,11 +59,15 @@ Règles :
 - Types disponibles : home, listing, detail, form, landing, quiz, search, hub, error, legal
 - Priorités : primary (pages clés), secondary (contenu), utility (mentions légales, 404...)
 - Inclus toujours : Accueil, Contact, Mentions légales, 404
-- Chaque page doit avoir une description courte (1 phrase) et un rationale (pourquoi cette page existe)
+- Chaque page doit avoir une description courte et un rationale
 - Pense SEO, parcours utilisateur, et conversion
 
-Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans commentaire, sans explication.
-Format exact :
+Champs optionnels enrichis (utilise-les sur les pages clés) :
+- "cta": ["Texte bouton"] — appels à l'action de la page
+- "tags": ["SEO", "conversion"] — tags pour catégoriser
+
+Réponds UNIQUEMENT avec un JSON valide, sans markdown.
+Format :
 {
   "nodes": [
     {
@@ -72,14 +76,15 @@ Format exact :
       "label": "Accueil",
       "type": "home",
       "priority": "primary",
-      "description": "Page d'entrée principale du site",
-      "rationale": "Point d'entrée principal, oriente les visiteurs"
+      "description": "Page d'entrée principale",
+      "rationale": "Oriente les visiteurs",
+      "cta": ["Découvrir", "Commencer"],
+      "tags": ["SEO", "conversion"]
     }
   ]
 }
 
-Les temp_id doivent être des identifiants courts en snake_case (ex: "home", "about", "blog_list", "contact").
-Les parent_temp_id référencent le temp_id du parent. null = page racine (seul "home" devrait être racine).`;
+Les temp_id : snake_case courts. Les parent_temp_id : null = racine (seul "home").`;
 
 const EDIT_SYSTEM = `Tu es un architecte UX/UI expert. L'utilisateur te donne l'arborescence actuelle de son site et te demande une modification.
 
@@ -207,19 +212,42 @@ export function buildCopyPrompt(
 Voici l'arbre actuel :
 ${treeStr}
 
-Je veux que tu me proposes des modifications. Réponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/après) :
+Propose des modifications en JSON. Chaque action peut inclure des champs riches optionnels.
 
+Format JSON exact (pas de markdown, pas d'explication) :
 {
   "actions": [
-    { "action": "add", "temp_id": "identifiant_court", "parent_id": "ID_DU_PARENT", "label": "Nom de la page", "type": "detail", "priority": "secondary", "description": "Description courte" },
-    { "action": "update", "node_id": "ID_EXISTANT", "label": "Nouveau nom" },
-    { "action": "delete", "node_id": "ID_EXISTANT" },
-    { "action": "move", "node_id": "ID_EXISTANT", "parent_id": "NOUVEL_ID_PARENT" }
+    {
+      "action": "add",
+      "temp_id": "faq",
+      "parent_id": "ID_DU_PARENT",
+      "label": "FAQ",
+      "type": "detail",
+      "priority": "secondary",
+      "description": "Questions fréquentes",
+      "rationale": "Pourquoi cette page existe",
+      "cta": ["Texte du bouton"],
+      "tags": ["SEO", "conversion"],
+      "entryPoints": [{ "type": "google", "label": "Google" }],
+      "zoningBlocks": [
+        { "id": "z1", "label": "Navigation", "skin": "nav", "height": 18 },
+        { "id": "z2", "label": "Contenu", "skin": "contenu", "height": 60 },
+        { "id": "z3", "label": "Footer", "skin": "footer", "height": 20 }
+      ]
+    },
+    { "action": "update", "node_id": "ID", "label": "Nouveau nom", "description": "..." },
+    { "action": "delete", "node_id": "ID" },
+    { "action": "move", "node_id": "ID", "parent_id": "NOUVEL_ID_PARENT" }
   ]
 }
 
-Types de page : home, listing, detail, form, landing, quiz, search, hub, error, legal
-Priorités : primary, secondary, utility
+Référence rapide :
+- Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
+- Priorités : primary, secondary, utility
+- Entry points : google, direct, nav, social, email, ads, qrcode
+- Zoning skins : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots
+
+Tous les champs sauf action/label sont optionnels. Utilise-les quand c'est pertinent.
 
 Ma demande : `;
 
