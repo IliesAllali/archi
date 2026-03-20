@@ -136,7 +136,11 @@ export default function DangerTab({
         </div>
         <div>
           <label className="text-2xs block mb-1.5" style={{ color: "var(--text-muted)" }}>
-            Tapez <strong style={{ color: "var(--text-primary)" }}>{projectName}</strong> pour confirmer
+            Tapez <strong
+              style={{ color: "var(--text-primary)", cursor: "pointer", textDecoration: "underline", textDecorationStyle: "dashed", textUnderlineOffset: "2px" }}
+              onClick={() => setConfirmName(projectName)}
+              title="Cliquer pour remplir"
+            >{projectName}</strong> pour confirmer
           </label>
           <div className="flex gap-2">
             <input
