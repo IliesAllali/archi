@@ -16,7 +16,7 @@ export default function NewProjectButton({ variant }: { variant: "small" | "larg
           style={{ backgroundColor: "var(--accent)", color: "#fff" }}
         >
           <Plus className="w-4 h-4" />
-          Cr{"\u00e9"}er un projet
+          Créer un projet
         </button>
       ) : (
         <button

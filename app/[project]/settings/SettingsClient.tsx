@@ -23,7 +23,7 @@ interface ProjectMeta {
 }
 
 const TABS = [
-  { id: "general", label: "G\u00e9n\u00e9ral", icon: Settings },
+  { id: "general", label: "Général", icon: Settings },
   { id: "ai", label: "Connecter une IA", icon: Sparkles },
   { id: "members", label: "Membres", icon: Users },
   { id: "share", label: "Liens de partage", icon: Link2 },
@@ -91,7 +91,7 @@ export default function SettingsClient({
             className="text-xs font-medium"
             style={{ color: "var(--text-primary)" }}
           >
-            Param\u00e8tres
+            Paramètres
           </span>
         </div>
       </header>

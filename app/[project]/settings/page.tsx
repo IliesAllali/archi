@@ -34,6 +34,6 @@ export async function generateMetadata({ params }: Props) {
   const project = getProject(params.project)
   if (!project) return { title: "arbo" }
   return {
-    title: `Param\u00e8tres \u2014 ${project.name} \u2014 arbo`,
+    title: `Paramètres — ${project.name} — arbo`,
   }
 }

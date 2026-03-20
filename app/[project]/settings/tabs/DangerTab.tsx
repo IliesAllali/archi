@@ -64,7 +64,7 @@ export default function DangerTab({
           Zone danger
         </h2>
         <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-          Actions irr\u00e9versibles. Proc\u00e9dez avec prudence.
+          Actions irréversibles. Procédez avec prudence.
         </p>
       </div>
 
@@ -74,14 +74,14 @@ export default function DangerTab({
         style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
       >
         <h3 className="text-xs font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-          Transf\u00e9rer la propri\u00e9t\u00e9
+          Transférer la propriété
         </h3>
         <p className="text-2xs mb-3" style={{ color: "var(--text-muted)" }}>
-          Transf\u00e9rez ce projet \u00e0 un autre utilisateur. Vous deviendrez \u00e9diteur.
+          Transférez ce projet à un autre utilisateur. Vous deviendrez éditeur.
         </p>
         {transferDone ? (
           <p className="text-xs" style={{ color: "var(--success-text)" }}>
-            Demande de transfert envoy\u00e9e.
+            Demande de transfert envoyée.
           </p>
         ) : (
           <div className="flex gap-2">
@@ -89,7 +89,7 @@ export default function DangerTab({
               type="email"
               value={transferEmail}
               onChange={(e) => setTransferEmail(e.target.value)}
-              placeholder="Email du nouveau propri\u00e9taire"
+              placeholder="Email du nouveau propriétaire"
               className="flex-1 px-3 py-2 rounded-lg text-xs outline-none transition-colors"
               style={{
                 background: "var(--canvas-bg)",
@@ -109,7 +109,7 @@ export default function DangerTab({
                 border: "1px solid var(--error-border)",
               }}
             >
-              {transferring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Transf\u00e9rer"}
+              {transferring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Transférer"}
             </button>
           </div>
         )}
@@ -130,7 +130,7 @@ export default function DangerTab({
               Archiver le projet
             </h3>
             <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Le projet ne sera plus visible dans le dashboard. Cette action peut \u00eatre annul\u00e9e par un administrateur.
+              Le projet ne sera plus visible dans le dashboard. Cette action peut être annulée par un administrateur.
             </p>
           </div>
         </div>

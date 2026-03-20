@@ -84,7 +84,7 @@ export default function TokensTab({ projectId }: { projectId: string }) {
             Tokens IA
           </h2>
           <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-            Tokens d&apos;acc\u00e8s pour les int\u00e9grations IA (GPT Actions, etc.).
+            Tokens d&apos;accès pour les intégrations IA (GPT Actions, etc.).
           </p>
         </div>
         {!showForm && !newToken && (
@@ -109,10 +109,10 @@ export default function TokensTab({ projectId }: { projectId: string }) {
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
             <div>
               <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                Token cr\u00e9\u00e9. Copiez-le maintenant.
+                Token créé. Copiez-le maintenant.
               </p>
               <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Ce token ne sera plus visible apr\u00e8s avoir ferm\u00e9 cette fen\u00eatre.
+                Ce token ne sera plus visible après avoir fermé cette fenêtre.
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function TokensTab({ projectId }: { projectId: string }) {
               }}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copi\u00e9" : "Copier"}
+              {copied ? "Copié" : "Copier"}
             </button>
           </div>
           <button
@@ -183,7 +183,7 @@ export default function TokensTab({ projectId }: { projectId: string }) {
               style={{ backgroundColor: "var(--accent)", color: "#fff" }}
             >
               {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
-              G\u00e9n\u00e9rer
+              Générer
             </button>
             <button
               onClick={() => setShowForm(false)}
@@ -228,16 +228,16 @@ export default function TokensTab({ projectId }: { projectId: string }) {
                       {token.scope}
                     </span>
                     <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                      Cr\u00e9\u00e9 le {new Date(token.created_at).toLocaleDateString("fr-FR")}
+                      Créé le {new Date(token.created_at).toLocaleDateString("fr-FR")}
                     </span>
                     {token.last_used_at && (
                       <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                        Utilis\u00e9 le {new Date(token.last_used_at).toLocaleDateString("fr-FR")}
+                        Utilisé le {new Date(token.last_used_at).toLocaleDateString("fr-FR")}
                       </span>
                     )}
                     {isRevoked && (
                       <span className="text-2xs font-medium" style={{ color: "var(--error-text)" }}>
-                        R\u00e9voqu\u00e9
+                        Révoqué
                       </span>
                     )}
                   </div>
@@ -253,7 +253,7 @@ export default function TokensTab({ projectId }: { projectId: string }) {
                       border: "1px solid var(--error-border)",
                     }}
                   >
-                    R\u00e9voquer
+                    Révoquer
                   </button>
                 )}
               </div>

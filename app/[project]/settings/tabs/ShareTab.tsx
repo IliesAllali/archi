@@ -94,7 +94,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
             Liens de partage
           </h2>
           <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-            Cr\u00e9ez des liens pour partager le projet avec des personnes externes.
+            Créez des liens pour partager le projet avec des personnes externes.
           </p>
         </div>
         {!showForm && (
@@ -124,7 +124,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
                 type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Laisser vide = acc\u00e8s libre"
+                placeholder="Laisser vide = accès libre"
                 className="w-full px-3 py-2 rounded-lg text-xs outline-none transition-colors"
                 style={{
                   background: "var(--canvas-bg)",
@@ -189,7 +189,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
               style={{ backgroundColor: "var(--accent)", color: "#fff" }}
             >
               {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              Cr\u00e9er
+              Créer
             </button>
             <button
               onClick={() => setShowForm(false)}
@@ -208,7 +208,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
           <Link2 className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--text-faint)" }} />
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>Aucun lien de partage</p>
           <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-            Cr\u00e9ez un lien pour partager ce projet.
+            Créez un lien pour partager ce projet.
           </p>
         </div>
       ) : (
@@ -234,7 +234,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
                     <div className="flex items-center gap-2 mt-0.5">
                       {link.hasPassword && (
                         <span className="flex items-center gap-0.5 text-2xs" style={{ color: "var(--text-faint)" }}>
-                          <Lock className="w-2.5 h-2.5" /> Prot\u00e9g\u00e9
+                          <Lock className="w-2.5 h-2.5" /> Protégé
                         </span>
                       )}
                       <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
@@ -245,7 +245,7 @@ export default function ShareTab({ projectId }: { projectId: string }) {
                       </span>
                       {link.expiresAt && (
                         <span className="text-2xs" style={{ color: isExpired ? "var(--error-text)" : "var(--text-faint)" }}>
-                          {isExpired ? "Expir\u00e9" : `Expire le ${new Date(link.expiresAt).toLocaleDateString("fr-FR")}`}
+                          {isExpired ? "Expiré" : `Expire le ${new Date(link.expiresAt).toLocaleDateString("fr-FR")}`}
                         </span>
                       )}
                     </div>

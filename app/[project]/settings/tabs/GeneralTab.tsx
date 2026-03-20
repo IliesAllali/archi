@@ -55,10 +55,10 @@ export default function GeneralTab({
           className="text-sm font-semibold mb-1"
           style={{ color: "var(--text-primary)" }}
         >
-          Informations g\u00e9n\u00e9rales
+          Informations générales
         </h2>
         <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-          Param\u00e8tres de base du projet.
+          Paramètres de base du projet.
         </p>
       </div>
 
@@ -168,7 +168,7 @@ export default function GeneralTab({
           ) : saved ? (
             <Check className="w-3.5 h-3.5" />
           ) : null}
-          {saving ? "Enregistrement..." : saved ? "Enregistr\u00e9" : "Enregistrer"}
+          {saving ? "Enregistrement..." : saved ? "Enregistré" : "Enregistrer"}
         </button>
       </div>
     </div>

@@ -135,7 +135,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                   style={{ backgroundColor: `${project.accent}15`, color: project.accent }}
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Cr{"\u00e9"}er un lien de partage
+                  Créer un lien de partage
                 </button>
               ) : (
                 <div className="p-3 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
@@ -147,7 +147,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                       type="text"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Laisser vide = acc\u00e8s libre"
+                      placeholder="Laisser vide = accès libre"
                       className="w-full h-9 px-3 rounded-md text-xs focus:outline-none"
                       style={{
                         background: "var(--elevated)",
@@ -164,7 +164,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                       style={{ backgroundColor: project.accent, color: "#fff" }}
                     >
                       {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
-                      Cr{"\u00e9"}er
+                      Créer
                     </button>
                     <button
                       onClick={() => { setShowCreate(false); setNewPassword(""); }}
@@ -201,7 +201,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                         <div className="flex items-center gap-2 mt-1 text-2xs" style={{ color: "var(--text-faint)" }}>
                           {link.hasPassword && (
                             <span className="flex items-center gap-0.5">
-                              <Lock className="w-2.5 h-2.5" /> Prot{"\u00e9"}g{"\u00e9"}
+                              <Lock className="w-2.5 h-2.5" /> Protégé
                             </span>
                           )}
                           <span className="flex items-center gap-0.5">

@@ -28,8 +28,8 @@ const ROLE_ICONS: Record<string, typeof Crown> = {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  owner: "Propri\u00e9taire",
-  editor: "\u00c9diteur",
+  owner: "Propriétaire",
+  editor: "Éditeur",
   viewer: "Lecteur",
 }
 
@@ -132,7 +132,7 @@ export default function MembersTab({
           Membres du projet
         </h2>
         <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-          G\u00e9rez les acc\u00e8s et les r\u00f4les.
+          Gérez les accès et les rôles.
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export default function MembersTab({
                 color: "var(--text-primary)",
               }}
             >
-              <option value="editor">\u00c9diteur</option>
+              <option value="editor">Éditeur</option>
               <option value="viewer">Lecteur</option>
             </select>
             <button
@@ -238,7 +238,7 @@ export default function MembersTab({
                         color: "var(--text-primary)",
                       }}
                     >
-                      <option value="editor">\u00c9diteur</option>
+                      <option value="editor">Éditeur</option>
                       <option value="viewer">Lecteur</option>
                     </select>
                     <button

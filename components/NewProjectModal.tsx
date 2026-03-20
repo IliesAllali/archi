@@ -69,7 +69,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la cr\u00e9ation")
+        setError("Erreur lors de la création")
       }
     } catch {
       setError("Erreur de connexion")
@@ -99,7 +99,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
         router.push(`/${data.id}/settings?tab=ai`)
         onClose()
       } else {
-        setError("Erreur lors de la cr\u00e9ation")
+        setError("Erreur lors de la création")
       }
     } catch {
       setError("Erreur de connexion")
@@ -167,10 +167,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                        Demander {"\u00e0"} mon IA
+                        Demander à mon IA
                       </p>
                       <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        Connecte Claude, Cursor ou ChatGPT pour g{"\u00e9"}n{"\u00e9"}rer l'arborescence
+                        Connecte Claude, Cursor ou ChatGPT pour générer l'arborescence
                       </p>
                     </div>
                     {loading ? (
@@ -283,7 +283,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       ) : (
                         <FileText className="w-3.5 h-3.5" />
                       )}
-                      Cr{"\u00e9"}er le projet
+                      Créer le projet
                     </button>
                   </div>
                 </div>
