@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken, verifySession, ACCESS_COOKIE, COOKIE_NAME, CSRF_COOKIE, verifyCsrfToken } from '@/lib/auth-edge'
+import { verifyAccessToken, verifySession, ACCESS_COOKIE, COOKIE_NAME, CSRF_COOKIE, REFRESH_COOKIE, verifyCsrfToken } from '@/lib/auth-edge'
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/signup', '/invite', '/reset-password', '/verify-email', '/landing']
@@ -52,6 +52,29 @@ export async function middleware(req: NextRequest) {
   if (accessToken) {
     const session = await verifyAccessToken(accessToken)
     if (session) return NextResponse.next()
+  }
+
+  // Access token expired or missing — try silent refresh via refresh token
+  const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value
+  if (refreshToken) {
+    try {
+      const refreshUrl = new URL('/api/auth/refresh', req.url)
+      const refreshRes = await fetch(refreshUrl, {
+        method: 'POST',
+        headers: { cookie: `${REFRESH_COOKIE}=${refreshToken}` },
+      })
+      if (refreshRes.ok) {
+        // Refresh succeeded — forward the new cookies to the client via redirect to same page
+        const response = NextResponse.redirect(req.url)
+        const setCookies = refreshRes.headers.getSetCookie()
+        for (const cookie of setCookies) {
+          response.headers.append('set-cookie', cookie)
+        }
+        return response
+      }
+    } catch {
+      // Refresh failed — fall through to login
+    }
   }
 
   // Fallback: legacy session cookie (for existing share-link sessions)
