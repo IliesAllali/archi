@@ -3,6 +3,7 @@ import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import NewProjectButton from "@/components/NewProjectButton";
+import UserMenu from "@/components/UserMenu";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default function HomePage() {
             {projects.length} projet{projects.length !== 1 ? "s" : ""}
           </span>
           <ThemeToggle />
+          <UserMenu />
         </div>
       </header>
 
@@ -49,7 +51,7 @@ export default function HomePage() {
               Bienvenue sur arbo
             </h2>
             <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
-              Cr{"\u00e9"}ez votre premi{"\u00e8"}re arborescence de site pour commencer.
+              Créez votre première arborescence de site pour commencer.
             </p>
             <NewProjectButton variant="large" />
           </div>
@@ -60,7 +62,7 @@ export default function HomePage() {
                 className="text-2xs uppercase tracking-widest font-medium"
                 style={{ color: "var(--text-faint)" }}
               >
-                Projets r{"\u00e9"}cents
+                Projets récents
               </p>
               <NewProjectButton variant="small" />
             </div>

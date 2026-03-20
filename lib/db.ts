@@ -21,6 +21,21 @@ function createDb(): Database.Database {
   // WAL mode — better concurrent read performance, safer writes
   db.pragma('journal_mode = WAL')
   db.pragma('foreign_keys = ON')
+
+  // Ensure user_api_keys table exists (auto-migration)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_api_keys (
+      id         TEXT PRIMARY KEY,
+      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider   TEXT NOT NULL,
+      key_hash   TEXT NOT NULL,
+      key_hint   TEXT NOT NULL,
+      label      TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
+  `)
+
   return db
 }
 

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, ExternalLink } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText } from "lucide-react"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -114,7 +115,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
     border: "1px solid var(--line-strong)",
   }
 
-  return (
+  if (typeof document === "undefined") return null
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -123,8 +126,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-50 backdrop-blur-[2px]"
-            style={{ backgroundColor: "var(--overlay-bg)" }}
+            className="fixed inset-0 backdrop-blur-[2px]"
+            style={{ backgroundColor: "var(--overlay-bg)", zIndex: 9998 }}
             onClick={onClose}
           />
           <motion.div
@@ -132,8 +135,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[520px] bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50 overflow-hidden"
-            style={{ boxShadow: "var(--modal-shadow)" }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[520px] rounded-xl overflow-hidden"
+            style={{ zIndex: 9999, background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--modal-shadow)" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
@@ -292,6 +295,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

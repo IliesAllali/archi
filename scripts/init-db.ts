@@ -136,6 +136,18 @@ db.exec(`
     revoked_at   INTEGER
   );
 
+  -- ─── User API keys ────────────────────────────────────────────────────────
+  CREATE TABLE IF NOT EXISTS user_api_keys (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider   TEXT NOT NULL, -- 'openai' | 'anthropic' | 'mistral'
+    key_hash   TEXT NOT NULL,
+    key_hint   TEXT NOT NULL, -- last 4 chars like '...a1b2'
+    label      TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
+
   -- ─── AI audit log ──────────────────────────────────────────────────────────
   CREATE TABLE IF NOT EXISTS ai_audit_log (
     id             TEXT PRIMARY KEY,
