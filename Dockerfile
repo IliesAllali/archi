@@ -17,18 +17,18 @@ COPY . .
 # Build Next.js
 RUN npm run build
 
-# Initialize database schema (before pruning devDeps since tsx is needed)
-RUN npx tsx scripts/init-db.ts
-
 # Remove devDependencies
 RUN npm prune --production
 
 # Create data directory
 RUN mkdir -p data
 
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 ENV NODE_ENV=production
 ENV PORT=3002
 
 EXPOSE 3002
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/entrypoint.sh"]
