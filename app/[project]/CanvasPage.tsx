@@ -10,7 +10,7 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Command, Undo2, Redo2, History } from "lucide-react";
+import { Share2, ChevronLeft, Command, Undo2, Redo2, History, Settings, Monitor } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
@@ -212,6 +212,14 @@ export default function CanvasPage({ project, currentUser }: Props) {
           <ThemeToggle />
           <ExportButton project={liveProject} />
 
+          <Link
+            href={`/${project.id}/settings`}
+            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
+            data-tooltip="Param\u00e8tres"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Link>
+
           <div className="w-px h-4 bg-line mx-1 hidden sm:block" />
 
           <button
@@ -227,6 +235,19 @@ export default function CanvasPage({ project, currentUser }: Props) {
           </button>
         </div>
       </header>
+
+      {/* Mobile read-only banner */}
+      <div
+        className="flex md:hidden items-center justify-center gap-1.5 px-3 py-1.5 text-2xs font-medium"
+        style={{
+          background: "var(--surface)",
+          borderBottom: "1px solid var(--line)",
+          color: "var(--text-muted)",
+        }}
+      >
+        <Monitor className="w-3 h-3" />
+        Mode lecture \u2014 \u00e9dition sur desktop uniquement
+      </div>
 
       {/* Canvas */}
       <div className="flex-1 relative overflow-hidden">

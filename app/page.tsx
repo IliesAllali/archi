@@ -2,6 +2,7 @@ import { getAllProjects } from "@/lib/project-loader";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
+import NewProjectButton from "@/components/NewProjectButton";
 
 export const dynamic = "force-dynamic";
 
@@ -36,30 +37,33 @@ export default function HomePage() {
         {projects.length === 0 ? (
           <div className="text-center py-24 animate-fade-in-up">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-4"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5"
               style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
             >
-              <Logo size={16} />
+              <Logo size={20} />
             </div>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Aucun projet</p>
-            <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-              Ajoutez un fichier JSON dans{" "}
-              <code
-                className="font-mono px-1 py-0.5 rounded"
-                style={{ color: "var(--text-secondary)", background: "var(--surface)" }}
-              >
-                /data/projects/
-              </code>
+            <h2
+              className="text-sm font-semibold mb-1"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Bienvenue sur arbo
+            </h2>
+            <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
+              Cr{"\u00e9"}ez votre premi{"\u00e8"}re arborescence de site pour commencer.
             </p>
+            <NewProjectButton variant="large" />
           </div>
         ) : (
           <div>
-            <p
-              className="text-2xs uppercase tracking-widest mb-4 font-medium animate-fade-in"
-              style={{ color: "var(--text-faint)" }}
-            >
-              Projets récents
-            </p>
+            <div className="flex items-center justify-between mb-4 animate-fade-in">
+              <p
+                className="text-2xs uppercase tracking-widest font-medium"
+                style={{ color: "var(--text-faint)" }}
+              >
+                Projets r{"\u00e9"}cents
+              </p>
+              <NewProjectButton variant="small" />
+            </div>
             <div className="space-y-1.5">
               {projects.map((project, i) => (
                 <ProjectCard key={project.id} project={project} index={i} />

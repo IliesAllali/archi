@@ -1,0 +1,176 @@
+"use client"
+
+import { useState } from "react"
+import { Check, Loader2 } from "lucide-react"
+import { csrfHeaders } from "../use-csrf"
+
+interface ProjectMeta {
+  id: string
+  slug: string
+  name: string
+  client: string
+  version: string
+  accent: string
+}
+
+const ACCENT_PRESETS = [
+  "#5E6AD2", "#3B82F6", "#8B5CF6", "#EC4899",
+  "#F59E0B", "#10B981", "#EF4444", "#06B6D4",
+]
+
+export default function GeneralTab({
+  project,
+  onNameChange,
+}: {
+  project: ProjectMeta
+  onNameChange: (name: string) => void
+}) {
+  const [name, setName] = useState(project.name)
+  const [client, setClient] = useState(project.client)
+  const [version, setVersion] = useState(project.version)
+  const [accent, setAccent] = useState(project.accent)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await fetch(`/api/projects/${project.id}`, {
+        method: "PUT",
+        headers: csrfHeaders(),
+        body: JSON.stringify({ name, client, version, accent }),
+      })
+      onNameChange(name)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h2
+          className="text-sm font-semibold mb-1"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Informations g\u00e9n\u00e9rales
+        </h2>
+        <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
+          Param\u00e8tres de base du projet.
+        </p>
+      </div>
+
+      {/* Name */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
+          Nom du projet
+        </label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            color: "var(--text-primary)",
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
+        />
+      </div>
+
+      {/* Client */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
+          Client
+        </label>
+        <input
+          type="text"
+          value={client}
+          onChange={(e) => setClient(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            color: "var(--text-primary)",
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
+          placeholder="Nom du client"
+        />
+      </div>
+
+      {/* Version */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
+          Version
+        </label>
+        <input
+          type="text"
+          value={version}
+          onChange={(e) => setVersion(e.target.value)}
+          className="w-full max-w-[120px] px-3 py-2 rounded-lg text-sm font-mono outline-none transition-colors"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            color: "var(--text-primary)",
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
+          placeholder="v1"
+        />
+      </div>
+
+      {/* Accent color */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
+          Couleur d&apos;accent
+        </label>
+        <div className="flex items-center gap-2 flex-wrap">
+          {ACCENT_PRESETS.map((color) => (
+            <button
+              key={color}
+              onClick={() => setAccent(color)}
+              className="w-7 h-7 rounded-lg transition-all duration-100 hover:scale-110"
+              style={{
+                backgroundColor: color,
+                outline: accent === color ? `2px solid ${color}` : "2px solid transparent",
+                outlineOffset: "2px",
+              }}
+            />
+          ))}
+          <input
+            type="color"
+            value={accent}
+            onChange={(e) => setAccent(e.target.value)}
+            className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0"
+            style={{ background: "transparent" }}
+          />
+        </div>
+      </div>
+
+      {/* Save button */}
+      <div className="pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-50"
+          style={{
+            backgroundColor: saved ? "var(--success-bg)" : accent,
+            color: saved ? "var(--success-text)" : "#fff",
+          }}
+        >
+          {saving ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : saved ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : null}
+          {saving ? "Enregistrement..." : saved ? "Enregistr\u00e9" : "Enregistrer"}
+        </button>
+      </div>
+    </div>
+  )
+}
