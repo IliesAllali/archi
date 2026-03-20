@@ -83,7 +83,7 @@ export const CARD_WIDTH = 110;
 export const HOME_CARD_WIDTH = 200;
 
 export function getCardWidth(type: string, zoningExpanded?: boolean): number {
-  if (type === "home" || zoningExpanded) return HOME_CARD_WIDTH;
+  if (zoningExpanded) return HOME_CARD_WIDTH;
   return CARD_WIDTH;
 }
 
@@ -100,10 +100,10 @@ function blocksHeight(blocks: ZoningBlock[]): number {
 }
 
 function resolveExpandedSections(type: string, zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): { blocks?: ZoningBlock[]; sections?: Section[] } | null {
-  if (zoningExpanded && zoningBlocks && zoningBlocks.length > 0) return { blocks: zoningBlocks };
+  if (!zoningExpanded) return null;
+  if (zoningBlocks && zoningBlocks.length > 0) return { blocks: zoningBlocks };
   const typeSections = ZONING_SECTIONS[type as ZoningType];
-  if (zoningExpanded && typeSections) return { sections: typeSections };
-  if (type === "home" && ZONING_SECTIONS.home) return { sections: ZONING_SECTIONS.home };
+  if (typeSections) return { sections: typeSections };
   return null;
 }
 
