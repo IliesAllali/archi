@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { editSitemap } from "@/lib/ai";
+import { editSitemap, getProviderLabel } from "@/lib/ai";
+import type { AiProvider } from "@/lib/ai";
 import { db, getActiveNodes } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 
+const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, apiKey, projectId } = body;
+    const { prompt, apiKey, projectId, provider: rawProvider } = body;
+    const provider: AiProvider = VALID_PROVIDERS.includes(rawProvider) ? rawProvider : "anthropic";
 
     if (!prompt || !apiKey || !projectId) {
       return NextResponse.json(
@@ -45,8 +49,9 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Call Claude
-    const result = await editSitemap(apiKey, prompt, currentTree);
+    // Call AI
+    const result = await editSitemap(apiKey, prompt, currentTree, provider);
+    const aiLabel = getProviderLabel(provider);
 
     // Apply actions
     const now = Date.now();
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
             description: action.description || "",
             rationale: action.rationale || undefined,
             lastModifiedBy: "ai",
-            lastModifiedByName: "Claude",
+            lastModifiedByName: aiLabel,
           });
 
           db.prepare(
@@ -172,9 +177,9 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "AI edit failed";
 
-    if (message.includes("401") || message.includes("authentication")) {
+    if (message.includes("401") || message.includes("authentication") || message.includes("Incorrect API key")) {
       return NextResponse.json(
-        { error: "Clé API invalide. Vérifie ta clé Anthropic." },
+        { error: "Clé API invalide. Vérifie ta clé." },
         { status: 401 }
       );
     }

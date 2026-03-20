@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSitemap } from "@/lib/ai";
+import { generateSitemap, getProviderLabel } from "@/lib/ai";
+import type { AiProvider } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { nanoid } from "nanoid";
+
+const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, apiKey, projectName, clientName } = body;
+    const { prompt, apiKey, projectName, clientName, provider: rawProvider } = body;
+    const provider: AiProvider = VALID_PROVIDERS.includes(rawProvider) ? rawProvider : "anthropic";
 
     if (!prompt || !apiKey) {
       return NextResponse.json(
@@ -28,8 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Generate sitemap via Claude
-    const result = await generateSitemap(apiKey, prompt);
+    // Generate sitemap via AI
+    const result = await generateSitemap(apiKey, prompt, provider);
+    const aiLabel = getProviderLabel(provider);
 
     // Create project
     const projectId = nanoid();
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
           description: node.description || "",
           rationale: node.rationale || undefined,
           lastModifiedBy: "ai",
-          lastModifiedByName: "Claude",
+          lastModifiedByName: aiLabel,
         });
 
         insertStmt.run(
@@ -111,9 +116,9 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "AI generation failed";
 
     // Detect Anthropic API errors
-    if (message.includes("401") || message.includes("authentication")) {
+    if (message.includes("401") || message.includes("authentication") || message.includes("Incorrect API key")) {
       return NextResponse.json(
-        { error: "Clé API invalide. Vérifie ta clé Anthropic." },
+        { error: "Clé API invalide. Vérifie ta clé." },
         { status: 401 }
       );
     }

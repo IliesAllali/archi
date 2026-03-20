@@ -5,16 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
-
-function getStoredApiKey(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("arbo_anthropic_key") || "";
-}
-
-function storeApiKey(key: string) {
-  if (typeof window === "undefined") return;
-  if (key.trim()) localStorage.setItem("arbo_anthropic_key", key.trim());
-}
+import {
+  getStoredProvider,
+  getStoredApiKey,
+  storeApiKey,
+  getProviderConfig,
+} from "@/lib/ai-providers";
+import type { AiProvider } from "@/lib/ai-providers";
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -34,6 +31,7 @@ export default function AiBar({ projectId }: Props) {
   const [success, setSuccess] = useState("");
   const [needsKey, setNeedsKey] = useState(false);
   const [keyInput, setKeyInput] = useState("");
+  const [provider, setProvider] = useState<AiProvider>("anthropic");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
 
@@ -57,7 +55,9 @@ export default function AiBar({ projectId }: Props) {
     if (open) {
       setError("");
       setSuccess("");
-      const key = getStoredApiKey();
+      const p = getStoredProvider();
+      setProvider(p);
+      const key = getStoredApiKey(p);
       setNeedsKey(!key);
       setKeyInput(key);
     }
@@ -66,10 +66,10 @@ export default function AiBar({ projectId }: Props) {
   const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
 
-    const apiKey = getStoredApiKey();
+    const apiKey = getStoredApiKey(provider);
     if (!apiKey) {
       setNeedsKey(true);
-      setError("Clé API Anthropic requise");
+      setError("Clé API requise");
       return;
     }
 
@@ -89,6 +89,7 @@ export default function AiBar({ projectId }: Props) {
           prompt: prompt.trim(),
           apiKey,
           projectId,
+          provider,
         }),
       });
 
@@ -110,7 +111,7 @@ export default function AiBar({ projectId }: Props) {
         setTimeout(() => setSuccess(""), 3000);
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 401 && data.error?.includes("Clé")) {
+        if (res.status === 401 && data.error?.includes("Cl")) {
           setNeedsKey(true);
         }
         setError(data.error || "Erreur de modification");
@@ -124,10 +125,12 @@ export default function AiBar({ projectId }: Props) {
 
   const handleSaveKey = () => {
     if (!keyInput.trim()) return;
-    storeApiKey(keyInput);
+    storeApiKey(keyInput, provider);
     setNeedsKey(false);
     setError("");
   };
+
+  const providerConfig = getProviderConfig(provider);
 
   return (
     <>
@@ -198,14 +201,14 @@ export default function AiBar({ projectId }: Props) {
             {needsKey && (
               <div className="px-3 sm:px-4 py-2.5 sm:py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Clé API Anthropic
+                  Clé API {providerConfig.label.split(" (")[0]}
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="password"
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
-                    placeholder="sk-ant-..."
+                    placeholder={providerConfig.placeholder}
                     className="flex-1 h-8 px-3 rounded-lg text-2xs font-mono focus:outline-none"
                     style={{
                       background: "var(--elevated)",
@@ -226,7 +229,7 @@ export default function AiBar({ projectId }: Props) {
                 <p className="text-2xs mt-1.5" style={{ color: "var(--text-faint)" }}>
                   Stockée dans ton navigateur uniquement.{" "}
                   <a
-                    href="https://console.anthropic.com/settings/keys"
+                    href={providerConfig.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"

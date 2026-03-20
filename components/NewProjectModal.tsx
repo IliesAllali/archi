@@ -4,25 +4,22 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2 } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, ChevronDown } from "lucide-react"
 import { Events } from "@/lib/posthog"
+import {
+  AI_PROVIDERS,
+  getStoredProvider,
+  storeProvider,
+  getStoredApiKey,
+  storeApiKey,
+  getProviderConfig,
+} from "@/lib/ai-providers"
+import type { AiProvider } from "@/lib/ai-providers"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
   const match = document.cookie.match(/arbo_csrf=([^;]+)/)
   return match ? match[1] : null
-}
-
-function getStoredApiKey(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("arbo_anthropic_key") || ""
-}
-
-function storeApiKey(key: string) {
-  if (typeof window === "undefined") return
-  if (key.trim()) {
-    localStorage.setItem("arbo_anthropic_key", key.trim())
-  }
 }
 
 interface Props {
@@ -42,10 +39,22 @@ export default function NewProjectModal({ open, onClose }: Props) {
   // AI mode state
   const [aiPrompt, setAiPrompt] = useState("")
   const [aiProjectName, setAiProjectName] = useState("")
+  const [provider, setProviderState] = useState<AiProvider>("anthropic")
   const [apiKey, setApiKey] = useState("")
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [aiStep, setAiStep] = useState<"prompt" | "generating">("prompt")
   const promptRef = useRef<HTMLTextAreaElement>(null)
+
+  const providerConfig = getProviderConfig(provider)
+
+  const handleProviderChange = (p: AiProvider) => {
+    setProviderState(p)
+    storeProvider(p)
+    const key = getStoredApiKey(p)
+    setApiKey(key)
+    setShowKeyInput(!key)
+    setError("")
+  }
 
   useEffect(() => {
     if (open) {
@@ -57,7 +66,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setError("")
       setLoading(false)
       setAiStep("prompt")
-      const stored = getStoredApiKey()
+      const p = getStoredProvider()
+      setProviderState(p)
+      const stored = getStoredApiKey(p)
       setApiKey(stored)
       setShowKeyInput(!stored)
     }
@@ -106,9 +117,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
   const handleAiGenerate = async () => {
     if (!aiPrompt.trim()) { setError("Décris ton site"); return }
-    if (!apiKey.trim()) { setError("Clé API Anthropic requise"); setShowKeyInput(true); return }
+    if (!apiKey.trim()) { setError("Clé API requise"); setShowKeyInput(true); return }
 
-    storeApiKey(apiKey)
+    storeApiKey(apiKey, provider)
     setLoading(true)
     setError("")
     setAiStep("generating")
@@ -125,6 +136,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
           prompt: aiPrompt.trim(),
           apiKey: apiKey.trim(),
           projectName: aiProjectName.trim() || undefined,
+          provider,
         }),
       })
 
@@ -263,7 +275,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           Génération en cours...
                         </p>
                         <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
-                          Claude analyse ton brief et construit l&apos;arborescence
+                          {providerConfig.label} analyse ton brief et construit l&apos;arborescence
                         </p>
                       </div>
                       {error && (
@@ -311,17 +323,36 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         </p>
                       </div>
 
-                      {/* API Key */}
+                      {/* Provider selector + API Key */}
+                      <div>
+                        <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
+                          Fournisseur IA
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={provider}
+                            onChange={(e) => handleProviderChange(e.target.value as AiProvider)}
+                            className="w-full h-9 px-3 pr-8 rounded-lg text-xs focus:outline-none transition-all appearance-none cursor-pointer"
+                            style={inputStyle}
+                          >
+                            {AI_PROVIDERS.map((p) => (
+                              <option key={p.id} value={p.id}>{p.label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-faint)" }} />
+                        </div>
+                      </div>
+
                       {showKeyInput ? (
                         <div>
                           <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
-                            Clé API Anthropic
+                            Clé API {providerConfig.label.split(" (")[0]}
                           </label>
                           <input
                             type="password"
                             value={apiKey}
                             onChange={(e) => { setApiKey(e.target.value); if (error) setError("") }}
-                            placeholder="sk-ant-..."
+                            placeholder={providerConfig.placeholder}
                             className="w-full h-9 px-3 rounded-lg text-xs font-mono focus:outline-none transition-all"
                             style={inputStyle}
                             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
@@ -330,7 +361,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
                             Stockée localement uniquement.{" "}
                             <a
-                              href="https://console.anthropic.com/settings/keys"
+                              href={providerConfig.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline"

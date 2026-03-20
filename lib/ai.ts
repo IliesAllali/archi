@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+export type AiProvider = "anthropic" | "openai" | "mistral";
 
 export interface AiNode {
   temp_id: string;
@@ -23,6 +26,24 @@ export interface AiEditAction {
   priority?: "primary" | "secondary" | "utility";
   description?: string;
   rationale?: string;
+}
+
+// ─── Provider config ────────────────────────────────────────────────────────
+
+const PROVIDER_MODELS: Record<AiProvider, string> = {
+  anthropic: "claude-sonnet-4-20250514",
+  openai: "gpt-4o",
+  mistral: "mistral-large-latest",
+};
+
+const PROVIDER_LABELS: Record<AiProvider, string> = {
+  anthropic: "Claude",
+  openai: "GPT-4o",
+  mistral: "Mistral",
+};
+
+export function getProviderLabel(provider: AiProvider): string {
+  return PROVIDER_LABELS[provider] || provider;
 }
 
 // ─── System prompts ──────────────────────────────────────────────────────────
@@ -88,31 +109,58 @@ Réponds UNIQUEMENT avec un JSON valide :
   "summary": "Courte explication de ce qui a été fait (1-2 phrases)"
 }`;
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Unified LLM call ───────────────────────────────────────────────────────
 
-function createClient(apiKey: string): Anthropic {
-  return new Anthropic({ apiKey });
+async function callLLM(
+  provider: AiProvider,
+  apiKey: string,
+  system: string,
+  userMessage: string
+): Promise<string> {
+  if (provider === "anthropic") {
+    const client = new Anthropic({ apiKey });
+    const response = await client.messages.create({
+      model: PROVIDER_MODELS.anthropic,
+      max_tokens: 4096,
+      system,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    return response.content[0].type === "text" ? response.content[0].text : "";
+  }
+
+  // OpenAI and Mistral both use the OpenAI SDK format
+  const config: { apiKey: string; baseURL?: string } = { apiKey };
+  if (provider === "mistral") {
+    config.baseURL = "https://api.mistral.ai/v1";
+  }
+
+  const client = new OpenAI(config);
+  const response = await client.chat.completions.create({
+    model: PROVIDER_MODELS[provider],
+    max_tokens: 4096,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: userMessage },
+    ],
+  });
+
+  return response.choices[0]?.message?.content || "";
 }
+
+function parseJSON(text: string): unknown {
+  const cleaned = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
+  return JSON.parse(cleaned);
+}
+
+// ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function generateSitemap(
   apiKey: string,
-  prompt: string
+  prompt: string,
+  provider: AiProvider = "anthropic"
 ): Promise<{ nodes: AiNode[] }> {
-  const client = createClient(apiKey);
-
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: GENERATE_SYSTEM,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
-
-  // Parse JSON (handle potential markdown wrapping)
-  const jsonStr = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(jsonStr);
+  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, prompt);
+  const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
     throw new Error("Invalid AI response: missing nodes array");
@@ -124,29 +172,14 @@ export async function generateSitemap(
 export async function editSitemap(
   apiKey: string,
   prompt: string,
-  currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[]
+  currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
+  provider: AiProvider = "anthropic"
 ): Promise<{ actions: AiEditAction[]; summary: string }> {
-  const client = createClient(apiKey);
-
   const treeContext = JSON.stringify(currentTree, null, 2);
+  const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: EDIT_SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`,
-      },
-    ],
-  });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
-
-  const jsonStr = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(jsonStr);
+  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, userMessage);
+  const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {
     throw new Error("Invalid AI response: missing actions array");
