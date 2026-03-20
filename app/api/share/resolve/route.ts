@@ -24,11 +24,11 @@ export async function GET(req: NextRequest) {
     .get(token) as ShareRow | undefined
 
   if (!link) {
-    return NextResponse.json({ error: 'Lien invalide ou expir\u00e9' }, { status: 404 })
+    return NextResponse.json({ error: 'Lien invalide ou expiré' }, { status: 404 })
   }
 
   if (link.expires_at && link.expires_at < Date.now()) {
-    return NextResponse.json({ error: 'Ce lien a expir\u00e9' }, { status: 410 })
+    return NextResponse.json({ error: 'Ce lien a expiré' }, { status: 410 })
   }
 
   return NextResponse.json({

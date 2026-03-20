@@ -226,7 +226,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
           <Link
             href={`/${project.id}/settings`}
             className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Param\u00e8tres"
+            data-tooltip="Paramètres"
           >
             <Settings className="w-3.5 h-3.5" />
           </Link>
@@ -257,7 +257,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
         }}
       >
         <Monitor className="w-3 h-3" />
-        Mode lecture \u2014 \u00e9dition sur desktop uniquement
+        Mode lecture \— édition sur desktop uniquement
       </div>
 
       {/* Canvas */}

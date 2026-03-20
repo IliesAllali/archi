@@ -93,7 +93,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la cr\u00e9ation")
+        setError("Erreur lors de la création")
       }
     } catch {
       setError("Erreur de connexion")
@@ -105,8 +105,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
   // ─── AI generate ──────────────────────────────────────────────────────────
 
   const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) { setError("D\u00e9cris ton site"); return }
-    if (!apiKey.trim()) { setError("Cl\u00e9 API Anthropic requise"); setShowKeyInput(true); return }
+    if (!aiPrompt.trim()) { setError("Décris ton site"); return }
+    if (!apiKey.trim()) { setError("Clé API Anthropic requise"); setShowKeyInput(true); return }
 
     storeApiKey(apiKey)
     setLoading(true)
@@ -135,7 +135,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
         onClose()
       } else {
         const data = await res.json().catch(() => ({}))
-        setError(data.error || "Erreur de g\u00e9n\u00e9ration")
+        setError(data.error || "Erreur de génération")
         setAiStep("prompt")
       }
     } catch {
@@ -178,7 +178,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "G\u00e9n\u00e9rer avec l\u2019IA" : "Projet vide"}
+                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "Générer avec l\’IA" : "Projet vide"}
               </h3>
               <button
                 onClick={onClose}
@@ -210,10 +210,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                        G\u00e9n\u00e9rer avec l&apos;IA
+                        Générer avec l&apos;IA
                       </p>
                       <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                        D\u00e9cris ton site, l&apos;IA cr\u00e9e l&apos;arborescence
+                        Décris ton site, l&apos;IA crée l&apos;arborescence
                       </p>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
@@ -256,7 +256,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       </div>
                       <div className="text-center">
                         <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                          G\u00e9n\u00e9ration en cours...
+                          Génération en cours...
                         </p>
                         <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
                           Claude analyse ton brief et construit l&apos;arborescence
@@ -288,13 +288,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       {/* Prompt */}
                       <div>
                         <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
-                          D\u00e9cris ton site
+                          Décris ton site
                         </label>
                         <textarea
                           ref={promptRef}
                           value={aiPrompt}
                           onChange={(e) => { setAiPrompt(e.target.value); if (error) setError("") }}
-                          placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fid\u00e9lit\u00e9 et click & collect"
+                          placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fidélité et click & collect"
                           rows={3}
                           className="w-full px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none"
                           style={inputStyle}
@@ -303,7 +303,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAiGenerate() }}
                         />
                         <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-                          Ctrl+Enter pour g\u00e9n\u00e9rer
+                          Ctrl+Enter pour générer
                         </p>
                       </div>
 
@@ -311,7 +311,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       {showKeyInput ? (
                         <div>
                           <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
-                            Cl\u00e9 API Anthropic
+                            Clé API Anthropic
                           </label>
                           <input
                             type="password"
@@ -324,7 +324,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
                           />
                           <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-                            Stock\u00e9e localement uniquement.{" "}
+                            Stockée localement uniquement.{" "}
                             <a
                               href="https://console.anthropic.com/settings/keys"
                               target="_blank"
@@ -332,7 +332,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                               className="underline"
                               style={{ color: "var(--accent)" }}
                             >
-                              Obtenir une cl\u00e9
+                              Obtenir une clé
                             </a>
                           </p>
                         </div>
@@ -342,7 +342,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           className="text-2xs transition-colors"
                           style={{ color: "var(--text-faint)" }}
                         >
-                          Changer la cl\u00e9 API
+                          Changer la clé API
                         </button>
                       )}
 
@@ -370,7 +370,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           ) : (
                             <Wand2 className="w-3.5 h-3.5" />
                           )}
-                          G\u00e9n\u00e9rer l&apos;arborescence
+                          Générer l&apos;arborescence
                         </button>
                       </div>
                     </>
@@ -440,7 +440,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       ) : (
                         <FileText className="w-3.5 h-3.5" />
                       )}
-                      Cr\u00e9er le projet
+                      Créer le projet
                     </button>
                   </div>
                 </div>

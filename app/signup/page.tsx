@@ -44,7 +44,7 @@ function SignupForm() {
         return;
       } else if (res.ok) {
         Events.userSignedUp("direct");
-        setSuccess(data.message || "Compte cr\u00e9\u00e9. V\u00e9rifiez votre email.");
+        setSuccess(data.message || "Compte créé. Vérifiez votre email.");
       } else {
         setError(data.error || "Erreur lors de l'inscription");
       }
@@ -68,7 +68,7 @@ function SignupForm() {
           className="w-12 h-12 rounded-full mx-auto flex items-center justify-center text-lg"
           style={{ background: "var(--success-bg)", color: "var(--success-text)" }}
         >
-          {"\u2713"}
+          {"✓"}
         </div>
         <p className="text-sm" style={{ color: "var(--text-primary)" }}>{success}</p>
         <Link
@@ -127,7 +127,7 @@ function SignupForm() {
           type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-          placeholder="Mot de passe (8 caract\u00e8res min.)"
+          placeholder="Mot de passe (8 caractères min.)"
           autoComplete="new-password"
           className="w-full h-11 pl-4 pr-12 rounded-lg text-sm transition-all duration-200 focus:outline-none"
           style={inputStyle()}
@@ -164,11 +164,11 @@ function SignupForm() {
         className="w-full h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
       >
-        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Cr\u00e9er mon compte"}
+        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Créer mon compte"}
       </button>
 
       <p className="text-2xs text-center pt-2" style={{ color: "var(--text-faint)" }}>
-        D\u00e9j\u00e0 un compte ?{" "}
+        Déjà un compte ?{" "}
         <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--accent)" }}>
           Se connecter
         </Link>
@@ -194,7 +194,7 @@ export default function SignupPage() {
           className="text-sm font-semibold text-center mb-6"
           style={{ color: "var(--text-primary)" }}
         >
-          Cr{"\u00e9"}er un compte
+          Cr{"é"}er un compte
         </h1>
 
         <div className="animate-fade-in-up" style={{ animationDelay: "100ms", opacity: 0 }}>

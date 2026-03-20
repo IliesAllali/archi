@@ -53,7 +53,7 @@ export default function HomePage() {
                 Bienvenue sur arbo
               </h2>
               <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
-                Cr\u00e9ez votre premi\u00e8re arborescence de site pour commencer.
+                Créez votre première arborescence de site pour commencer.
               </p>
               <NewProjectButton variant="large" />
             </div>

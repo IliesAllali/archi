@@ -69,7 +69,7 @@ export default function AiBar({ projectId }: Props) {
     const apiKey = getStoredApiKey();
     if (!apiKey) {
       setNeedsKey(true);
-      setError("Cl\u00e9 API Anthropic requise");
+      setError("Clé API Anthropic requise");
       return;
     }
 
@@ -102,7 +102,7 @@ export default function AiBar({ projectId }: Props) {
           initProject(project);
         }
 
-        setSuccess(data.summary || `${data.applied?.length || 0} modification(s) appliqu\u00e9e(s)`);
+        setSuccess(data.summary || `${data.applied?.length || 0} modification(s) appliquée(s)`);
         setPrompt("");
         Events.aiActionPerformed("edit_tree", "built-in");
 
@@ -110,7 +110,7 @@ export default function AiBar({ projectId }: Props) {
         setTimeout(() => setSuccess(""), 3000);
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 401 && data.error?.includes("Cl\u00e9")) {
+        if (res.status === 401 && data.error?.includes("Clé")) {
           setNeedsKey(true);
         }
         setError(data.error || "Erreur de modification");
@@ -172,7 +172,7 @@ export default function AiBar({ projectId }: Props) {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5CF6" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                  \u00c9diter avec l&apos;IA
+                  Éditer avec l&apos;IA
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -180,7 +180,7 @@ export default function AiBar({ projectId }: Props) {
                   onClick={() => setNeedsKey((v) => !v)}
                   className="p-1 rounded-md transition-colors"
                   style={{ color: "var(--text-faint)" }}
-                  title="Cl\u00e9 API"
+                  title="Clé API"
                 >
                   <Settings className="w-3.5 h-3.5" />
                 </button>
@@ -198,7 +198,7 @@ export default function AiBar({ projectId }: Props) {
             {needsKey && (
               <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Cl\u00e9 API Anthropic
+                  Clé API Anthropic
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -224,7 +224,7 @@ export default function AiBar({ projectId }: Props) {
                   </button>
                 </div>
                 <p className="text-2xs mt-1.5" style={{ color: "var(--text-faint)" }}>
-                  Stock\u00e9e dans ton navigateur uniquement.{" "}
+                  Stockée dans ton navigateur uniquement.{" "}
                   <a
                     href="https://console.anthropic.com/settings/keys"
                     target="_blank"
@@ -232,7 +232,7 @@ export default function AiBar({ projectId }: Props) {
                     className="underline"
                     style={{ color: "var(--accent)" }}
                   >
-                    Obtenir une cl\u00e9
+                    Obtenir une clé
                   </a>
                 </p>
               </div>
@@ -261,7 +261,7 @@ export default function AiBar({ projectId }: Props) {
                   ref={inputRef}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ex : Ajoute une page FAQ sous Contact, R\u00e9organise le blog en cat\u00e9gories..."
+                  placeholder="Ex : Ajoute une page FAQ sous Contact, Réorganise le blog en catégories..."
                   rows={2}
                   disabled={loading}
                   className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"

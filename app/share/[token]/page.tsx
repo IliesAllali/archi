@@ -48,7 +48,7 @@ export default function ShareAccessPage() {
         if (data.error?.includes("Mot de passe")) {
           setError("Mot de passe incorrect");
         } else {
-          setError(data.error || "Erreur d'acc\u00e8s");
+          setError(data.error || "Erreur d'accès");
         }
       }
     } catch {
@@ -76,7 +76,7 @@ export default function ShareAccessPage() {
             style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-muted)" }}
           >
             <Lock className="w-3 h-3" />
-            Acc{"\u00e8"}s prot{"\u00e9"}g{"\u00e9"}
+            Acc{"è"}s prot{"é"}g{"é"}
           </div>
         </div>
 
@@ -130,7 +130,7 @@ export default function ShareAccessPage() {
             className="w-full h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
             style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
           >
-            {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Acc\u00e9der au projet"}
+            {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Accéder au projet"}
           </button>
         </form>
       </div>

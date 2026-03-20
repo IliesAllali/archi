@@ -174,13 +174,13 @@ export async function POST(req: NextRequest) {
 
     if (message.includes("401") || message.includes("authentication")) {
       return NextResponse.json(
-        { error: "Cl\u00e9 API invalide. V\u00e9rifie ta cl\u00e9 Anthropic." },
+        { error: "Clé API invalide. Vérifie ta clé Anthropic." },
         { status: 401 }
       );
     }
     if (message.includes("429") || message.includes("rate")) {
       return NextResponse.json(
-        { error: "Trop de requ\u00eates. R\u00e9essaie dans quelques secondes." },
+        { error: "Trop de requêtes. Réessaie dans quelques secondes." },
         { status: 429 }
       );
     }

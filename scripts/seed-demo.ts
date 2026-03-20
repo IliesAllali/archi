@@ -23,7 +23,7 @@ const existing = db
   .prepare("SELECT id FROM projects WHERE slug = ?")
   .get(DEMO_PROJECT_SLUG);
 if (existing) {
-  console.log("\u2192 Demo project already exists, skipping");
+  console.log("-> Demo project already exists, skipping");
   db.close();
   process.exit(0);
 }
@@ -44,7 +44,7 @@ if (systemUser) {
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
      VALUES (?, 'system@arbo.app', 1, ?, 'Arbo', '#5E6AD2', 'admin', ?, ?)`
   ).run(systemUserId, hash, now, now);
-  console.log("\u2713 System user created");
+  console.log("[ok] System user created");
 }
 
 // Create demo project
@@ -72,22 +72,22 @@ db.prepare(
 
 // Insert demo nodes
 const nodes = [
-  { tid: "home", pid: null, label: "Accueil", type: "home", priority: "primary", desc: "Page d'entr\u00e9e avec hero, nouveaut\u00e9s et cat\u00e9gories" },
+  { tid: "home", pid: null, label: "Accueil", type: "home", priority: "primary", desc: "Page d'entr\u00E9e avec hero, nouveaut\u00E9s et cat\u00E9gories" },
   { tid: "catalog", pid: "home", label: "Catalogue", type: "listing", priority: "primary", desc: "Grille produits avec filtres (marque, taille, prix)" },
-  { tid: "product", pid: "catalog", label: "Fiche produit", type: "detail", priority: "primary", desc: "D\u00e9tail sneaker avec photos, tailles, avis" },
-  { tid: "cart", pid: "home", label: "Panier", type: "detail", priority: "primary", desc: "R\u00e9cap commande avec modification quantit\u00e9s" },
-  { tid: "checkout", pid: "cart", label: "Tunnel d'achat", type: "form", priority: "primary", desc: "Adresse, livraison, paiement en 3 \u00e9tapes" },
-  { tid: "confirm", pid: "checkout", label: "Confirmation", type: "detail", priority: "secondary", desc: "Merci + r\u00e9cap commande + suivi" },
+  { tid: "product", pid: "catalog", label: "Fiche produit", type: "detail", priority: "primary", desc: "D\u00E9tail sneaker avec photos, tailles, avis" },
+  { tid: "cart", pid: "home", label: "Panier", type: "detail", priority: "primary", desc: "R\u00E9cap commande avec modification quantit\u00E9s" },
+  { tid: "checkout", pid: "cart", label: "Tunnel d'achat", type: "form", priority: "primary", desc: "Adresse, livraison, paiement en 3 \u00E9tapes" },
+  { tid: "confirm", pid: "checkout", label: "Confirmation", type: "detail", priority: "secondary", desc: "Merci + r\u00E9cap commande + suivi" },
   { tid: "account", pid: "home", label: "Mon compte", type: "hub", priority: "secondary", desc: "Dashboard client : commandes, adresses, wishlist" },
   { tid: "orders", pid: "account", label: "Mes commandes", type: "listing", priority: "secondary", desc: "Historique et suivi des commandes" },
-  { tid: "wishlist", pid: "account", label: "Wishlist", type: "listing", priority: "secondary", desc: "Sneakers sauv\u00e9es pour plus tard" },
+  { tid: "wishlist", pid: "account", label: "Wishlist", type: "listing", priority: "secondary", desc: "Sneakers sauv\u00E9es pour plus tard" },
   { tid: "blog", pid: "home", label: "Blog", type: "listing", priority: "secondary", desc: "Actus sneakers, guides d'achat, tendances" },
   { tid: "article", pid: "blog", label: "Article", type: "detail", priority: "secondary", desc: "Article de blog avec images et partage social" },
-  { tid: "about", pid: "home", label: "\u00c0 propos", type: "detail", priority: "secondary", desc: "Histoire de la marque et engagements" },
+  { tid: "about", pid: "home", label: "\u00C0 propos", type: "detail", priority: "secondary", desc: "Histoire de la marque et engagements" },
   { tid: "contact", pid: "home", label: "Contact", type: "form", priority: "secondary", desc: "Formulaire de contact + FAQ rapide" },
-  { tid: "faq", pid: "contact", label: "FAQ", type: "detail", priority: "utility", desc: "Questions fr\u00e9quentes : livraison, retours, tailles" },
+  { tid: "faq", pid: "contact", label: "FAQ", type: "detail", priority: "utility", desc: "Questions fr\u00E9quentes : livraison, retours, tailles" },
   { tid: "search", pid: "home", label: "Recherche", type: "search", priority: "secondary", desc: "Recherche full-text avec suggestions et filtres" },
-  { tid: "legal", pid: "home", label: "Mentions l\u00e9gales", type: "legal", priority: "utility", desc: "CGV, CGU, politique de confidentialit\u00e9" },
+  { tid: "legal", pid: "home", label: "Mentions l\u00E9gales", type: "legal", priority: "utility", desc: "CGV, CGU, politique de confidentialit\u00E9" },
   { tid: "404", pid: "home", label: "Page 404", type: "error", priority: "utility", desc: "Page introuvable avec suggestions de navigation" },
 ];
 
@@ -115,14 +115,14 @@ db.transaction(() => {
       type: node.type,
       priority: node.priority,
       description: node.desc,
-      rationale: "Projet de d\u00e9monstration",
+      rationale: "Projet de d\u00E9monstration",
     });
 
     insertStmt.run(realId, projectId, parentId, posRow.next_pos, data, now, now);
   }
 })();
 
-console.log(`\u2713 Demo project created: ${projectId} (${nodes.length} pages)`);
+console.log(`[ok] Demo project created: ${projectId} (${nodes.length} pages)`);
 console.log(`  Slug: ${DEMO_PROJECT_SLUG}`);
 
 db.close();

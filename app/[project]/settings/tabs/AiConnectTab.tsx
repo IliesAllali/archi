@@ -86,7 +86,7 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
 Voici l'arbre actuel :
 ${treeStr || "(vide)"}
 
-Je veux que tu me proposes des modifications. R\u00e9ponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/apr\u00e8s) :
+Je veux que tu me proposes des modifications. Réponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/après) :
 
 {
   "actions": [
@@ -98,7 +98,7 @@ Je veux que tu me proposes des modifications. R\u00e9ponds UNIQUEMENT avec ce fo
 }
 
 Types de page : home, listing, detail, form, landing, quiz, search, hub, error, legal
-Priorit\u00e9s : primary, secondary, utility
+Priorités : primary, secondary, utility
 
 Ma demande : `
           )
@@ -169,7 +169,7 @@ Ma demande : `
 
       const apiKey = getStoredApiKey()
       if (!apiKey) {
-        setImportError("Cl\u00e9 API Anthropic requise pour appliquer les modifications. Configure-la dans la section \"IA int\u00e9gr\u00e9e\".")
+        setImportError("Clé API Anthropic requise pour appliquer les modifications. Configure-la dans la section \"IA intégrée\".")
         return
       }
 
@@ -191,14 +191,14 @@ Ma demande : `
 
       if (res.ok) {
         const data = await res.json()
-        setImportResult(`${data.applied?.length || 0} modification(s) appliqu\u00e9e(s). ${data.summary || ""}`)
+        setImportResult(`${data.applied?.length || 0} modification(s) appliquée(s). ${data.summary || ""}`)
         setJsonInput("")
       } else {
         const data = await res.json().catch(() => ({}))
         setImportError(data.error || "Erreur d'import")
       }
     } catch {
-      setImportError("JSON invalide. V\u00e9rifie le format et r\u00e9essaie.")
+      setImportError("JSON invalide. Vérifie le format et réessaie.")
     } finally {
       setImporting(false)
     }
@@ -227,7 +227,7 @@ Ma demande : `
   ]
 
   const sections = [
-    { id: "builtin" as const, icon: Sparkles, label: "IA int\u00e9gr\u00e9e", desc: "Cl\u00e9 API Anthropic (BYOK)" },
+    { id: "builtin" as const, icon: Sparkles, label: "IA intégrée", desc: "Clé API Anthropic (BYOK)" },
     { id: "mcp" as const, icon: Terminal, label: "Serveur MCP", desc: "Claude Desktop, Cursor, etc." },
     { id: "copypaste" as const, icon: ClipboardPaste, label: "Copier-coller", desc: "ChatGPT, autre IA" },
   ]
@@ -275,10 +275,10 @@ Ma demande : `
           <div className="p-4 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
             <div>
               <h4 className="text-xs font-medium mb-1" style={{ color: "var(--text-primary)" }}>
-                Cl\u00e9 API Anthropic
+                Clé API Anthropic
               </h4>
               <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                Ta cl\u00e9 est stock\u00e9e uniquement dans ton navigateur. Elle n&apos;est jamais envoy\u00e9e \u00e0 nos serveurs, seulement utilis\u00e9e pour appeler Claude directement.
+                Ta clé est stockée uniquement dans ton navigateur. Elle n&apos;est jamais envoyée à nos serveurs, seulement utilisée pour appeler Claude directement.
               </p>
             </div>
             <div className="flex gap-2">
@@ -310,24 +310,24 @@ Ma demande : `
                 className="underline"
                 style={{ color: "var(--accent)" }}
               >
-                Obtenir une cl\u00e9 sur console.anthropic.com
+                Obtenir une clé sur console.anthropic.com
               </a>
             </p>
           </div>
 
           <div className="p-4 rounded-lg space-y-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
             <h4 className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-              Comment \u00e7a marche ?
+              Comment ça marche ?
             </h4>
             <ul className="text-2xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
-              <li>1. Entre ta cl\u00e9 API Anthropic ci-dessus</li>
-              <li>2. \u00c0 la cr\u00e9ation d&apos;un projet, choisis &laquo; G\u00e9n\u00e9rer avec l&apos;IA &raquo;</li>
+              <li>1. Entre ta clé API Anthropic ci-dessus</li>
+              <li>2. À la création d&apos;un projet, choisis &laquo; Générer avec l&apos;IA &raquo;</li>
               <li>3. Sur le canvas, utilise <kbd className="px-1 py-0.5 rounded text-2xs font-mono" style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}>Ctrl+I</kbd> pour modifier l&apos;arbre avec l&apos;IA</li>
             </ul>
           </div>
 
           <div className="p-3 rounded-lg text-2xs" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.20)", color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--accent)" }}>Bient\u00f4t :</strong> Un abonnement mensuel pour utiliser l&apos;IA sans cl\u00e9 API, directement int\u00e9gr\u00e9e.
+            <strong style={{ color: "var(--accent)" }}>Bientôt :</strong> Un abonnement mensuel pour utiliser l&apos;IA sans clé API, directement intégrée.
           </div>
         </div>
       )}
@@ -339,13 +339,13 @@ Ma demande : `
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold" style={{ background: "var(--accent)", color: "#fff" }}>1</div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Cr\u00e9er un token API</p>
+              <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Créer un token API</p>
             </div>
 
             {revealedToken && (
               <div className="p-3 rounded-lg space-y-2" style={{ background: "#16a34a15", border: "1px solid #16a34a40" }}>
                 <p className="text-2xs font-medium" style={{ color: "#16a34a" }}>
-                  Token cr\u00e9\u00e9 ! Copiez-le maintenant, il ne sera plus affich\u00e9.
+                  Token créé ! Copiez-le maintenant, il ne sera plus affiché.
                 </p>
                 <div className="flex gap-2">
                   <code className="flex-1 px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--canvas-bg)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>
@@ -379,13 +379,13 @@ Ma demande : `
             {!showCreate ? (
               <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 text-2xs font-medium transition-colors" style={{ color: "var(--accent)" }}>
                 <Plus className="w-3 h-3" />
-                {tokens.length > 0 ? "Nouveau token" : "Cr\u00e9er un token"}
+                {tokens.length > 0 ? "Nouveau token" : "Créer un token"}
               </button>
             ) : (
               <div className="flex gap-2">
                 <input type="text" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} placeholder="Nom du token (ex: Mon Claude)" autoFocus className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }} onKeyDown={e => { if (e.key === "Enter") createToken() }} />
                 <button onClick={createToken} disabled={creating || !newTokenName.trim()} className="px-3 h-8 rounded-md text-2xs font-medium disabled:opacity-40" style={{ background: "var(--accent)", color: "#fff" }}>
-                  {creating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Cr\u00e9er"}
+                  {creating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Créer"}
                 </button>
               </div>
             )}
@@ -401,7 +401,7 @@ Ma demande : `
 
               {!hasRealToken && (
                 <div className="p-2.5 rounded-lg text-2xs" style={{ background: "rgba(234,179,8,0.10)", border: "1px solid rgba(234,179,8,0.30)", color: "rgba(202,138,4,1)" }}>
-                  Cr\u00e9e un token ci-dessus pour obtenir une config pr\u00eate \u00e0 coller.
+                  Crée un token ci-dessus pour obtenir une config prête à coller.
                 </div>
               )}
 
@@ -416,7 +416,7 @@ Ma demande : `
               <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--line)" }}>
                 {activeTab === "chatgpt" ? (
                   <div className="p-3 space-y-3" style={{ background: "var(--canvas-bg)" }}>
-                    <p className="text-2xs" style={{ color: "var(--text-muted)" }}>Settings \u2192 Connections \u2192 Add MCP Server</p>
+                    <p className="text-2xs" style={{ color: "var(--text-muted)" }}>Settings → Connections → Add MCP Server</p>
                     <div><p className="text-2xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>URL</p><code className="block px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>{baseUrl}/api/mcp</code></div>
                     <div><p className="text-2xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Header</p><code className="block px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>Authorization: Bearer {tokenValue}</code></div>
                   </div>
@@ -427,7 +427,7 @@ Ma demande : `
                 )}
                 <div className="px-3 py-2 flex justify-end" style={{ background: "var(--surface)", borderTop: "1px solid var(--line)" }}>
                   <button onClick={() => copyText(activeTab === "chatgpt" ? `${baseUrl}/api/mcp\nAuthorization: Bearer ${tokenValue}` : activeTab === "claude-code" ? claudeCodeCommand : mcpConfig, "config")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-2xs font-medium transition-all" style={{ background: copied === "config" ? "#16a34a" : "var(--accent)", color: "#fff" }}>
-                    {copied === "config" ? <><Check className="w-3 h-3" /> Copi\u00e9</> : <><Copy className="w-3 h-3" /> Copier</>}
+                    {copied === "config" ? <><Check className="w-3 h-3" /> Copié</> : <><Copy className="w-3 h-3" /> Copier</>}
                   </button>
                 </div>
               </div>
@@ -446,7 +446,7 @@ Ma demande : `
               <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Copie le prompt</p>
             </div>
             <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-              Colle-le dans ChatGPT, Claude, Gemini ou n&apos;importe quelle IA. Ajoute ta demande \u00e0 la fin.
+              Colle-le dans ChatGPT, Claude, Gemini ou n&apos;importe quelle IA. Ajoute ta demande à la fin.
             </p>
             <div className="relative">
               <pre className="p-3 rounded-lg text-2xs font-mono overflow-x-auto max-h-48 overflow-y-auto whitespace-pre-wrap" style={{ background: "var(--canvas-bg)", color: "var(--text-secondary)", border: "1px solid var(--line)" }}>
@@ -457,7 +457,7 @@ Ma demande : `
                 className="absolute top-2 right-2 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-2xs font-medium transition-all"
                 style={{ background: copied === "prompt" ? "#16a34a" : "var(--accent)", color: "#fff" }}
               >
-                {copied === "prompt" ? <><Check className="w-3 h-3" /> Copi\u00e9</> : <><Copy className="w-3 h-3" /> Copier</>}
+                {copied === "prompt" ? <><Check className="w-3 h-3" /> Copié</> : <><Copy className="w-3 h-3" /> Copier</>}
               </button>
             </div>
           </div>
@@ -466,10 +466,10 @@ Ma demande : `
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold" style={{ background: "var(--accent)", color: "#fff" }}>2</div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Colle la r\u00e9ponse JSON</p>
+              <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Colle la réponse JSON</p>
             </div>
             <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-              Copie le JSON g\u00e9n\u00e9r\u00e9 par l&apos;IA et colle-le ici pour appliquer les modifications.
+              Copie le JSON généré par l&apos;IA et colle-le ici pour appliquer les modifications.
             </p>
             <textarea
               value={jsonInput}

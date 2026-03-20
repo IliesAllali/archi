@@ -70,6 +70,6 @@ export async function POST(req: NextRequest) {
   await sendVerificationEmail(email, name, token).catch(console.error)
 
   return NextResponse.json({
-    message: 'V\u00e9rifiez votre bo\u00eete mail pour confirmer votre compte.'
+    message: 'Vérifiez votre boîte mail pour confirmer votre compte.'
   })
 }

@@ -37,7 +37,7 @@ export async function POST(
 
   // Check expiration
   if (link.expires_at && link.expires_at < Date.now()) {
-    return NextResponse.json({ error: 'Ce lien a expir\u00e9' }, { status: 410 })
+    return NextResponse.json({ error: 'Ce lien a expiré' }, { status: 410 })
   }
 
   // Check password if set

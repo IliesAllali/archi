@@ -29,19 +29,19 @@ export interface AiEditAction {
 
 const GENERATE_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web.
 
-L'utilisateur va te d\u00e9crire un site. Tu dois g\u00e9n\u00e9rer une arborescence compl\u00e8te et professionnelle.
+L'utilisateur va te décrire un site. Tu dois générer une arborescence complète et professionnelle.
 
-R\u00e8gles :
-- G\u00e9n\u00e8re entre 8 et 30 pages selon la complexit\u00e9 du site
-- La premi\u00e8re page doit toujours \u00eatre "Accueil" (type: "home", priority: "primary")
-- Utilise une hi\u00e9rarchie logique (max 3 niveaux de profondeur)
+Règles :
+- Génère entre 8 et 30 pages selon la complexité du site
+- La première page doit toujours être "Accueil" (type: "home", priority: "primary")
+- Utilise une hiérarchie logique (max 3 niveaux de profondeur)
 - Types disponibles : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priorit\u00e9s : primary (pages cl\u00e9s), secondary (contenu), utility (mentions l\u00e9gales, 404...)
-- Inclus toujours : Accueil, Contact, Mentions l\u00e9gales, 404
+- Priorités : primary (pages clés), secondary (contenu), utility (mentions légales, 404...)
+- Inclus toujours : Accueil, Contact, Mentions légales, 404
 - Chaque page doit avoir une description courte (1 phrase) et un rationale (pourquoi cette page existe)
 - Pense SEO, parcours utilisateur, et conversion
 
-R\u00e9ponds UNIQUEMENT avec un JSON valide, sans markdown, sans commentaire, sans explication.
+Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans commentaire, sans explication.
 Format exact :
 {
   "nodes": [
@@ -51,33 +51,33 @@ Format exact :
       "label": "Accueil",
       "type": "home",
       "priority": "primary",
-      "description": "Page d'entr\u00e9e principale du site",
-      "rationale": "Point d'entr\u00e9e principal, oriente les visiteurs"
+      "description": "Page d'entrée principale du site",
+      "rationale": "Point d'entrée principal, oriente les visiteurs"
     }
   ]
 }
 
-Les temp_id doivent \u00eatre des identifiants courts en snake_case (ex: "home", "about", "blog_list", "contact").
-Les parent_temp_id r\u00e9f\u00e9rencent le temp_id du parent. null = page racine (seul "home" devrait \u00eatre racine).`;
+Les temp_id doivent être des identifiants courts en snake_case (ex: "home", "about", "blog_list", "contact").
+Les parent_temp_id référencent le temp_id du parent. null = page racine (seul "home" devrait être racine).`;
 
 const EDIT_SYSTEM = `Tu es un architecte UX/UI expert. L'utilisateur te donne l'arborescence actuelle de son site et te demande une modification.
 
-Tu dois r\u00e9pondre avec une liste d'actions \u00e0 effectuer sur l'arbre.
+Tu dois répondre avec une liste d'actions à effectuer sur l'arbre.
 
 Actions possibles :
 - "add" : ajouter une page (temp_id + parent_id ou parent_temp_id + label + type + priority + description)
-- "update" : modifier une page existante (node_id + champs \u00e0 modifier)
+- "update" : modifier une page existante (node_id + champs à modifier)
 - "delete" : supprimer une page (node_id)
-- "move" : d\u00e9placer une page (node_id + nouveau parent_id)
+- "move" : déplacer une page (node_id + nouveau parent_id)
 
-R\u00e8gles :
-- Sois chirurgical : ne modifie que ce qui est demand\u00e9
-- Si l'utilisateur demande une r\u00e9organisation globale, propose les mouvements n\u00e9cessaires
-- Garde la coh\u00e9rence de l'arbre (pas d'orphelins)
+Règles :
+- Sois chirurgical : ne modifie que ce qui est demandé
+- Si l'utilisateur demande une réorganisation globale, propose les mouvements nécessaires
+- Garde la cohérence de l'arbre (pas d'orphelins)
 - Pour les ajouts, utilise des temp_id en snake_case
-- Les parent_id r\u00e9f\u00e9rencent des IDs r\u00e9els existants dans l'arbre
+- Les parent_id référencent des IDs réels existants dans l'arbre
 
-R\u00e9ponds UNIQUEMENT avec un JSON valide :
+Réponds UNIQUEMENT avec un JSON valide :
 {
   "actions": [
     { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID_HERE", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
@@ -85,7 +85,7 @@ R\u00e9ponds UNIQUEMENT avec un JSON valide :
     { "action": "delete", "node_id": "REAL_ID" },
     { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_REAL_ID" }
   ],
-  "summary": "Courte explication de ce qui a \u00e9t\u00e9 fait (1-2 phrases)"
+  "summary": "Courte explication de ce qui a été fait (1-2 phrases)"
 }`;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ export function buildCopyPrompt(
 Voici l'arbre actuel :
 ${treeStr}
 
-Je veux que tu me proposes des modifications. R\u00e9ponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/apr\u00e8s) :
+Je veux que tu me proposes des modifications. Réponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/après) :
 
 {
   "actions": [
@@ -186,7 +186,7 @@ Je veux que tu me proposes des modifications. R\u00e9ponds UNIQUEMENT avec ce fo
 }
 
 Types de page : home, listing, detail, form, landing, quiz, search, hub, error, legal
-Priorit\u00e9s : primary, secondary, utility
+Priorités : primary, secondary, utility
 
 Ma demande : `;
 
