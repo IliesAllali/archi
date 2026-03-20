@@ -6,12 +6,27 @@ import { db } from './db'
 
 // ─── Secrets ──────────────────────────────────────────────────────────────────
 
-const ACCESS_SECRET = new TextEncoder().encode(
-  process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-in-prod'
-)
-const REFRESH_SECRET = new TextEncoder().encode(
-  process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-in-prod'
-)
+let _accessSecret: Uint8Array | null = null
+let _refreshSecret: Uint8Array | null = null
+
+function getSecret(envVar: string, name: string): Uint8Array {
+  const value = process.env[envVar]
+  if (!value && process.env.NODE_ENV === 'production') {
+    throw new Error(`CRITICAL: ${envVar} must be set in production. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+  }
+  return new TextEncoder().encode(value || `dev-${name}-not-for-prod`)
+}
+
+function getAccessSecret(): Uint8Array {
+  if (!_accessSecret) _accessSecret = getSecret('JWT_ACCESS_SECRET', 'access')
+  return _accessSecret
+}
+
+function getRefreshSecret(): Uint8Array {
+  if (!_refreshSecret) _refreshSecret = getSecret('JWT_REFRESH_SECRET', 'refresh')
+  return _refreshSecret
+}
+
 
 // ─── Cookie names ─────────────────────────────────────────────────────────────
 
@@ -37,12 +52,12 @@ export async function createAccessToken(payload: Omit<AccessTokenPayload, 'type'
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('15m')
-    .sign(ACCESS_SECRET)
+    .sign(getAccessSecret())
 }
 
 export async function verifyAccessToken(token: string): Promise<AccessTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, ACCESS_SECRET)
+    const { payload } = await jwtVerify(token, getAccessSecret())
     if (payload.type !== 'access') return null
     return payload as unknown as AccessTokenPayload
   } catch {
@@ -195,12 +210,12 @@ export async function createSession(payload: Record<string, string>): Promise<st
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime('7d')
-    .sign(ACCESS_SECRET)
+    .sign(getAccessSecret())
 }
 
 export async function verifySession(token: string) {
   try {
-    const { payload } = await jwtVerify(token, ACCESS_SECRET)
+    const { payload } = await jwtVerify(token, getAccessSecret())
     return payload
   } catch {
     return null

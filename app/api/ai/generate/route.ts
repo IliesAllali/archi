@@ -3,6 +3,7 @@ import { generateSitemap, getProviderLabel } from "@/lib/ai";
 import type { AiProvider } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { nanoid } from "nanoid";
+import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 
 const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
 
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
     const payload = await verifyAccessToken(token);
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit
+    const limit = checkAiRateLimit(payload.sub);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Limite atteinte (20/h). Réessaie dans ${Math.ceil(limit.retryAfterSeconds / 60)} min.` },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      );
     }
 
     // Generate sitemap via AI
@@ -113,23 +123,17 @@ export async function POST(req: NextRequest) {
       nodeCount: result.nodes.length,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "AI generation failed";
+    const message = err instanceof Error ? err.message : "";
+    // Log internally but never expose raw error to client
+    console.error("AI generate error:", message);
 
-    // Detect Anthropic API errors
     if (message.includes("401") || message.includes("authentication") || message.includes("Incorrect API key")) {
-      return NextResponse.json(
-        { error: "Clé API invalide. Vérifie ta clé." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Clé API invalide ou expirée." }, { status: 401 });
     }
     if (message.includes("429") || message.includes("rate")) {
-      return NextResponse.json(
-        { error: "Trop de requêtes. Réessaie dans quelques secondes." },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: "Limite du fournisseur IA atteinte. Réessaie dans quelques secondes." }, { status: 429 });
     }
 
-    console.error("AI generate error:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Erreur lors de la génération. Réessaie." }, { status: 500 });
   }
 }
