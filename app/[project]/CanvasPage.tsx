@@ -10,7 +10,7 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Command, Undo2, Redo2, History, Settings, Monitor, Activity } from "lucide-react";
+import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, Activity } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
@@ -28,6 +28,8 @@ export default function CanvasPage({ project, currentUser }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const initProject = useCanvasStore((s) => s.initProject);
   const nodes = useCanvasStore((s) => s.nodes);
@@ -77,6 +79,16 @@ export default function CanvasPage({ project, currentUser }: Props) {
     month: "short",
     year: "numeric",
   });
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   const handleSpotlightSelect = useCallback(
     (node: SiteNode) => {
@@ -152,86 +164,100 @@ export default function CanvasPage({ project, currentUser }: Props) {
           </div>
         </div>
 
-        {/* Center — meta */}
-        <div className="hidden md:flex items-center gap-3 text-2xs absolute left-1/2 -translate-x-1/2">
-          <span className="font-mono" style={{ color: "var(--text-muted)" }}>
-            {project.client}
-          </span>
-          <div className="w-px h-3" style={{ background: "var(--line)" }} />
-          <span
-            className="font-medium px-1.5 py-0.5 rounded font-mono"
-            style={{
-              color: project.accent,
-              backgroundColor: `${project.accent}18`,
-            }}
-          >
-            {project.version}
-          </span>
-          <span style={{ color: "var(--text-muted)" }}>{formattedDate}</span>
-          <div className="w-px h-3" style={{ background: "var(--line)" }} />
-          <span className="tabular-nums font-mono" style={{ color: "var(--text-muted)" }}>
-            {nodes.length}p
-          </span>
-        </div>
-
         {/* Right — actions */}
         <div className="flex items-center gap-1 shrink-0">
           <PresenceAvatars users={otherUsers} />
-          {otherUsers.length > 0 && <div className="w-px h-4 bg-line mx-1 hidden sm:block" />}
+
           <SaveStatusBadge />
 
-          <button
-            onClick={() => {
-              const e = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
-              window.dispatchEvent(e);
-            }}
-            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Rechercher une page"
-          >
-            <Command className="w-3 h-3" />
-            <span className="font-mono">K</span>
-          </button>
+          <span className="hidden lg:inline text-2xs tabular-nums font-mono ml-1" style={{ color: "var(--text-faint)" }}>
+            {nodes.length}p
+          </span>
 
-          <button
-            onClick={() => {
-              const e = new KeyboardEvent("keydown", { key: "f", metaKey: true, bubbles: true });
-              window.dispatchEvent(e);
-            }}
-            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Ajuster la vue"
-          >
-            <Command className="w-3 h-3" />
-            <span className="font-mono">F</span>
-          </button>
-
-          <button
-            onClick={() => setActivityOpen(true)}
-            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Activité récente"
-          >
-            <Activity className="w-3.5 h-3.5" />
-          </button>
-
-          <button
-            onClick={() => setHistoryOpen(true)}
-            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Historique des versions"
-          >
-            <History className="w-3.5 h-3.5" />
-          </button>
-
-          <ThemeToggle />
           <ExportButton project={liveProject} />
 
-          <Link
-            href={`/${project.id}/settings`}
-            className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-md text-2xs text-label-faint hover:text-label-muted hover:bg-bg-hover transition-all duration-100 active:scale-95"
-            data-tooltip="Paramètres"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </Link>
+          {/* More menu */}
+          <div className="relative hidden sm:block" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="p-1.5 rounded-md transition-colors duration-100 active:scale-95"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 w-48 rounded-lg py-1 shadow-lg z-50"
+                style={{ background: "var(--elevated)", border: "1px solid var(--line-strong)" }}
+              >
+                <button
+                  onClick={() => {
+                    const e = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
+                    window.dispatchEvent(e);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <Search className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Rechercher
+                  <span className="ml-auto text-2xs font-mono" style={{ color: "var(--text-faint)" }}>Ctrl+K</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const e = new KeyboardEvent("keydown", { key: "f", metaKey: true, bubbles: true });
+                    window.dispatchEvent(e);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <Maximize className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Ajuster la vue
+                  <span className="ml-auto text-2xs font-mono" style={{ color: "var(--text-faint)" }}>Ctrl+F</span>
+                </button>
+                <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
+                <button
+                  onClick={() => { setActivityOpen(true); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <Activity className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Activité
+                </button>
+                <button
+                  onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <History className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Historique
+                </button>
+                <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
+                <Link
+                  href={`/${project.id}/settings`}
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <Settings className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                  Paramètres
+                </Link>
+              </div>
+            )}
+          </div>
 
-          <div className="w-px h-4 bg-line mx-1 hidden sm:block" />
+          <ThemeToggle />
 
           <button
             onClick={() => setShareOpen(true)}
