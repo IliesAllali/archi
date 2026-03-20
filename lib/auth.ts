@@ -51,7 +51,7 @@ export async function createAccessToken(payload: Omit<AccessTokenPayload, 'type'
   return new SignJWT({ ...payload, type: 'access' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('15m')
+    .setExpirationTime('7d')
     .sign(getAccessSecret())
 }
 
@@ -161,7 +161,7 @@ export async function setAuthCookies(
     httpOnly: true,
     secure,
     sameSite: 'lax',
-    maxAge: 15 * 60,
+    maxAge: 7 * 24 * 60 * 60,
     path: '/',
   })
   res.cookies.set(REFRESH_COOKIE, refreshToken, {

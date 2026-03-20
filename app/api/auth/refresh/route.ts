@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true })
 
   res.cookies.set(ACCESS_COOKIE, newAccessToken, {
-    httpOnly: true, secure, sameSite: 'lax', maxAge: 15 * 60, path: '/',
+    httpOnly: true, secure, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60, path: '/',
   })
   res.cookies.set(REFRESH_COOKIE, newRefreshToken, {
     httpOnly: true, secure, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60, path: '/',
