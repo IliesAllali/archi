@@ -42,6 +42,33 @@ function createDb(): Database.Database {
     db.exec("ALTER TABLE users ADD COLUMN avatar TEXT")
   }
 
+  // Ensure comments table exists (auto-migration)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id          TEXT PRIMARY KEY,
+      project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      node_id     TEXT NOT NULL,
+      author_name TEXT NOT NULL,
+      author_id   TEXT,
+      content     TEXT NOT NULL,
+      resolved    INTEGER NOT NULL DEFAULT 0,
+      created_at  INTEGER NOT NULL,
+      offset_x    REAL DEFAULT 0,
+      offset_y    REAL DEFAULT 0,
+      parent_id   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
+    CREATE INDEX IF NOT EXISTS idx_comments_node    ON comments(node_id);
+  `)
+
+  // Add spatial comment fields if missing (auto-migration for existing DBs)
+  const commentCols = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[]
+  if (!commentCols.some(c => c.name === "offset_x")) {
+    db.exec("ALTER TABLE comments ADD COLUMN offset_x REAL DEFAULT 0")
+    db.exec("ALTER TABLE comments ADD COLUMN offset_y REAL DEFAULT 0")
+    db.exec("ALTER TABLE comments ADD COLUMN parent_id TEXT")
+  }
+
   return db
 }
 

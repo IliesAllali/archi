@@ -17,6 +17,7 @@ import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import ActivityPanel from "@/components/ActivityPanel";
 import AiBar from "@/components/AiBar";
 import CommentsPanel from "@/components/CommentsPanel";
+import { useCommentsStore } from "@/store/comments-store";
 import { usePresence } from "@/hooks/usePresence";
 import { usePresenceStore } from "@/hooks/usePresenceStore";
 
@@ -24,6 +25,34 @@ interface Props {
   project: Project;
   currentUser?: { id: string; name: string; role: string } | null;
   readOnly?: boolean;
+}
+
+function CommentModeButton({ accent }: { accent: string }) {
+  const commentMode = useCommentsStore(s => s.commentMode)
+  const toggleCommentMode = useCommentsStore(s => s.toggleCommentMode)
+  const unresolvedCount = useCommentsStore(s => s.comments.filter(c => !c.parentId && !c.resolved).length)
+
+  return (
+    <button
+      onClick={toggleCommentMode}
+      className="relative flex items-center gap-1.5 p-1.5 rounded-md text-2xs font-medium transition-all duration-150 active:scale-95"
+      style={{
+        background: commentMode ? `${accent}20` : "transparent",
+        color: commentMode ? accent : "var(--text-muted)",
+      }}
+      title={commentMode ? "Quitter le mode commentaire (Esc)" : "Mode commentaire"}
+    >
+      <MessageCircle className="w-4 h-4" />
+      {unresolvedCount > 0 && (
+        <span
+          className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center rounded-full text-white"
+          style={{ background: accent, fontSize: 9, fontWeight: 700 }}
+        >
+          {unresolvedCount > 9 ? "9+" : unresolvedCount}
+        </span>
+      )}
+    </button>
+  )
 }
 
 export default function CanvasPage({ project, currentUser, readOnly = false }: Props) {
@@ -202,6 +231,9 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
 
           <ExportButton project={liveProject} />
 
+          {/* Comment mode toggle */}
+          <CommentModeButton accent={project.accent} />
+
           {/* More menu */}
           <div className="relative hidden sm:block" ref={menuRef}>
             <button
@@ -349,6 +381,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
           onExternalSelectClear={() => selectNode(null)}
           onOpenComments={openComments}
           readOnly={readOnly}
+          currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
         />
       </div>
 

@@ -12,6 +12,9 @@ interface CommentRow {
   content: string
   resolved: number
   created_at: number
+  offset_x: number
+  offset_y: number
+  parent_id: string | null
 }
 
 export async function GET(
@@ -28,7 +31,7 @@ export async function GET(
       .all(params.id, nodeId) as CommentRow[]
   } else {
     rows = db
-      .prepare("SELECT * FROM comments WHERE project_id = ? ORDER BY created_at DESC")
+      .prepare("SELECT * FROM comments WHERE project_id = ? ORDER BY created_at ASC")
       .all(params.id) as CommentRow[]
   }
 
@@ -40,6 +43,9 @@ export async function GET(
     content: r.content,
     resolved: !!r.resolved,
     createdAt: r.created_at,
+    offsetX: r.offset_x ?? 0,
+    offsetY: r.offset_y ?? 0,
+    parentId: r.parent_id ?? null,
   })))
 }
 
@@ -48,7 +54,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const body = await req.json()
-  const { nodeId, content, authorName } = body
+  const { nodeId, content, authorName, offsetX, offsetY, parentId } = body
 
   if (!nodeId || !content?.trim()) {
     return NextResponse.json({ error: "nodeId and content required" }, { status: 400 })
@@ -65,9 +71,13 @@ export async function POST(
   const id = nanoid()
   const now = Date.now()
 
+  const ox = typeof offsetX === "number" ? offsetX : 0
+  const oy = typeof offsetY === "number" ? offsetY : 0
+  const pid = typeof parentId === "string" ? parentId : null
+
   db.prepare(
-    "INSERT INTO comments (id, project_id, node_id, author_name, author_id, content, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, params.id, nodeId, name, session?.sub || null, content.trim(), now)
+    "INSERT INTO comments (id, project_id, node_id, author_name, author_id, content, created_at, offset_x, offset_y, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(id, params.id, nodeId, name, session?.sub || null, content.trim(), now, ox, oy, pid)
 
   return NextResponse.json({
     id,
@@ -77,5 +87,8 @@ export async function POST(
     content: content.trim(),
     resolved: false,
     createdAt: now,
+    offsetX: ox,
+    offsetY: oy,
+    parentId: pid,
   }, { status: 201 })
 }

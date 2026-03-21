@@ -24,6 +24,7 @@ import EntryPointNodeComponent from "./EntryPointNode";
 import DropIndicatorNode from "./DropIndicator";
 import DetailPanel from "../Panel/DetailPanel";
 import DeleteNodeModal from "../DeleteNodeModal";
+import CommentOverlay from "../CommentOverlay";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -41,6 +42,7 @@ interface CanvasProps {
   onExternalSelectClear?: () => void;
   onOpenComments?: (nodeId: string) => void;
   readOnly?: boolean;
+  currentUser?: { id: string; name: string } | null;
 }
 
 // ─── Helper: get parent of a node from store nodes ──────────────────────────
@@ -242,7 +244,7 @@ function computeShiftsAndIndicator(
 
 // ─── Main Canvas ────────────────────────────────────────────────────────────
 
-function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments, readOnly = false }: CanvasProps) {
+function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments, readOnly = false, currentUser = null }: CanvasProps) {
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -657,7 +659,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.color = "var(--text-secondary)" }}
           >
             <Plus className="w-5 h-5" />
-            Cr\u00e9er la premi\u00e8re page
+            Créer la première page
           </button>
         )}
       </div>
@@ -720,6 +722,12 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
+
+      <CommentOverlay
+        projectId={project.id}
+        currentUser={currentUser}
+        rfNodes={rfNodesRef.current}
+      />
 
       <DetailPanel
         node={selectedNode}
