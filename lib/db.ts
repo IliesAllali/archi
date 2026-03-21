@@ -20,54 +20,66 @@ function createDb(): Database.Database {
   const db = new Database(DB_PATH)
   // WAL mode — better concurrent read performance, safer writes
   db.pragma('journal_mode = WAL')
+
+  // Run migrations with FK disabled (parent tables may not exist yet)
+  db.pragma('foreign_keys = OFF')
+
+  try {
+    // Ensure user_api_keys table exists (auto-migration)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS user_api_keys (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider   TEXT NOT NULL,
+        key_hash   TEXT NOT NULL,
+        key_hint   TEXT NOT NULL,
+        label      TEXT,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
+    `)
+
+    // Add avatar column if missing (auto-migration)
+    const usersExist = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get()
+    if (usersExist) {
+      const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[]
+      if (!cols.some(c => c.name === "avatar")) {
+        db.exec("ALTER TABLE users ADD COLUMN avatar TEXT")
+      }
+    }
+
+    // Ensure comments table exists (auto-migration)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id          TEXT PRIMARY KEY,
+        project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        node_id     TEXT NOT NULL,
+        author_name TEXT NOT NULL,
+        author_id   TEXT,
+        content     TEXT NOT NULL,
+        resolved    INTEGER NOT NULL DEFAULT 0,
+        created_at  INTEGER NOT NULL,
+        offset_x    REAL DEFAULT 0,
+        offset_y    REAL DEFAULT 0,
+        parent_id   TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
+      CREATE INDEX IF NOT EXISTS idx_comments_node    ON comments(node_id);
+    `)
+
+    // Add spatial comment fields if missing (auto-migration for existing DBs)
+    const commentCols = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[]
+    if (!commentCols.some(c => c.name === "offset_x")) {
+      db.exec("ALTER TABLE comments ADD COLUMN offset_x REAL DEFAULT 0")
+      db.exec("ALTER TABLE comments ADD COLUMN offset_y REAL DEFAULT 0")
+      db.exec("ALTER TABLE comments ADD COLUMN parent_id TEXT")
+    }
+  } catch {
+    // Migrations may fail at build time (no full schema) — that's OK
+  }
+
+  // Enable FK enforcement for runtime queries
   db.pragma('foreign_keys = ON')
-
-  // Ensure user_api_keys table exists (auto-migration)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS user_api_keys (
-      id         TEXT PRIMARY KEY,
-      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      provider   TEXT NOT NULL,
-      key_hash   TEXT NOT NULL,
-      key_hint   TEXT NOT NULL,
-      label      TEXT,
-      created_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
-  `)
-
-  // Add avatar column if missing (auto-migration)
-  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[]
-  if (!cols.some(c => c.name === "avatar")) {
-    db.exec("ALTER TABLE users ADD COLUMN avatar TEXT")
-  }
-
-  // Ensure comments table exists (auto-migration)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS comments (
-      id          TEXT PRIMARY KEY,
-      project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-      node_id     TEXT NOT NULL,
-      author_name TEXT NOT NULL,
-      author_id   TEXT,
-      content     TEXT NOT NULL,
-      resolved    INTEGER NOT NULL DEFAULT 0,
-      created_at  INTEGER NOT NULL,
-      offset_x    REAL DEFAULT 0,
-      offset_y    REAL DEFAULT 0,
-      parent_id   TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_comments_project ON comments(project_id);
-    CREATE INDEX IF NOT EXISTS idx_comments_node    ON comments(node_id);
-  `)
-
-  // Add spatial comment fields if missing (auto-migration for existing DBs)
-  const commentCols = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[]
-  if (!commentCols.some(c => c.name === "offset_x")) {
-    db.exec("ALTER TABLE comments ADD COLUMN offset_x REAL DEFAULT 0")
-    db.exec("ALTER TABLE comments ADD COLUMN offset_y REAL DEFAULT 0")
-    db.exec("ALTER TABLE comments ADD COLUMN parent_id TEXT")
-  }
 
   return db
 }
