@@ -7,6 +7,8 @@ export const AI_PROVIDERS: { id: AiProvider; label: string; placeholder: string;
   { id: "mistral", label: "Mistral", placeholder: "...", url: "https://console.mistral.ai/api-keys" },
 ];
 
+const STORAGE_PREFIX = "arbo_ai_";
+
 export function getStoredSpeed(): AiSpeed {
   if (typeof window === "undefined") return "fast";
   return (localStorage.getItem(`${STORAGE_PREFIX}speed`) as AiSpeed) || "fast";
@@ -16,8 +18,6 @@ export function storeSpeed(speed: AiSpeed) {
   if (typeof window === "undefined") return;
   localStorage.setItem(`${STORAGE_PREFIX}speed`, speed);
 }
-
-const STORAGE_PREFIX = "arbo_ai_";
 
 export function getStoredProvider(): AiProvider {
   if (typeof window === "undefined") return "anthropic";

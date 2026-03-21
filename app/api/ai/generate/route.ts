@@ -4,6 +4,7 @@ import type { AiProvider, AiSpeed } from "@/lib/ai";
 import { db, saveSnapshot } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
+import { sanitizeText } from "@/lib/sanitize";
 
 const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
 const VALID_SPEEDS: AiSpeed[] = ["fast", "quality"];
@@ -83,10 +84,13 @@ export async function POST(req: NextRequest) {
           .replace(/^-|-$/g, "")}-${nanoid(6)}`;
         const now = Date.now();
 
+        const safeName = sanitizeText(projectName) || "Nouveau projet";
+        const safeClient = sanitizeText(clientName) || null;
+
         db.prepare(
           `INSERT INTO projects (id, slug, name, client, accent, version, owner_id, archived, created_at, updated_at)
            VALUES (?, ?, ?, ?, '#5E6AD2', 'v1', ?, 0, ?, ?)`
-        ).run(projectId, slug, projectName || "Nouveau projet", clientName || null, payload.sub, now, now);
+        ).run(projectId, slug, safeName, safeClient, payload.sub, now, now);
 
         // Add user as project member (owner)
         db.prepare(

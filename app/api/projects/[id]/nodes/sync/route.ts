@@ -38,7 +38,7 @@ export async function PUT(
   const member = db
     .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
     .get(params.id, payload.sub) as { role: string } | undefined;
-  if (!member) {
+  if (!member || member.role === "viewer") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

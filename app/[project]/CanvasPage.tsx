@@ -327,17 +327,19 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       </header>
 
       {/* Mobile read-only banner */}
-      <div
-        className="flex md:hidden items-center justify-center gap-1.5 px-3 py-1.5 text-2xs font-medium"
-        style={{
-          background: "var(--surface)",
-          borderBottom: "1px solid var(--line)",
-          color: "var(--text-muted)",
-        }}
-      >
-        <Monitor className="w-3 h-3" />
-        Mode lecture — édition sur desktop uniquement
-      </div>
+      {readOnly && (
+        <div
+          className="flex md:hidden items-center justify-center gap-1.5 px-3 py-1.5 text-2xs font-medium"
+          style={{
+            background: "var(--surface)",
+            borderBottom: "1px solid var(--line)",
+            color: "var(--text-muted)",
+          }}
+        >
+          <Monitor className="w-3 h-3" />
+          Mode lecture, édition sur desktop uniquement
+        </div>
+      )}
 
       {/* Canvas */}
       <div className="flex-1 relative overflow-hidden">
