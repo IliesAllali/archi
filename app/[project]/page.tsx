@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import CanvasPage from "./CanvasPage";
 import type { Project } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: { project: string };
 }

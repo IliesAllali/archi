@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth"
 import { notFound, redirect } from "next/navigation"
 import SettingsClient from "./SettingsClient"
 
+export const dynamic = "force-dynamic"
+
 interface Props {
   params: { project: string }
 }
