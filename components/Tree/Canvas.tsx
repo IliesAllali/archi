@@ -723,11 +723,11 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         />
       </ReactFlow>
 
-      <CommentOverlay
+      {/* <CommentOverlay
         projectId={project.id}
         currentUser={currentUser}
         rfNodes={rfNodesRef.current}
-      />
+      /> */}
 
       <DetailPanel
         node={selectedNode}
