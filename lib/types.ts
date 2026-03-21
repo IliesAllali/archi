@@ -70,6 +70,7 @@ export interface SiteNode extends NodeData {
   id: string
   children: string[]      // Computed from DB parent_id relationships
   position?: number
+  readOnly?: boolean       // Injected at render time for guest/viewer mode
 }
 
 // ─── Project ─────────────────────────────────────────────────────────────────

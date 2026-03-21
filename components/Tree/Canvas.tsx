@@ -329,10 +329,11 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
     const currentSelectedId = useCanvasStore.getState().selectedNodeId;
 
     computeLayout(nodes).then(({ rfNodes: layoutNodes, rfEdges: layoutEdges }) => {
-      // Mark the selected node
+      // Mark the selected node + inject readOnly into data
       const withSelection = layoutNodes.map((n) => ({
         ...n,
         selected: n.id === currentSelectedId,
+        data: { ...n.data, readOnly },
       }));
 
       rfNodesRef.current = withSelection;
@@ -378,10 +379,10 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
       const target = e.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.contentEditable === "true";
 
-      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+      if (!readOnly && (e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault(); undo(); return;
       }
-      if ((e.metaKey || e.ctrlKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+      if (!readOnly && (e.metaKey || e.ctrlKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
         e.preventDefault(); redo(); return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "f") {

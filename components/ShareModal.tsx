@@ -110,20 +110,26 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 4 }}
             transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:w-[480px] max-h-[90vh] overflow-y-auto bg-bg-elevated border border-line-strong rounded-xl shadow-2xl z-50"
-            style={{ boxShadow: "var(--modal-shadow)" }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+          >
+          <div
+            className="w-[calc(100%-32px)] sm:w-[480px] max-h-[90vh] overflow-y-auto rounded-xl pointer-events-auto"
+            style={{ background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--modal-shadow)" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-line">
               <div>
-                <h3 className="text-sm font-semibold text-label-primary">Partager le projet</h3>
-                <p className="text-2xs text-label-faint mt-0.5">{project.name}</p>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Partager le projet</h3>
+                <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>{project.name}</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-colors"
+                className="p-1.5 rounded-md transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
               >
-                <X className="w-4 h-4 text-label-muted" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -142,7 +148,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
               ) : (
                 <div className="p-3 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
                   <div>
-                    <label className="text-2xs text-label-muted block mb-1.5">
+                    <label className="text-2xs block mb-1.5" style={{ color: "var(--text-muted)" }}>
                       Mot de passe (optionnel)
                     </label>
                     <input
@@ -170,8 +176,8 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                     </button>
                     <button
                       onClick={() => { setShowCreate(false); setNewPassword(""); }}
-                      className="px-3 h-9 rounded-md text-xs text-label-muted hover:text-label-primary transition-colors"
-                      style={{ border: "1px solid var(--line)" }}
+                      className="px-3 h-9 rounded-md text-xs transition-colors"
+                      style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
                     >
                       Annuler
                     </button>
@@ -182,7 +188,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
               {/* Existing links */}
               {loading ? (
                 <div className="flex justify-center py-6">
-                  <Loader2 className="w-4 h-4 animate-spin text-label-faint" />
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
                 </div>
               ) : links.length > 0 ? (
                 <div className="space-y-2">
@@ -197,7 +203,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 text-2xs font-mono truncate" style={{ color: "var(--text-secondary)" }}>
-                          <Link2 className="w-3 h-3 text-label-faint shrink-0" />
+                          <Link2 className="w-3 h-3 shrink-0" style={{ color: "var(--text-faint)" }} />
                           /share/{link.token.slice(0, 8)}...
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-2xs" style={{ color: "var(--text-faint)" }}>
@@ -223,7 +229,8 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                       </button>
                       <button
                         onClick={() => deleteLink(link.id)}
-                        className="p-1.5 rounded-md text-label-faint hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                        className="p-1.5 rounded-md hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                        style={{ color: "var(--text-faint)" }}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -236,6 +243,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                 </p>
               )}
             </div>
+          </div>
           </motion.div>
         </>
       )}

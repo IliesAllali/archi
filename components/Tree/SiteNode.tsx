@@ -610,7 +610,7 @@ function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
     : null;
 
   const editingNodeId = useCanvasStore((s) => s.editingNodeId);
-  const isEditing = editingNodeId === id;
+  const isEditing = editingNodeId === id && !data.readOnly;
   const isDropTarget = useCanvasStore((s) => {
     const di = s.dropIntent;
     if (!di) return false;
@@ -788,8 +788,8 @@ function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
           </div>
         )}
 
-        {/* Add node buttons — hover-reveal */}
-        <AddNodeButtons nodeId={id} isHome={isHome} />
+        {/* Add node buttons — hover-reveal (hidden in readOnly) */}
+        {!data.readOnly && <AddNodeButtons nodeId={id} isHome={isHome} />}
       </div>
     </>
   );
