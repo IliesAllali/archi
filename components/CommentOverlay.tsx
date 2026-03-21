@@ -511,9 +511,9 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
       ref={containerRef}
       className="comment-overlay-container absolute inset-0 pointer-events-none"
       style={{
-        zIndex: 20,
+        zIndex: 50,
         cursor: commentMode ? "crosshair" : undefined,
-        pointerEvents: commentMode ? "auto" : undefined,
+        pointerEvents: commentMode ? "auto" : "none",
       }}
       onClick={handleOverlayClick}
     >
