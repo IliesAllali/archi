@@ -23,9 +23,10 @@ import { usePresenceStore } from "@/hooks/usePresenceStore";
 interface Props {
   project: Project;
   currentUser?: { id: string; name: string; role: string } | null;
+  readOnly?: boolean;
 }
 
-export default function CanvasPage({ project, currentUser }: Props) {
+export default function CanvasPage({ project, currentUser, readOnly = false }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
@@ -59,11 +60,12 @@ export default function CanvasPage({ project, currentUser }: Props) {
     initProject(project);
   }, [project, initProject]);
 
-  // Setup auto-save
+  // Setup auto-save (only for editors)
   useEffect(() => {
+    if (readOnly) return;
     const unsub = setupAutoSave(project.id);
     return unsub;
-  }, [project.id]);
+  }, [project.id, readOnly]);
 
   // Track node focus for presence
   const prevSelectedRef = useRef<string | null>(null);
@@ -163,34 +165,36 @@ export default function CanvasPage({ project, currentUser }: Props) {
             </span>
           )}
 
-          {/* Undo/Redo */}
-          <div className="hidden sm:flex items-center gap-0.5 ml-2">
-            <button
-              onClick={undo}
-              disabled={past.length === 0}
-              className="p-1.5 rounded-md transition-colors duration-100 active:scale-95 disabled:opacity-30"
-              style={{ color: "var(--text-muted)" }}
-              title="Annuler (Ctrl+Z)"
-            >
-              <Undo2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={redo}
-              disabled={future.length === 0}
-              className="p-1.5 rounded-md transition-colors duration-100 active:scale-95 disabled:opacity-30"
-              style={{ color: "var(--text-muted)" }}
-              title="Rétablir (Ctrl+Y)"
-            >
-              <Redo2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* Undo/Redo (editors only) */}
+          {!readOnly && (
+            <div className="hidden sm:flex items-center gap-0.5 ml-2">
+              <button
+                onClick={undo}
+                disabled={past.length === 0}
+                className="p-1.5 rounded-md transition-colors duration-100 active:scale-95 disabled:opacity-30"
+                style={{ color: "var(--text-muted)" }}
+                title="Annuler (Ctrl+Z)"
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={redo}
+                disabled={future.length === 0}
+                className="p-1.5 rounded-md transition-colors duration-100 active:scale-95 disabled:opacity-30"
+                style={{ color: "var(--text-muted)" }}
+                title="Rétablir (Ctrl+Y)"
+              >
+                <Redo2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right — actions */}
         <div className="flex items-center gap-1 shrink-0">
           <PresenceAvatars users={otherUsers} />
 
-          {!isDemo && <SaveStatusBadge />}
+          {!isDemo && !readOnly && <SaveStatusBadge />}
 
           <span className="hidden lg:inline text-2xs tabular-nums font-mono ml-1" style={{ color: "var(--text-faint)" }}>
             {nodes.length}p
@@ -273,25 +277,29 @@ export default function CanvasPage({ project, currentUser }: Props) {
                   <MessageCircle className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
                   Commentaires
                 </button>
-                <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
-                <Link
-                  href={`/${project.id}/settings`}
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <Settings className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
-                  Paramètres
-                </Link>
+                {!readOnly && (
+                  <>
+                    <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
+                    <Link
+                      href={`/${project.id}/settings`}
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                      style={{ color: "var(--text-secondary)" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >
+                      <Settings className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                      Paramètres
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
 
           <ThemeToggle />
 
-          {!isDemo && (
+          {!isDemo && !readOnly && (
             <button
               onClick={() => setShareOpen(true)}
               className="share-btn flex items-center gap-1.5 px-2.5 py-2 sm:py-1.5 rounded-md text-xs sm:text-2xs font-medium transition-all duration-150 hover:brightness-125 active:scale-95"
@@ -303,6 +311,17 @@ export default function CanvasPage({ project, currentUser }: Props) {
               <Share2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Partager</span>
             </button>
+          )}
+
+          {/* Read-only badge for guests */}
+          {readOnly && (
+            <span
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium"
+              style={{ background: "var(--surface-hover)", color: "var(--text-muted)" }}
+            >
+              <Monitor className="w-3 h-3" />
+              Lecture seule
+            </span>
           )}
         </div>
       </header>
@@ -327,6 +346,7 @@ export default function CanvasPage({ project, currentUser }: Props) {
           externalSelectedNode={selectedNode}
           onExternalSelectClear={() => selectNode(null)}
           onOpenComments={openComments}
+          readOnly={readOnly}
         />
       </div>
 
@@ -360,8 +380,8 @@ export default function CanvasPage({ project, currentUser }: Props) {
         currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
       />
 
-      {/* AI Bar */}
-      {!isDemo && <AiBar projectId={project.id} />}
+      {/* AI Bar (editors only) */}
+      {!isDemo && !readOnly && <AiBar projectId={project.id} />}
     </div>
   );
 }

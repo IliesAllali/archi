@@ -4,6 +4,7 @@ import OpenAI from "openai";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type AiProvider = "anthropic" | "openai" | "mistral";
+export type AiSpeed = "fast" | "quality";
 
 export interface AiNode {
   temp_id: string;
@@ -30,11 +31,15 @@ export interface AiEditAction {
 
 // ─── Provider config ────────────────────────────────────────────────────────
 
-const PROVIDER_MODELS: Record<AiProvider, string> = {
-  anthropic: "claude-sonnet-4-20250514",
-  openai: "gpt-4o",
-  mistral: "mistral-large-latest",
+const PROVIDER_MODELS: Record<AiProvider, Record<AiSpeed, string>> = {
+  anthropic: { quality: "claude-sonnet-4-20250514", fast: "claude-haiku-4-5-20251001" },
+  openai: { quality: "gpt-4o", fast: "gpt-4o-mini" },
+  mistral: { quality: "mistral-large-latest", fast: "mistral-small-latest" },
 };
+
+function getModel(provider: AiProvider, speed: AiSpeed = "fast"): string {
+  return PROVIDER_MODELS[provider][speed];
+}
 
 const PROVIDER_LABELS: Record<AiProvider, string> = {
   anthropic: "Claude",
@@ -65,14 +70,17 @@ Règles :
 - CHAQUE page doit avoir : description (2-3 phrases), rationale, cta, tags
 - Pense SEO, parcours utilisateur, et conversion
 
-Champs enrichis (utilise-les sur TOUTES les pages clés, soit au moins 50% des pages) :
+Champs de base (sur TOUTES les pages) :
 - "cta": ["Texte bouton 1", "Texte bouton 2"] — appels à l'action
 - "tags": ["SEO", "conversion"] — catégorisation
-- "entryPoints": [{"type": "google", "label": "Recherche Google"}] — sources de trafic. Types: google, direct, nav, social, email, ads, qrcode
-- "zoningBlocks": wireframe layout de la page. Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
+
+Champs avancés (UNIQUEMENT sur les pages de type "home" et "landing", PAS sur les autres) :
+- "entryPoints": sources de trafic EXTERNES au site uniquement. On ne veut PAS de navigation interne (pas de type "nav"). Types valides : google, direct, social, email, ads, qrcode. Exemples : "Recherche Google", "Instagram", "Newsletter", "Google Ads". N'en mets que sur home et landing.
+- "zoningBlocks": wireframe layout de la page. UNIQUEMENT sur home et landing. Skins disponibles : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown.
-Exemple de node complet :
+
+Exemple — la homepage AVEC zoningBlocks et entryPoints, une page standard SANS :
 {
   "nodes": [
     {
@@ -88,11 +96,13 @@ Exemple de node complet :
       "entryPoints": [{"type": "direct", "label": "URL directe"}, {"type": "google", "label": "Recherche Google"}],
       "zoningBlocks": [
         {"id": "z1", "label": "Navigation", "skin": "nav", "height": 8},
-        {"id": "z2", "label": "Hero", "skin": "hero", "height": 25},
-        {"id": "z3", "label": "Features", "skin": "cards", "height": 30},
-        {"id": "z4", "label": "Social proof", "skin": "social-proof", "height": 15},
-        {"id": "z5", "label": "CTA", "skin": "cta", "height": 12},
-        {"id": "z6", "label": "Footer", "skin": "footer", "height": 10}
+        {"id": "z2", "label": "Hero principal", "skin": "hero", "height": 22},
+        {"id": "z3", "label": "Logos clients", "skin": "social-proof", "height": 8},
+        {"id": "z4", "label": "Features clés", "skin": "cards", "height": 22},
+        {"id": "z5", "label": "Arguments", "skin": "arguments", "height": 15},
+        {"id": "z6", "label": "Témoignages", "skin": "social-proof", "height": 10},
+        {"id": "z7", "label": "CTA final", "skin": "cta", "height": 8},
+        {"id": "z8", "label": "Footer", "skin": "footer", "height": 7}
       ]
     },
     {
@@ -117,60 +127,52 @@ L'utilisateur te donne l'arborescence actuelle de son site (avec les IDs réels)
 
 Tu dois répondre avec une liste d'actions à effectuer sur l'arbre.
 
+CONCEPT CLÉ — Pages vs Sections :
+- Une PAGE = un noeud dans l'arborescence (une URL distincte du site). Ex: "Accueil", "Tarifs", "Blog", "Contact".
+- Une SECTION = un bloc à l'intérieur d'une page (zoningBlocks). Ex: "Hero", "Features", "Témoignages", "CTA".
+- Quand l'utilisateur demande d'ajouter des "sections" à une page existante, utilise "update" avec zoningBlocks. NE CRÉE PAS de nouvelles pages.
+- Quand l'utilisateur demande d'ajouter des "pages", utilise "add".
+
+RÈGLE DE SCOPE — Touche uniquement ce qui est demandé :
+- Si l'utilisateur demande une modification sur UNE page spécifique, ne modifie QUE cette page. Ne touche pas aux autres.
+- Si l'utilisateur demande d'ajouter une section à la page d'accueil, fais un "update" sur la homepage avec les zoningBlocks mis à jour. Ne crée pas de nouvelles pages.
+- Ne reformule pas les descriptions ou labels des pages non concernées par la demande.
+- Sois minimal et précis : le moins d'actions possible pour satisfaire la demande.
+
 Actions possibles :
-- "add" : ajouter une page. TOUJOURS rattacher à un parent existant via parent_id (ID réel) ou parent_temp_id (si le parent est aussi un ajout). Seule la homepage peut avoir parent_id: null.
-- "update" : modifier une page existante (node_id + champs à modifier)
+- "add" : ajouter une NOUVELLE PAGE au site. TOUJOURS rattacher à un parent existant.
+- "update" : modifier une page existante (node_id + champs à modifier). Utilise ceci pour ajouter/modifier des sections (zoningBlocks), changer un label, une description, etc.
 - "delete" : supprimer une page (node_id)
 - "move" : déplacer une page (node_id + nouveau parent_id)
 
-Règles CRITIQUES :
-- CHAQUE page ajoutée DOIT avoir un parent_id valide (un ID existant dans l'arbre fourni) ou un parent_temp_id (si son parent est aussi un "add" dans la même réponse). Ne jamais créer de pages orphelines.
-- Crée des arborescences hiérarchiques réalistes : les sous-pages sont enfants de leur section parente.
-- Sois généreux en contenu : description complète, rationale, cta, tags sur chaque page.
-- Types disponibles : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priorités : primary (pages clés du parcours), secondary (contenu), utility (légal, 404)
-- Si l'utilisateur demande d'ajouter un site complet ou une section, crée une vraie hiérarchie (8-25 pages) avec des sous-sections.
+Règles :
+- CHAQUE page ajoutée DOIT avoir un parent_id valide (un ID existant dans l'arbre fourni) ou un parent_temp_id (si son parent est aussi un "add" dans la même réponse).
+- Types de pages : home, listing, detail, form, landing, quiz, search, hub, error, legal
+- Priorités : primary (pages clés), secondary (contenu), utility (légal, 404)
 
 Champs disponibles pour "add" et "update" :
 - label (string) : nom de la page
 - type (string) : type de page
 - priority (string) : primary/secondary/utility
-- description (string) : description du contenu et du rôle de la page (2-3 phrases)
-- rationale (string) : pourquoi cette page existe dans l'arborescence
-- cta (string[]) : textes des boutons d'appel à l'action
-- tags (string[]) : catégorisation (ex: "SEO", "conversion", "support", "onboarding")
-- entryPoints ({type, label}[]) : sources de trafic. Types: google, direct, nav, social, email, ads, qrcode
-- zoningBlocks ({id, label, skin, height}[]) : wireframe layout. Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
+- description (string) : description du contenu (2-3 phrases)
+- rationale (string) : pourquoi cette page existe
+- cta (string[]) : textes des boutons d'action
+- tags (string[]) : catégorisation
+- entryPoints ({type, label}[]) : sources de trafic EXTERNES uniquement. Types: google, direct, social, email, ads, qrcode. UNIQUEMENT sur home et landing.
+- zoningBlocks ({id, label, skin, height}[]) : les SECTIONS INTERNES de la page (wireframe layout). Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
 
-Utilise entryPoints et zoningBlocks sur les pages clés (homepage, landing, listing au minimum).
+Exemples de zoningBlocks (sections d'une page) :
+- Homepage type : nav(8) → hero(22) → social-proof(8) → cards(22) → arguments(15) → cta(10) → footer(7)
+- Landing type : nav(8) → hero(25) → arguments(20) → social-proof(12) → form(20) → footer(7)
+- Listing type : nav(8) → breadcrumb(5) → filtres(10) → grille(55) → pagination(8) → footer(8)
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown :
 {
   "actions": [
-    {
-      "action": "add",
-      "temp_id": "pricing",
-      "parent_id": "REAL_ID_OF_HOME",
-      "label": "Tarifs",
-      "type": "detail",
-      "priority": "primary",
-      "description": "Grille tarifaire avec les plans Free et Pro, FAQ billing",
-      "rationale": "Essentiel pour la conversion, les visiteurs doivent voir les prix avant de s'inscrire",
-      "cta": ["Commencer gratuitement", "Passer Pro"],
-      "tags": ["conversion", "pricing"],
-      "entryPoints": [{"type": "nav", "label": "Menu principal"}, {"type": "google", "label": "Google 'arbo pricing'"}],
-      "zoningBlocks": [
-        {"id": "z1", "label": "Navigation", "skin": "nav", "height": 8},
-        {"id": "z2", "label": "Hero tarifs", "skin": "hero", "height": 15},
-        {"id": "z3", "label": "Grille plans", "skin": "cards", "height": 40},
-        {"id": "z4", "label": "FAQ", "skin": "contenu", "height": 25},
-        {"id": "z5", "label": "CTA final", "skin": "cta", "height": 7},
-        {"id": "z6", "label": "Footer", "skin": "footer", "height": 5}
-      ]
-    },
-    { "action": "update", "node_id": "REAL_ID", "label": "Nouveau nom", "description": "..." },
+    { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...] },
+    { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
     { "action": "delete", "node_id": "REAL_ID" },
-    { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_REAL_ID" }
+    { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" }
   ],
   "summary": "Courte explication de ce qui a été fait"
 }`;
@@ -181,12 +183,15 @@ async function callLLM(
   provider: AiProvider,
   apiKey: string,
   system: string,
-  userMessage: string
+  userMessage: string,
+  speed: AiSpeed = "fast"
 ): Promise<string> {
+  const model = getModel(provider, speed);
+
   if (provider === "anthropic") {
     const client = new Anthropic({ apiKey });
     const response = await client.messages.create({
-      model: PROVIDER_MODELS.anthropic,
+      model,
       max_tokens: 4096,
       system,
       messages: [{ role: "user", content: userMessage }],
@@ -202,7 +207,7 @@ async function callLLM(
 
   const client = new OpenAI(config);
   const response = await client.chat.completions.create({
-    model: PROVIDER_MODELS[provider],
+    model,
     max_tokens: 4096,
     messages: [
       { role: "system", content: system },
@@ -223,9 +228,10 @@ function parseJSON(text: string): unknown {
 export async function generateSitemap(
   apiKey: string,
   prompt: string,
-  provider: AiProvider = "anthropic"
+  provider: AiProvider = "anthropic",
+  speed: AiSpeed = "fast"
 ): Promise<{ nodes: AiNode[] }> {
-  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, prompt);
+  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, prompt, speed);
   const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
@@ -239,12 +245,13 @@ export async function editSitemap(
   apiKey: string,
   prompt: string,
   currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
-  provider: AiProvider = "anthropic"
+  provider: AiProvider = "anthropic",
+  speed: AiSpeed = "fast"
 ): Promise<{ actions: AiEditAction[]; summary: string }> {
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
 
-  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, userMessage);
+  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, userMessage, speed);
   const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {

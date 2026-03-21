@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { editSitemap, getProviderLabel } from "@/lib/ai";
-import type { AiProvider } from "@/lib/ai";
-import { db, getActiveNodes } from "@/lib/db";
+import type { AiProvider, AiSpeed } from "@/lib/ai";
+import { db, getActiveNodes, saveSnapshot } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 
 const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
+const VALID_SPEEDS: AiSpeed[] = ["fast", "quality"];
 
 function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -21,11 +22,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectId, provider: rawProvider } = body as {
-    prompt?: string; apiKey?: string; projectId?: string; provider?: string;
+  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed } = body as {
+    prompt?: string; apiKey?: string; projectId?: string; provider?: string; speed?: string;
   };
   const provider: AiProvider = VALID_PROVIDERS.includes(rawProvider as AiProvider)
     ? (rawProvider as AiProvider) : "anthropic";
+  const speed: AiSpeed = VALID_SPEEDS.includes(rawSpeed as AiSpeed)
+    ? (rawSpeed as AiSpeed) : "fast";
 
   if (!prompt || !apiKey || !projectId) {
     return NextResponse.json(
@@ -92,7 +95,8 @@ export async function POST(req: NextRequest) {
         const result = await editSitemap(
           apiKey, prompt,
           currentTree as { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
-          provider
+          provider,
+          speed
         );
         const aiLabel = getProviderLabel(provider);
 
@@ -202,6 +206,9 @@ export async function POST(req: NextRequest) {
             send("action", { index: actionIndex, type: "move", id: action.node_id });
           }
         }
+
+        // Save version snapshot
+        saveSnapshot(projectId as string, "ai_edit", aiLabel, "ai");
 
         // Phase 3: done — send final tree
         const updatedNodes = getActiveNodes(projectId);

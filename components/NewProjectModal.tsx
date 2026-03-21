@@ -13,8 +13,10 @@ import {
   getStoredApiKey,
   storeApiKey,
   getProviderConfig,
+  getStoredSpeed,
+  storeSpeed,
 } from "@/lib/ai-providers"
-import type { AiProvider } from "@/lib/ai-providers"
+import type { AiProvider, AiSpeed } from "@/lib/ai-providers"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -42,7 +44,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const [provider, setProviderState] = useState<AiProvider>("anthropic")
   const [apiKey, setApiKey] = useState("")
   const [showKeyInput, setShowKeyInput] = useState(false)
+  const [speed, setSpeedState] = useState<AiSpeed>("fast")
   const [aiStep, setAiStep] = useState<"prompt" | "generating">("prompt")
+  const [aiStatus, setAiStatus] = useState("")
+  const [aiActions, setAiActions] = useState<{ label: string; index: number; total: number }[]>([])
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
   const providerConfig = getProviderConfig(provider)
@@ -66,8 +71,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setError("")
       setLoading(false)
       setAiStep("prompt")
+      setAiStatus("")
+      setAiActions([])
       const p = getStoredProvider()
       setProviderState(p)
+      setSpeedState(getStoredSpeed())
       const stored = getStoredApiKey(p)
       setApiKey(stored)
       setShowKeyInput(!stored)
@@ -123,6 +131,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
     setLoading(true)
     setError("")
     setAiStep("generating")
+    setAiStatus("")
+    setAiActions([])
 
     try {
       const csrf = getCsrfToken()
@@ -137,21 +147,61 @@ export default function NewProjectModal({ open, onClose }: Props) {
           apiKey: apiKey.trim(),
           projectName: aiProjectName.trim() || undefined,
           provider,
+          speed,
         }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        Events.projectCreated(false)
-        router.push(`/${data.projectId}`)
-        onClose()
-      } else {
+      if (!res.ok) {
+        // Pre-stream errors (auth, rate limit) still return JSON
         const data = await res.json().catch(() => ({}))
-        setError(data.error || "Erreur de génération")
+        setError(data.error || "Erreur de connexion au serveur")
         setAiStep("prompt")
+        setLoading(false)
+        return
+      }
+
+      // Consume SSE stream
+      const reader = res.body?.getReader()
+      if (!reader) { setError("Erreur de connexion"); setAiStep("prompt"); setLoading(false); return }
+
+      const decoder = new TextDecoder()
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split("\n")
+        buffer = lines.pop() || ""
+
+        let currentEvent = ""
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7)
+          } else if (line.startsWith("data: ") && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              if (currentEvent === "status") {
+                setAiStatus(data.message)
+              } else if (currentEvent === "action") {
+                setAiActions(prev => [...prev, { label: data.label, index: data.index, total: data.total }])
+                setAiStatus(`${data.index}/${data.total} pages cr\u00e9\u00e9es`)
+              } else if (currentEvent === "done") {
+                Events.projectCreated(false)
+                router.push(`/${data.projectId}`)
+                onClose()
+              } else if (currentEvent === "error") {
+                setError(data.error)
+                setAiStep("prompt")
+              }
+            } catch { /* skip malformed JSON */ }
+            currentEvent = ""
+          }
+        }
       }
     } catch {
-      setError("Erreur de connexion")
+      setError("Erreur de connexion au serveur")
       setAiStep("prompt")
     } finally {
       setLoading(false)
@@ -266,18 +316,22 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 <div className="space-y-3 pt-1">
                   {aiStep === "generating" ? (
                     <div className="flex flex-col items-center justify-center py-8 gap-3">
-                      <div className="relative">
-                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
-                        <Sparkles className="w-3.5 h-3.5 absolute -top-1 -right-1" style={{ color: "#8B5CF6" }} />
-                      </div>
+                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--accent)" }} />
                       <div className="text-center">
                         <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                          Génération en cours...
-                        </p>
-                        <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
-                          {providerConfig.label} analyse ton brief et construit l&apos;arborescence
+                          {aiStatus || "Connexion au fournisseur IA..."}
                         </p>
                       </div>
+                      {aiActions.length > 0 && (
+                        <div className="w-full max-w-[280px] flex flex-col gap-1 max-h-[120px] overflow-y-auto">
+                          {aiActions.map((a, i) => (
+                            <div key={i} className="flex items-center gap-2 text-2xs" style={{ color: "var(--text-muted)" }}>
+                              <span className="w-4 h-4 rounded flex items-center justify-center text-white shrink-0" style={{ background: "#22c55e", fontSize: 9 }}>+</span>
+                              <span className="truncate">{a.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {error && (
                         <p className="text-2xs text-center px-4" style={{ color: "var(--error-text)" }}>{error}</p>
                       )}
@@ -323,27 +377,51 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         </p>
                       </div>
 
-                      {/* Provider selector + API Key */}
-                      <div>
-                        <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                          Fournisseur IA
-                        </label>
-                        <div className="flex gap-1.5">
-                          {AI_PROVIDERS.map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => handleProviderChange(p.id)}
-                              className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
-                              style={{
-                                background: provider === p.id ? "var(--accent)" : "var(--surface)",
-                                color: provider === p.id ? "#fff" : "var(--text-secondary)",
-                                border: `1px solid ${provider === p.id ? "var(--accent)" : "var(--line-strong)"}`,
-                              }}
-                            >
-                              {p.label.split(" (")[0]}
-                            </button>
-                          ))}
+                      {/* Provider + Speed selector */}
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
+                            Fournisseur IA
+                          </label>
+                          <div className="flex gap-1.5">
+                            {AI_PROVIDERS.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => handleProviderChange(p.id)}
+                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
+                                style={{
+                                  background: provider === p.id ? "var(--accent)" : "var(--surface)",
+                                  color: provider === p.id ? "#fff" : "var(--text-secondary)",
+                                  border: `1px solid ${provider === p.id ? "var(--accent)" : "var(--line-strong)"}`,
+                                }}
+                              >
+                                {p.label.split(" (")[0]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="w-[130px] shrink-0">
+                          <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
+                            Vitesse
+                          </label>
+                          <div className="flex gap-1.5">
+                            {(["fast", "quality"] as const).map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                onClick={() => { setSpeedState(s); storeSpeed(s) }}
+                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
+                                style={{
+                                  background: speed === s ? "var(--accent)" : "var(--surface)",
+                                  color: speed === s ? "#fff" : "var(--text-secondary)",
+                                  border: `1px solid ${speed === s ? "var(--accent)" : "var(--line-strong)"}`,
+                                }}
+                              >
+                                {s === "fast" ? "\u26A1 Rapide" : "\u2728 Qualit\u00e9"}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
 

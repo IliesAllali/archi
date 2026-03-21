@@ -18,6 +18,7 @@ import "reactflow/dist/style.css";
 import { computeLayout } from "@/lib/elk-layout";
 import type { Project, SiteNode } from "@/lib/types";
 import { useCanvasStore, type DropIntent } from "@/store/canvas-store";
+import { Plus } from "lucide-react";
 import SiteNodeComponent from "./SiteNode";
 import EntryPointNodeComponent from "./EntryPointNode";
 import DropIndicatorNode from "./DropIndicator";
@@ -39,6 +40,7 @@ interface CanvasProps {
   externalSelectedNode?: SiteNode | null;
   onExternalSelectClear?: () => void;
   onOpenComments?: (nodeId: string) => void;
+  readOnly?: boolean;
 }
 
 // ─── Helper: get parent of a node from store nodes ──────────────────────────
@@ -240,7 +242,7 @@ function computeShiftsAndIndicator(
 
 // ─── Main Canvas ────────────────────────────────────────────────────────────
 
-function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments }: CanvasProps) {
+function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments, readOnly = false }: CanvasProps) {
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -388,7 +390,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
       if (isInput) return;
 
-      if (selectedNodeId && !editingNodeId) {
+      if (selectedNodeId && !editingNodeId && !readOnly) {
         if (e.key === "Tab") {
           e.preventDefault(); addNode(selectedNodeId, "child"); return;
         }
@@ -453,10 +455,11 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
   const onNodeDoubleClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
+      if (readOnly) return;
       if (node.id.startsWith("ep_")) return;
       startEditing(node.id);
     },
-    [startEditing]
+    [startEditing, readOnly]
   );
 
   const onPaneClick = useCallback(() => {
@@ -634,6 +637,32 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
     );
   }
 
+  // Empty state
+  if (nodes.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
+        {readOnly ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Ce projet est vide.</p>
+        ) : (
+          <button
+            onClick={() => addNode(null, "child", "Accueil")}
+            className="flex items-center gap-3 px-6 py-4 rounded-xl text-sm font-medium transition-all duration-150 hover:scale-105 active:scale-95"
+            style={{
+              background: "var(--elevated)",
+              border: "2px dashed var(--line-strong)",
+              color: "var(--text-secondary)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--text-primary)" }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.color = "var(--text-secondary)" }}
+          >
+            <Plus className="w-5 h-5" />
+            Cr\u00e9er la premi\u00e8re page
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full h-full relative${selectedNode ? " has-selection" : ""}`}>
       <ReactFlow
@@ -653,7 +682,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         fitViewOptions={{ padding: 0.15, maxZoom: 1.2 }}
         minZoom={0.05}
         maxZoom={2.5}
-        nodesDraggable={true}
+        nodesDraggable={!readOnly}
         nodesConnectable={false}
         elementsSelectable={true}
         panOnDrag={true}

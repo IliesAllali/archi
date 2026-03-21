@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings } from "lucide-react";
+import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings, ChevronUp, ChevronDown, Zap } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -10,8 +10,10 @@ import {
   getStoredApiKey,
   storeApiKey,
   getProviderConfig,
+  getStoredSpeed,
+  storeSpeed,
 } from "@/lib/ai-providers";
-import type { AiProvider } from "@/lib/ai-providers";
+import type { AiProvider, AiSpeed } from "@/lib/ai-providers";
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -34,6 +36,9 @@ export default function AiBar({ projectId }: Props) {
   const [needsKey, setNeedsKey] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [provider, setProvider] = useState<AiProvider>("anthropic");
+  const [speed, setSpeed] = useState<AiSpeed>("fast");
+  const [history, setHistory] = useState<{ prompt: string; summary: string; actions: { type: string; label?: string }[]; time: number }[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
 
@@ -59,6 +64,7 @@ export default function AiBar({ projectId }: Props) {
       setSuccess("");
       const p = getStoredProvider();
       setProvider(p);
+      setSpeed(getStoredSpeed());
       const key = getStoredApiKey(p);
       setNeedsKey(!key);
       setKeyInput(key);
@@ -75,11 +81,15 @@ export default function AiBar({ projectId }: Props) {
       return;
     }
 
+    const currentPrompt = prompt.trim();
     setLoading(true);
     setError("");
     setSuccess("");
     setStatusMsg("");
     setActionLog([]);
+
+    // Local accumulator for history (state setters are async)
+    const localActions: { type: string; label?: string }[] = [];
 
     try {
       const csrf = getCsrfToken();
@@ -90,10 +100,11 @@ export default function AiBar({ projectId }: Props) {
         method: "POST",
         headers,
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: currentPrompt,
           apiKey,
           projectId,
           provider,
+          speed,
         }),
       });
 
@@ -134,7 +145,9 @@ export default function AiBar({ projectId }: Props) {
               if (currentEvent === "status") {
                 setStatusMsg(data.message);
               } else if (currentEvent === "action") {
-                setActionLog((prev) => [...prev, { type: data.type, label: data.label }]);
+                const action = { type: data.type, label: data.label };
+                localActions.push(action);
+                setActionLog((prev) => [...prev, action]);
                 setStatusMsg(`${data.index}/${data.index} ${data.type === "add" ? "+" : data.type === "delete" ? "-" : "\u270F"} ${data.label || data.id}`);
               } else if (currentEvent === "done") {
                 // Reload project with final tree
@@ -143,7 +156,14 @@ export default function AiBar({ projectId }: Props) {
                   const project = await projectRes.json();
                   initProject(project);
                 }
-                setSuccess(data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`);
+                const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
+                setSuccess(summary);
+                setHistory(prev => [{
+                  prompt: currentPrompt,
+                  summary,
+                  actions: localActions,
+                  time: Date.now(),
+                }, ...prev.slice(0, 9)]);
                 setPrompt("");
                 setStatusMsg("");
                 Events.aiActionPerformed("edit_tree", "built-in");
@@ -163,7 +183,7 @@ export default function AiBar({ projectId }: Props) {
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, projectId, provider, initProject]);
+  }, [prompt, projectId, provider, speed, initProject]);
 
   const handleSaveKey = () => {
     if (!keyInput.trim()) return;
@@ -221,11 +241,35 @@ export default function AiBar({ projectId }: Props) {
                 </span>
               </div>
               <div className="flex items-center gap-1">
+                {/* Speed toggle */}
+                <button
+                  onClick={() => { const next = speed === "fast" ? "quality" : "fast"; setSpeed(next); storeSpeed(next); }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors"
+                  style={{
+                    color: speed === "fast" ? "#f59e0b" : "#8B5CF6",
+                    background: speed === "fast" ? "rgba(245,158,11,0.1)" : "rgba(139,92,246,0.1)",
+                  }}
+                  title={speed === "fast" ? "Mode rapide (Haiku/Mini)" : "Mode qualit\u00e9 (Sonnet/GPT-4o)"}
+                >
+                  <Zap className="w-3 h-3" />
+                  {speed === "fast" ? "Rapide" : "Qualit\u00e9"}
+                </button>
+                {/* History toggle */}
+                {history.length > 0 && (
+                  <button
+                    onClick={() => setShowHistory((v) => !v)}
+                    className="p-1 rounded-md transition-colors"
+                    style={{ color: "var(--text-faint)" }}
+                    title="Historique IA"
+                  >
+                    {showHistory ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                  </button>
+                )}
                 <button
                   onClick={() => setNeedsKey((v) => !v)}
                   className="p-1 rounded-md transition-colors"
                   style={{ color: "var(--text-faint)" }}
-                  title="Clé API"
+                  title="Cl\u00e9 API"
                 >
                   <Settings className="w-3.5 h-3.5" />
                 </button>
@@ -238,6 +282,44 @@ export default function AiBar({ projectId }: Props) {
                 </button>
               </div>
             </div>
+
+            {/* History panel */}
+            {showHistory && history.length > 0 && (
+              <div className="px-3 sm:px-4 py-2.5 max-h-[180px] overflow-y-auto" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                <p className="text-2xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>
+                  Historique ({history.length})
+                </p>
+                <div className="flex flex-col gap-2">
+                  {history.map((h, i) => (
+                    <div key={i} className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2">
+                        <p className="text-2xs font-medium truncate flex-1" style={{ color: "var(--text-primary)" }}>
+                          &quot;{h.prompt}&quot;
+                        </p>
+                        <span className="text-2xs shrink-0" style={{ color: "var(--text-faint)" }}>
+                          {new Date(h.time).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="text-2xs" style={{ color: "var(--text-muted)" }}>{h.summary}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {h.actions.map((a, j) => (
+                          <span
+                            key={j}
+                            className="text-2xs px-1 py-0.5 rounded"
+                            style={{
+                              background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "rgba(139,92,246,0.1)",
+                              color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "#8B5CF6",
+                            }}
+                          >
+                            {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* API Key input (if needed) */}
             {needsKey && (

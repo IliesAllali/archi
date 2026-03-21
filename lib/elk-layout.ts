@@ -8,7 +8,12 @@ const EP_MARGIN = 24; // gap between EP group bottom and page top
 const ISOLATED_GAP = 20; // horizontal spacing between standalone nodes
 const ISOLATED_Y_OFFSET = 80; // vertical gap below the tree
 
-function getEntryPointGroupHeight(entryPoints: EntryPoint[]): number {
+function getEntryPointGroupHeight(entryPoints: EntryPoint[], isHome: boolean): number {
+  if (!isHome) {
+    // Compact mode: single row of icons, all 24px tall
+    return 24;
+  }
+  // Full mode: stacked vertically
   let h = 0;
   for (const ep of entryPoints) {
     h += ep.type === "google" ? 30 : 24;
@@ -36,7 +41,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     pageWidth[n.id] = getCardWidth(n.type, n.zoningExpanded) + 20;
     epOverhead[n.id] =
       n.entryPoints && n.entryPoints.length > 0
-        ? getEntryPointGroupHeight(n.entryPoints) + EP_MARGIN
+        ? getEntryPointGroupHeight(n.entryPoints, n.type === "home") + EP_MARGIN
         : 0;
   });
 
@@ -128,7 +133,8 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     const p = positionMap[n.id];
     if (!p) return;
 
-    const epH = getEntryPointGroupHeight(n.entryPoints);
+    const isHome = n.type === "home";
+    const epH = getEntryPointGroupHeight(n.entryPoints, isHome);
     const nodeW = pageWidth[n.id];
 
     rfNodes.push({
@@ -138,7 +144,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
         x: p.x + (nodeW - EP_WIDTH) / 2,
         y: p.y,
       },
-      data: { entryPoints: n.entryPoints, targetId: n.id },
+      data: { entryPoints: n.entryPoints, targetId: n.id, isHome },
       selectable: false,
       draggable: false,
       zIndex: 10,

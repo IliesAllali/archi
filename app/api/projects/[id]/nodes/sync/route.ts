@@ -23,6 +23,25 @@ export async function PUT(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
+  // Auth check — must be a project member to sync
+  const { verifyAccessToken } = await import("@/lib/auth");
+  const token =
+    req.cookies.get("arbo_access")?.value ||
+    req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const payload = await verifyAccessToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const member = db
+    .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
+    .get(params.id, payload.sub) as { role: string } | undefined;
+  if (!member) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await req.json();
   const clientNodes: SiteNode[] = body.nodes;
   const triggers: string[] = body.triggers || [];
