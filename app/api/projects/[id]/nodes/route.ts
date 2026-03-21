@@ -6,6 +6,8 @@ import { emitToProject } from "@/lib/socket";
 import { nanoid } from "nanoid";
 import type { SiteNode } from "@/lib/types";
 
+export const dynamic = "force-dynamic"
+
 function checkApiKey(req: NextRequest) {
   return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`;
 }

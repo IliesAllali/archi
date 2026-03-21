@@ -2,6 +2,8 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
+export const dynamic = "force-dynamic"
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ keyId: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 /**
  * OpenAPI 3.1 schema for GPT Actions and API documentation.
  * Serves the spec as JSON at GET /api/v1/openapi.json

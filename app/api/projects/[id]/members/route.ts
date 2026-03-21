@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import type { DbProject } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 interface MemberRow {
   user_id: string
   role: string

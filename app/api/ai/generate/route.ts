@@ -6,6 +6,8 @@ import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
 
+export const dynamic = "force-dynamic"
+
 const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
 const VALID_SPEEDS: AiSpeed[] = ["fast", "quality"];
 

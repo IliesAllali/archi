@@ -3,6 +3,8 @@ import { compareSync } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { createSession, COOKIE_NAME } from '@/lib/auth'
 
+export const dynamic = "force-dynamic"
+
 interface ShareLink {
   id: string
   project_id: string

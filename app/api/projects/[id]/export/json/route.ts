@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getProject } from "@/lib/project-loader"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const project = getProject(params.id)
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 })

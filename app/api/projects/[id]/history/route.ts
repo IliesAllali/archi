@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSnapshots } from "@/lib/db";
 import { getProject } from "@/lib/project-loader";
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

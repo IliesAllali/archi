@@ -7,6 +7,8 @@ import { sendVerificationEmail } from '@/lib/email'
 import { checkAuthLimit } from '@/lib/rate-limiter'
 import { sanitizeText } from '@/lib/sanitize'
 
+export const dynamic = "force-dynamic"
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || 'unknown'
   const limit = checkAuthLimit(ip)

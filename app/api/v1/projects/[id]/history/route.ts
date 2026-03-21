@@ -1,6 +1,8 @@
 import { authorizeRequest, apiSuccess } from '@/lib/api-auth'
 import { getSnapshots } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }

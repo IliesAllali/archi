@@ -5,6 +5,8 @@ import { db, getActiveNodes } from "@/lib/db"
 import type { DbProject, DbNode } from "@/lib/db"
 import { nanoid } from "nanoid"
 
+export const dynamic = "force-dynamic"
+
 // ─── Auth helper ────────────────────────────────────────────────────────────
 
 function authenticateToken(req: Request): { valid: boolean; tokenName?: string; projectIds?: string[] } {

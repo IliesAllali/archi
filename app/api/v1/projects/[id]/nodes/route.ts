@@ -6,6 +6,8 @@ import { emitToProject } from '@/lib/socket'
 import { nanoid } from 'nanoid'
 import type { DbProject } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }

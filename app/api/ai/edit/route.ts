@@ -6,6 +6,8 @@ import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 
+export const dynamic = "force-dynamic"
+
 const VALID_PROVIDERS: AiProvider[] = ["anthropic", "openai", "mistral"];
 const VALID_SPEEDS: AiSpeed[] = ["fast", "quality"];
 

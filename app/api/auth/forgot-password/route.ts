@@ -6,6 +6,8 @@ import { checkAuthLimit } from '@/lib/rate-limiter'
 import { sanitizeText } from '@/lib/sanitize'
 import type { DbUser } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 const GENERIC_MSG = 'Si cet email existe, vous recevrez un lien de réinitialisation.'
 
 export async function POST(req: NextRequest) {

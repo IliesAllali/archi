@@ -3,6 +3,8 @@ import { db, getActiveNodes } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 
+export const dynamic = "force-dynamic"
+
 /**
  * Import actions JSON directly (no AI call needed).
  * Used by the copy-paste workflow in settings.

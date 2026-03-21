@@ -2,6 +2,8 @@ import { authorizeRequest, apiSuccess, apiError } from '@/lib/api-auth'
 import { db, getActiveNodes } from '@/lib/db'
 import type { DbProject } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }

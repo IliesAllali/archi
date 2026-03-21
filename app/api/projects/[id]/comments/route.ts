@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
 
+export const dynamic = "force-dynamic"
+
 interface CommentRow {
   id: string
   project_id: string

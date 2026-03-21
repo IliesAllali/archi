@@ -6,6 +6,8 @@ import { emitToProject } from "@/lib/socket";
 import { nanoid } from "nanoid";
 import type { SiteNode } from "@/lib/types";
 
+export const dynamic = "force-dynamic"
+
 const STRUCTURAL_TRIGGERS = new Set(["create_node", "delete_node", "reparent", "bulk_import", "restore"]);
 
 /**

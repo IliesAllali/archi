@@ -4,6 +4,8 @@ import { sanitizeText, sanitizeTextArray } from '@/lib/sanitize'
 import { logAuditEntry } from '@/lib/audit'
 import { emitToProject } from '@/lib/socket'
 
+export const dynamic = "force-dynamic"
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string; nid: string } }

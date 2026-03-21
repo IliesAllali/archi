@@ -4,6 +4,8 @@ import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
 import type { DbProject } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 interface InvitationRow {
   id: string
   project_id: string

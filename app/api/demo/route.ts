@@ -3,6 +3,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 
+export const dynamic = "force-dynamic"
+
 const DEMO_SLUG = "demo-ecommerce"
 
 export async function GET() {

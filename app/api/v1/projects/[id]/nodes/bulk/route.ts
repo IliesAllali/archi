@@ -5,6 +5,8 @@ import { logAuditEntry } from '@/lib/audit'
 import { emitToProject } from '@/lib/socket'
 import { nanoid } from 'nanoid'
 
+export const dynamic = "force-dynamic"
+
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }

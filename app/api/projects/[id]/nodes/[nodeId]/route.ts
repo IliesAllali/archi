@@ -4,6 +4,8 @@ import { getProject, getNode } from "@/lib/project-loader";
 import { sanitizeText, sanitizeTextArray } from "@/lib/sanitize";
 import { emitToProject } from "@/lib/socket";
 
+export const dynamic = "force-dynamic"
+
 function checkApiKey(req: NextRequest) {
   return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`;
 }

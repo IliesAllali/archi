@@ -1,6 +1,8 @@
 import { authenticateApiToken, apiSuccess, apiError } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 interface AsyncJob {
   id: string
   project_id: string

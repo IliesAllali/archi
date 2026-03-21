@@ -5,6 +5,8 @@ import { getProject, getAllProjects } from "@/lib/project-loader";
 import fs from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic"
+
 /**
  * Legacy auth route — simple password-based login.
  * Checks admin password and per-project passwords from JSON files.

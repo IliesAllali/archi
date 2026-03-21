@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 /**
  * API documentation page — serves HTML at GET /api/v1/docs
  */

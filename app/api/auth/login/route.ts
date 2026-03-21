@@ -6,6 +6,8 @@ import { checkAuthLimit } from '@/lib/rate-limiter'
 import { sanitizeText } from '@/lib/sanitize'
 import type { DbUser } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 const GENERIC_ERROR = 'Email ou mot de passe incorrect.'
 const ARTIFICIAL_DELAY = 200 // ms — resist timing attacks
 

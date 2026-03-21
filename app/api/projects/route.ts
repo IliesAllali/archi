@@ -5,6 +5,8 @@ import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
 import type { Project } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 function checkApiKey(req: NextRequest) {
   const auth = req.headers.get("authorization")
   const key = process.env.API_KEY

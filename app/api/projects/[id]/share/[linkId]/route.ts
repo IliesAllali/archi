@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import type { DbProject } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 function isProjectOwnerOrEditor(projectId: string, userId: string): boolean {
   const project = db
     .prepare("SELECT owner_id FROM projects WHERE id = ? AND archived = 0")

@@ -5,6 +5,8 @@ import { nanoid } from "nanoid"
 import bcrypt from "bcryptjs"
 import type { DbProject } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 interface ShareLinkRow {
   id: string
   project_id: string

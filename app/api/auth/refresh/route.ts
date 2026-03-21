@@ -12,6 +12,8 @@ import {
 import { db } from '@/lib/db'
 import type { DbUser } from '@/lib/db'
 
+export const dynamic = "force-dynamic"
+
 export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value
   if (!refreshToken) {

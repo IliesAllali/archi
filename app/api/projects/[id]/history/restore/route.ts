@@ -3,6 +3,8 @@ import { restoreSnapshot, getSnapshotById } from "@/lib/db";
 import { getProject } from "@/lib/project-loader";
 import { emitToProject } from "@/lib/socket";
 
+export const dynamic = "force-dynamic"
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

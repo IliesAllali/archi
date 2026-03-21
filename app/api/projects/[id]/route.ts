@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getProject, saveProject, deleteProject } from "@/lib/project-loader"
 import { getSession } from "@/lib/auth"
 
+export const dynamic = "force-dynamic"
+
 function checkApiKey(req: NextRequest) {
   const auth = req.headers.get("authorization")
   return auth === `Bearer ${process.env.API_KEY}`

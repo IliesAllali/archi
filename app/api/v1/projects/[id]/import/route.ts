@@ -5,6 +5,8 @@ import { logAuditEntry } from '@/lib/audit'
 import { emitToProject } from '@/lib/socket'
 import { nanoid } from 'nanoid'
 
+export const dynamic = "force-dynamic"
+
 /**
  * Async import endpoint.
  * For small imports (<50 nodes), processes synchronously.

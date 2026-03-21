@@ -3,6 +3,8 @@ import { hashSync } from 'bcryptjs'
 import { db } from '@/lib/db'
 import { validateAuthToken, consumeAuthToken, revokeAllRefreshTokens } from '@/lib/auth'
 
+export const dynamic = "force-dynamic"
+
 export async function POST(req: NextRequest) {
   const body     = await req.json().catch(() => ({}))
   const token: string    = body.token    || ''
