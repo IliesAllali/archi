@@ -1,14 +1,10 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { useReactFlow, useStore as useRfStore } from "reactflow"
+import { useReactFlow } from "reactflow"
 import { Send, Check, X, Loader2, Trash2 } from "lucide-react"
 import { useCommentsStore, type CanvasComment } from "@/store/comments-store"
 import type { Node } from "reactflow"
-
-// Selector for viewport — returns a stable string key so React only re-renders when viewport actually changes
-const viewportSelector = (s: { transform: [number, number, number] }) =>
-  `${s.transform[0].toFixed(1)},${s.transform[1].toFixed(1)},${s.transform[2].toFixed(3)}`
 
 // ─── Find nearest node to a canvas position ─────────────────────────────────
 
@@ -37,32 +33,32 @@ function findNearestNode(
 
 interface PinProps {
   comment: CanvasComment
-  screenX: number
-  screenY: number
   index: number
   isActive: boolean
   onClick: () => void
+  pinRef: (el: HTMLElement | null) => void
 }
 
-function CommentPin({ comment, screenX, screenY, index, isActive, onClick }: PinProps) {
+function CommentPin({ comment, index, isActive, onClick, pinRef }: PinProps) {
   const replyCount = useCommentsStore(s =>
     s.comments.filter(c => c.parentId === comment.id).length
   )
 
   return (
     <button
+      ref={pinRef}
       onClick={(e) => { e.stopPropagation(); onClick() }}
       className="absolute flex items-center justify-center transition-all duration-150 hover:scale-110 z-30"
       style={{
-        left: screenX - 14,
-        top: screenY - 14,
+        left: -9999,
+        top: -9999,
         width: 28,
         height: 28,
         borderRadius: "50% 50% 50% 0",
         transform: "rotate(-45deg)",
         background: comment.resolved
           ? "var(--text-faint)"
-          : isActive ? "var(--accent)" : "var(--accent)",
+          : "var(--accent)",
         opacity: comment.resolved ? 0.5 : 1,
         boxShadow: isActive
           ? "0 0 0 3px var(--accent-muted), 0 2px 8px rgba(0,0,0,0.2)"
@@ -84,13 +80,12 @@ function CommentPin({ comment, screenX, screenY, index, isActive, onClick }: Pin
 interface ThreadProps {
   rootComment: CanvasComment
   projectId: string
-  screenX: number
-  screenY: number
   currentUser: { id: string; name: string } | null
   onClose: () => void
+  threadRef: (el: HTMLElement | null) => void
 }
 
-function CommentThread({ rootComment, projectId, screenX, screenY, currentUser, onClose }: ThreadProps) {
+function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef }: ThreadProps) {
   const [content, setContent] = useState("")
   const [guestName, setGuestName] = useState("")
   const [sending, setSending] = useState(false)
@@ -143,18 +138,13 @@ function CommentThread({ rootComment, projectId, screenX, screenY, currentUser, 
     return `${Math.floor(diff / 86400000)}j`
   }
 
-  // Position the thread popover to the right of the pin
-  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1200
-  const popoverLeft = screenX + 20 + 280 > viewportWidth ? screenX - 300 : screenX + 20
-  const popoverTop = Math.max(8, Math.min(screenY - 20, (typeof window !== "undefined" ? window.innerHeight : 800) - 400))
-
   return (
     <div
-      ref={panelRef}
+      ref={(el) => { (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el; threadRef(el) }}
       className="absolute z-50 w-[280px] rounded-xl overflow-hidden"
       style={{
-        left: popoverLeft,
-        top: popoverTop,
+        left: -9999,
+        top: -9999,
         background: "var(--elevated)",
         border: "1px solid var(--line-strong)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
@@ -397,6 +387,11 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
 
   const rf = useReactFlow()
 
+  // DOM refs for pins and thread — we position them via rAF, no React re-renders
+  const pinRefs = useRef<Map<string, HTMLElement | null>>(new Map())
+  const threadRef = useRef<HTMLElement | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
   // Fetch comments on mount
   useEffect(() => {
     fetchComments(projectId)
@@ -421,18 +416,15 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     if (!commentMode) return
     e.stopPropagation()
 
-    // Convert screen position to canvas (flow) position
     const bounds = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const screenX = e.clientX - bounds.left
     const screenY = e.clientY - bounds.top
 
     const canvasPos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY })
 
-    // Find nearest node
     const nearest = findNearestNode(canvasPos.x, canvasPos.y, rfNodes)
     if (!nearest) return
 
-    // Calculate offset from node center
     const nodeCx = nearest.position.x + (nearest.width ?? 160) / 2
     const nodeCy = nearest.position.y + (nearest.height ?? 60) / 2
     const offsetX = canvasPos.x - nodeCx
@@ -445,36 +437,78 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     openThread(null)
   }, [commentMode, rf, rfNodes, openThread])
 
-  // Convert canvas position to screen position for a comment
-  const getScreenPos = useCallback((comment: CanvasComment) => {
-    // Find the node this comment is attached to
-    const rfNode = rfNodes.find(n => n.id === comment.nodeId)
-    if (!rfNode) return null
-
-    const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
-    const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
-    const canvasX = nodeCx + comment.offsetX
-    const canvasY = nodeCy + comment.offsetY
-
-    const screenPos = rf.flowToScreenPosition({ x: canvasX, y: canvasY })
-    // Get container bounds
-    const container = document.querySelector(".comment-overlay-container")
-    if (!container) return null
-    const bounds = container.getBoundingClientRect()
-    return {
-      x: screenPos.x - bounds.left,
-      y: screenPos.y - bounds.top,
-    }
-  }, [rfNodes, rf])
-
   // Only show root comments as pins (not replies)
   const rootComments = comments.filter(c => !c.parentId)
 
-  // Subscribe to viewport changes via useStore — only re-renders when the string key changes
-  useRfStore(viewportSelector)
+  // ─── rAF-based positioning — NO React state, NO re-renders ───────────────
+  useEffect(() => {
+    let running = true
+
+    function updatePositions() {
+      if (!running) return
+      const container = containerRef.current
+      if (!container) {
+        requestAnimationFrame(updatePositions)
+        return
+      }
+      const bounds = container.getBoundingClientRect()
+
+      // Position each pin
+      for (const comment of rootComments) {
+        const el = pinRefs.current.get(comment.id)
+        if (!el) continue
+
+        const rfNode = rfNodes.find(n => n.id === comment.nodeId)
+        if (!rfNode) {
+          el.style.left = "-9999px"
+          continue
+        }
+
+        const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
+        const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
+        const canvasX = nodeCx + comment.offsetX
+        const canvasY = nodeCy + comment.offsetY
+        const screenPos = rf.flowToScreenPosition({ x: canvasX, y: canvasY })
+
+        el.style.left = `${screenPos.x - bounds.left - 14}px`
+        el.style.top = `${screenPos.y - bounds.top - 14}px`
+      }
+
+      // Position thread popover
+      const threadEl = threadRef.current
+      if (threadEl && activeThreadId) {
+        const root = rootComments.find(c => c.id === activeThreadId)
+        if (root) {
+          const rfNode = rfNodes.find(n => n.id === root.nodeId)
+          if (rfNode) {
+            const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
+            const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
+            const canvasX = nodeCx + root.offsetX
+            const canvasY = nodeCy + root.offsetY
+            const screenPos = rf.flowToScreenPosition({ x: canvasX, y: canvasY })
+            const sx = screenPos.x - bounds.left
+            const sy = screenPos.y - bounds.top
+
+            const viewportWidth = window.innerWidth
+            const popoverLeft = sx + 20 + 280 > viewportWidth ? sx - 300 : sx + 20
+            const popoverTop = Math.max(8, Math.min(sy - 20, window.innerHeight - 400))
+
+            threadEl.style.left = `${popoverLeft}px`
+            threadEl.style.top = `${popoverTop}px`
+          }
+        }
+      }
+
+      requestAnimationFrame(updatePositions)
+    }
+
+    requestAnimationFrame(updatePositions)
+    return () => { running = false }
+  }) // runs every render to pick up latest rootComments/rfNodes/activeThreadId
 
   return (
     <div
+      ref={containerRef}
       className="comment-overlay-container absolute inset-0 pointer-events-none"
       style={{
         zIndex: 20,
@@ -484,45 +518,37 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
       onClick={handleOverlayClick}
     >
       {/* Render pins */}
-      {rootComments.map((comment, i) => {
-        const pos = getScreenPos(comment)
-        if (!pos) return null
-        return (
-          <div key={comment.id} style={{ pointerEvents: "auto" }}>
-            <CommentPin
-              comment={comment}
-              screenX={pos.x}
-              screenY={pos.y}
-              index={i}
-              isActive={activeThreadId === comment.id}
-              onClick={() => {
-                if (activeThreadId === comment.id) {
-                  openThread(null)
-                } else {
-                  openThread(comment.id)
-                  setNewComment(null)
-                }
-              }}
-            />
-          </div>
-        )
-      })}
+      {rootComments.map((comment, i) => (
+        <div key={comment.id} style={{ pointerEvents: "auto" }}>
+          <CommentPin
+            comment={comment}
+            index={i}
+            isActive={activeThreadId === comment.id}
+            onClick={() => {
+              if (activeThreadId === comment.id) {
+                openThread(null)
+              } else {
+                openThread(comment.id)
+                setNewComment(null)
+              }
+            }}
+            pinRef={(el) => { pinRefs.current.set(comment.id, el) }}
+          />
+        </div>
+      ))}
 
       {/* Active thread popover */}
       {activeThreadId && (() => {
         const root = rootComments.find(c => c.id === activeThreadId)
         if (!root) return null
-        const pos = getScreenPos(root)
-        if (!pos) return null
         return (
           <div style={{ pointerEvents: "auto" }}>
             <CommentThread
               rootComment={root}
               projectId={projectId}
-              screenX={pos.x}
-              screenY={pos.y}
               currentUser={currentUser}
               onClose={() => openThread(null)}
+              threadRef={(el) => { threadRef.current = el }}
             />
           </div>
         )
