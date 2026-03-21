@@ -1,10 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { useReactFlow, useOnViewportChange, type Viewport } from "reactflow"
+import { useReactFlow, useStore as useRfStore } from "reactflow"
 import { Send, Check, X, Loader2, Trash2 } from "lucide-react"
 import { useCommentsStore, type CanvasComment } from "@/store/comments-store"
 import type { Node } from "reactflow"
+
+// Selector for viewport — returns a stable string key so React only re-renders when viewport actually changes
+const viewportSelector = (s: { transform: [number, number, number] }) =>
+  `${s.transform[0].toFixed(1)},${s.transform[1].toFixed(1)},${s.transform[2].toFixed(3)}`
 
 // ─── Find nearest node to a canvas position ─────────────────────────────────
 
@@ -466,19 +470,8 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
   // Only show root comments as pins (not replies)
   const rootComments = comments.filter(c => !c.parentId)
 
-  // Re-render when viewport changes (pan/zoom) — throttled via rAF to avoid loops
-  const [, setTick] = useState(0)
-  const rafRef = useRef(0)
-  const vpRef = useRef("")
-  const handleViewportChange = useCallback((vp: Viewport) => {
-    // Only re-render if viewport actually changed (prevents infinite loops)
-    const key = `${vp.x.toFixed(1)},${vp.y.toFixed(1)},${vp.zoom.toFixed(3)}`
-    if (key === vpRef.current) return
-    vpRef.current = key
-    cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => setTick(t => t + 1))
-  }, [])
-  useOnViewportChange({ onChange: handleViewportChange })
+  // Subscribe to viewport changes via useStore — only re-renders when the string key changes
+  useRfStore(viewportSelector)
 
   return (
     <div
