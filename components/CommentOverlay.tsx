@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { useReactFlow, useOnViewportChange } from "reactflow"
+import { useReactFlow, useOnViewportChange, type Viewport } from "reactflow"
 import { Send, Check, X, Loader2, Trash2 } from "lucide-react"
 import { useCommentsStore, type CanvasComment } from "@/store/comments-store"
 import type { Node } from "reactflow"
@@ -466,11 +466,19 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
   // Only show root comments as pins (not replies)
   const rootComments = comments.filter(c => !c.parentId)
 
-  // Re-render when viewport changes (pan/zoom)
+  // Re-render when viewport changes (pan/zoom) — throttled via rAF to avoid loops
   const [, setTick] = useState(0)
-  useOnViewportChange({
-    onChange: useCallback(() => setTick(t => t + 1), []),
-  })
+  const rafRef = useRef(0)
+  const vpRef = useRef("")
+  const handleViewportChange = useCallback((vp: Viewport) => {
+    // Only re-render if viewport actually changed (prevents infinite loops)
+    const key = `${vp.x.toFixed(1)},${vp.y.toFixed(1)},${vp.zoom.toFixed(3)}`
+    if (key === vpRef.current) return
+    vpRef.current = key
+    cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(() => setTick(t => t + 1))
+  }, [])
+  useOnViewportChange({ onChange: handleViewportChange })
 
   return (
     <div
