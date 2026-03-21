@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 const DEMO_SLUG = "demo-ecommerce"
 
@@ -25,5 +26,6 @@ export async function DELETE() {
     db.prepare("DELETE FROM projects WHERE id = ?").run(demo.id)
   })()
 
+  revalidatePath("/")
   return NextResponse.json({ success: true })
 }

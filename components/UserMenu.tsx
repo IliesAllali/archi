@@ -10,6 +10,7 @@ interface UserData {
   name: string
   email: string
   color: string
+  avatar: string | null
   role: string
 }
 
@@ -43,14 +44,20 @@ export default function UserMenu() {
 
   return (
     <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-transform hover:scale-105"
-        style={{ background: user.color, color: "#fff" }}
-        title={user.name}
-      >
-        {initial}
-      </button>
+      {user.avatar ? (
+        <button onClick={() => setOpen(!open)} className="transition-transform hover:scale-105" title={user.name}>
+          <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(!open)}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-transform hover:scale-105"
+          style={{ background: user.color, color: "#fff" }}
+          title={user.name}
+        >
+          {initial}
+        </button>
+      )}
 
       {open && (
         <div

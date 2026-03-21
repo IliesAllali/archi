@@ -8,7 +8,7 @@ export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const user = db.prepare("SELECT id, name, email, color, role_global FROM users WHERE id = ?").get(session.sub) as any
+  const user = db.prepare("SELECT id, name, email, color, avatar, role_global FROM users WHERE id = ?").get(session.sub) as any
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
   return NextResponse.json({
@@ -16,6 +16,7 @@ export async function GET() {
     name: user.name,
     email: user.email,
     color: user.color,
+    avatar: user.avatar || null,
     role: user.role_global,
   })
 }
@@ -44,6 +45,22 @@ export async function PATCH(req: NextRequest) {
     }
     updates.push("color = ?")
     values.push(color)
+  }
+
+  if (body.avatar !== undefined) {
+    if (body.avatar === null) {
+      updates.push("avatar = ?")
+      values.push(null)
+    } else if (typeof body.avatar === "string" && body.avatar.startsWith("data:image/")) {
+      // Max ~500KB base64 (~375KB image)
+      if (body.avatar.length > 500_000) {
+        return NextResponse.json({ error: "Image trop lourde (max 500KB)" }, { status: 400 })
+      }
+      updates.push("avatar = ?")
+      values.push(body.avatar)
+    } else {
+      return NextResponse.json({ error: "Format d'image invalide" }, { status: 400 })
+    }
   }
 
   if (body.newPassword !== undefined) {

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle } from "lucide-react"
+import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X } from "lucide-react"
 import Logo from "@/components/Logo"
 
 function getCsrfToken(): string | null {
@@ -11,13 +11,13 @@ function getCsrfToken(): string | null {
   return match ? match[1] : null
 }
 
-interface UserData { id: string; name: string; email: string; color: string; role: string }
+interface UserData { id: string; name: string; email: string; color: string; avatar: string | null; role: string }
 interface ApiKey { id: string; provider: string; key_hint: string; label: string | null; created_at: number }
 
 const PROVIDERS = [
-  { id: "openai", label: "OpenAI", placeholder: "sk-..." },
-  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-..." },
-  { id: "mistral", label: "Mistral", placeholder: "..." },
+  { id: "openai", label: "OpenAI", placeholder: "sk-...", url: "https://platform.openai.com/api-keys" },
+  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-...", url: "https://console.anthropic.com/settings/keys" },
+  { id: "mistral", label: "Mistral", placeholder: "...", url: "https://console.mistral.ai/api-keys" },
 ]
 
 const AVATAR_COLORS = [
@@ -42,6 +42,10 @@ export default function AccountClient() {
   const [nameValue, setNameValue] = useState("")
   const [savingName, setSavingName] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
+
+  // Avatar
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Password
   const [showPassword, setShowPassword] = useState(false)
@@ -101,6 +105,34 @@ export default function AccountClient() {
     if (res.ok) {
       setUser(prev => prev ? { ...prev, color } : prev)
       setShowColorPicker(false)
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) return
+    if (file.size > 375_000) { alert("Image trop lourde (max 375KB)"); return }
+
+    setUploadingAvatar(true)
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const dataUrl = reader.result as string
+      const res = await fetch("/api/me", { method: "PATCH", headers: headers(), body: JSON.stringify({ avatar: dataUrl }) })
+      if (res.ok) {
+        setUser(prev => prev ? { ...prev, avatar: dataUrl } : prev)
+      }
+      setUploadingAvatar(false)
+    }
+    reader.readAsDataURL(file)
+    // Reset input so same file can be re-selected
+    e.target.value = ""
+  }
+
+  const removeAvatar = async () => {
+    const res = await fetch("/api/me", { method: "PATCH", headers: headers(), body: JSON.stringify({ avatar: null }) })
+    if (res.ok) {
+      setUser(prev => prev ? { ...prev, avatar: null } : prev)
     }
   }
 
@@ -182,22 +214,61 @@ export default function AccountClient() {
             <div className="p-4 rounded-lg space-y-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
               {/* Avatar + name */}
               <div className="flex items-center gap-3">
-                <div className="relative">
+                <div className="relative group">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-12 h-12 rounded-full object-cover cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                  ) : (
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold shrink-0 cursor-pointer transition-opacity hover:opacity-80"
+                      style={{ background: user.color, color: "#fff" }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Upload overlay */}
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 cursor-pointer transition-opacity hover:opacity-80"
-                    style={{ background: user.color, color: "#fff" }}
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                    title="Changer la couleur"
+                    className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
                   >
-                    {user.name.charAt(0).toUpperCase()}
+                    {uploadingAvatar ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Camera className="w-4 h-4 text-white" />
+                    )}
                   </div>
-                  <div
-                    className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
-                    style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                  >
-                    <Palette className="w-2.5 h-2.5" style={{ color: "var(--text-faint)" }} />
-                  </div>
+                  {/* Remove avatar button */}
+                  {user.avatar && (
+                    <button
+                      onClick={removeAvatar}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)" }}
+                    >
+                      <X className="w-2.5 h-2.5" style={{ color: "var(--error-text)" }} />
+                    </button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  {/* Color dot (when no avatar) */}
+                  {!user.avatar && (
+                    <div
+                      className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center cursor-pointer"
+                      style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}
+                      onClick={(e) => { e.stopPropagation(); setShowColorPicker(!showColorPicker) }}
+                    >
+                      <Palette className="w-2.5 h-2.5" style={{ color: "var(--text-faint)" }} />
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   {editingName ? (
@@ -227,8 +298,8 @@ export default function AccountClient() {
                 </div>
               </div>
 
-              {/* Color picker */}
-              {showColorPicker && (
+              {/* Color picker (only when no avatar) */}
+              {showColorPicker && !user.avatar && (
                 <div className="flex gap-1.5 flex-wrap">
                   {AVATAR_COLORS.map(c => (
                     <button
@@ -254,7 +325,7 @@ export default function AccountClient() {
 
           {pwSaved && (
             <div className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--success-text)" }}>
-              <Check className="w-3 h-3" /> Mot de passe modifi\u00e9
+              <Check className="w-3 h-3" /> Mot de passe modifié
             </div>
           )}
 
@@ -285,7 +356,7 @@ export default function AccountClient() {
                   type="password"
                   value={newPw}
                   onChange={e => setNewPw(e.target.value)}
-                  placeholder="8 caract\u00e8res minimum"
+                  placeholder="8 caractères minimum"
                   className="w-full h-9 px-3 rounded-lg text-2xs focus:outline-none"
                   style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
                   onKeyDown={e => { if (e.key === "Enter" && newPw.length >= 8) changePassword() }}
@@ -312,15 +383,15 @@ export default function AccountClient() {
         {/* ─── API Keys ────────────────────────────────────── */}
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Cl\u00e9s API</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Clés API</h3>
             <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Tes cl\u00e9s sont chiffr\u00e9es et jamais partag\u00e9es. Elles permettent \u00e0 Arbo d'utiliser l'IA de ton choix.
+              Tes clés sont chiffrées et jamais partagées. Elles permettent à Arbo d{"'"}utiliser l{"'"}IA de ton choix.
             </p>
           </div>
 
           {saved && (
             <div className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--success-text)" }}>
-              <Check className="w-3 h-3" /> Cl\u00e9 ajout\u00e9e
+              <Check className="w-3 h-3" /> Clé ajoutée
             </div>
           )}
 
@@ -348,7 +419,7 @@ export default function AccountClient() {
           {!showAdd ? (
             <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 text-2xs font-medium transition-colors" style={{ color: "var(--accent)" }}>
               <Plus className="w-3 h-3" />
-              Ajouter une cl\u00e9 API
+              Ajouter une clé API
             </button>
           ) : (
             <div className="p-3 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
@@ -372,7 +443,7 @@ export default function AccountClient() {
                 </div>
               </div>
               <div>
-                <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>Cl\u00e9 API</label>
+                <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>Clé API</label>
                 <input
                   type="password"
                   value={keyValue}
@@ -383,6 +454,18 @@ export default function AccountClient() {
                   onKeyDown={e => { if (e.key === "Enter" && keyValue.trim()) addKey() }}
                 />
               </div>
+              <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                Obtiens ta clé sur{" "}
+                <a
+                  href={PROVIDERS.find(p => p.id === provider)?.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {PROVIDERS.find(p => p.id === provider)?.label}
+                </a>
+              </p>
               <div className="flex gap-2">
                 <button onClick={() => setShowAdd(false)} className="px-3 h-8 rounded-lg text-2xs" style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}>
                   Annuler
@@ -406,7 +489,7 @@ export default function AccountClient() {
             <div>
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Projet exemple</h3>
               <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                Le projet "E-commerce Sneakers" est un exemple inclus pour d\u00e9couvrir Arbo.
+                Le projet "E-commerce Sneakers" est un exemple inclus pour découvrir Arbo.
               </p>
             </div>
 
@@ -424,7 +507,7 @@ export default function AccountClient() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "var(--warning-text)" }} />
                   <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                    Le projet exemple et toutes ses pages seront supprim\u00e9s d\u00e9finitivement.
+                    Le projet exemple et toutes ses pages seront supprimés définitivement.
                   </p>
                 </div>
                 <div className="flex gap-2">

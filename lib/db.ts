@@ -36,6 +36,12 @@ function createDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_user_api_keys_user ON user_api_keys(user_id);
   `)
 
+  // Add avatar column if missing (auto-migration)
+  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[]
+  if (!cols.some(c => c.name === "avatar")) {
+    db.exec("ALTER TABLE users ADD COLUMN avatar TEXT")
+  }
+
   return db
 }
 
