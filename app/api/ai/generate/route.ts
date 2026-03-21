@@ -137,7 +137,10 @@ export async function POST(req: NextRequest) {
             if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
             if (raw.zoningBlocks) {
               nodeData.zoningBlocks = raw.zoningBlocks;
-              nodeData.zoningExpanded = raw.zoningExpanded ?? false;
+              nodeData.zoningExpanded = raw.zoningExpanded ?? true;
+            }
+            if (raw.zoningExpanded !== undefined && !raw.zoningBlocks) {
+              nodeData.zoningExpanded = raw.zoningExpanded;
             }
             const data = JSON.stringify(nodeData);
 

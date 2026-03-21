@@ -77,10 +77,11 @@ Champs de base (sur TOUTES les pages) :
 Champs avancés (UNIQUEMENT sur les pages de type "home" et "landing", PAS sur les autres) :
 - "entryPoints": sources de trafic EXTERNES au site uniquement. On ne veut PAS de navigation interne (pas de type "nav"). Types valides : google, direct, social, email, ads, qrcode. Exemples : "Recherche Google", "Instagram", "Newsletter", "Google Ads". N'en mets que sur home et landing.
 - "zoningBlocks": wireframe layout de la page. UNIQUEMENT sur home et landing. Skins disponibles : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
+- "zoningExpanded": (boolean) si true, le wireframe est affiché directement dans le canvas. Mets true sur les pages clés (home, landing) pour que l'utilisateur voie immédiatement la structure. Mets false ou omets le champ pour les pages secondaires.
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown.
 
-Exemple — la homepage AVEC zoningBlocks et entryPoints, une page standard SANS :
+Exemple — la homepage AVEC zoningBlocks visibles et entryPoints, une page standard SANS :
 {
   "nodes": [
     {
@@ -103,7 +104,8 @@ Exemple — la homepage AVEC zoningBlocks et entryPoints, une page standard SANS
         {"id": "z6", "label": "Témoignages", "skin": "social-proof", "height": 10},
         {"id": "z7", "label": "CTA final", "skin": "cta", "height": 8},
         {"id": "z8", "label": "Footer", "skin": "footer", "height": 7}
-      ]
+      ],
+      "zoningExpanded": true
     },
     {
       "temp_id": "pricing",
@@ -160,6 +162,7 @@ Champs disponibles pour "add" et "update" :
 - tags (string[]) : catégorisation
 - entryPoints ({type, label}[]) : sources de trafic EXTERNES uniquement. Types: google, direct, social, email, ads, qrcode. UNIQUEMENT sur home et landing.
 - zoningBlocks ({id, label, skin, height}[]) : les SECTIONS INTERNES de la page (wireframe layout). Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
+- zoningExpanded (boolean) : si true, le wireframe est affiché directement dans le canvas. Utilise true pour rendre le wireframe visible sur les pages clés (home, landing). Utilise false pour cacher le wireframe d'une page. Omets le champ pour ne pas changer la visibilité actuelle.
 
 Exemples de zoningBlocks (sections d'une page) :
 - Homepage type : nav(8) → hero(22) → social-proof(8) → cards(22) → arguments(15) → cta(10) → footer(7)
@@ -169,7 +172,7 @@ Exemples de zoningBlocks (sections d'une page) :
 Réponds UNIQUEMENT avec un JSON valide, sans markdown :
 {
   "actions": [
-    { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...] },
+    { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...], "zoningExpanded": true },
     { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
     { "action": "delete", "node_id": "REAL_ID" },
     { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" }

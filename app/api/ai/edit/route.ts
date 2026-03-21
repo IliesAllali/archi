@@ -96,6 +96,10 @@ export async function POST(req: NextRequest) {
           if (data.description) node.description = data.description;
           if (data.cta?.length) node.cta = data.cta;
           if (data.tags?.length) node.tags = data.tags;
+          if (data.zoningBlocks?.length) {
+            node.zoningBlocks = data.zoningBlocks;
+            node.zoningExpanded = !!data.zoningExpanded;
+          }
           return node;
         });
 
@@ -148,7 +152,10 @@ export async function POST(req: NextRequest) {
               if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
               if (raw.zoningBlocks) {
                 nodeData.zoningBlocks = raw.zoningBlocks;
-                nodeData.zoningExpanded = raw.zoningExpanded ?? false;
+                nodeData.zoningExpanded = raw.zoningExpanded ?? true;
+              }
+              if (raw.zoningExpanded !== undefined && !raw.zoningBlocks) {
+                nodeData.zoningExpanded = raw.zoningExpanded;
               }
 
               db.prepare(
@@ -177,7 +184,10 @@ export async function POST(req: NextRequest) {
                 if (raw.entryPoints !== undefined) data.entryPoints = raw.entryPoints;
                 if (raw.zoningBlocks !== undefined) {
                   data.zoningBlocks = raw.zoningBlocks;
-                  data.zoningExpanded = raw.zoningExpanded ?? data.zoningExpanded ?? false;
+                  data.zoningExpanded = raw.zoningExpanded ?? data.zoningExpanded ?? true;
+                }
+                if (raw.zoningExpanded !== undefined && raw.zoningBlocks === undefined) {
+                  data.zoningExpanded = raw.zoningExpanded;
                 }
                 data.lastModifiedBy = "ai";
                 data.lastModifiedByName = aiLabel;
