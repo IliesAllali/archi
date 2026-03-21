@@ -122,7 +122,7 @@ function createMcpServer() {
       db.prepare(
         `INSERT INTO projects (id, slug, name, client, accent, version, owner_id, archived, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 'v1', 'ai', 0, ?, ?)`
-      ).run(projectId, slug, name, client || null, accent || "#5E6AD2", now, now)
+      ).run(projectId, slug, name, client || null, accent || "#F76B15", now, now)
 
       return {
         content: [{

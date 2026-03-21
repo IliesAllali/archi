@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
         db.prepare(
           `INSERT INTO projects (id, slug, name, client, accent, version, owner_id, archived, created_at, updated_at)
-           VALUES (?, ?, ?, ?, '#5E6AD2', 'v1', ?, 0, ?, ?)`
+           VALUES (?, ?, ?, ?, '#F76B15', 'v1', ?, 0, ?, ?)`
         ).run(projectId, slug, safeName, safeClient, payload.sub, now, now);
 
         // Add user as project member (owner)

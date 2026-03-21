@@ -4,9 +4,9 @@
 
 /* ─── Theme system ─── */
 :root {
-  --accent: #5E6AD2;
-  --accent-muted: rgba(94, 106, 210, 0.12);
-  --accent-strong: rgba(94, 106, 210, 0.24);
+  --accent: #F76B15;
+  --accent-muted: rgba(247, 107, 21, 0.12);
+  --accent-strong: rgba(247, 107, 21, 0.24);
 
   /* Light mode (default) */
   --canvas-bg: #f5f5f7;

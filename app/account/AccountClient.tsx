@@ -21,7 +21,7 @@ const PROVIDERS = [
 ]
 
 const AVATAR_COLORS = [
-  "#5E6AD2", "#E5484D", "#E54D2E", "#F76B15", "#F5D90A",
+  "#F76B15", "#E5484D", "#E54D2E", "#5E6AD2", "#F5D90A",
   "#46A758", "#30A46C", "#0091FF", "#6E56CF", "#AB4ABA",
 ]
 

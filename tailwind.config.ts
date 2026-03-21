@@ -29,9 +29,9 @@ const config: Config = {
           faint: "var(--text-faint)",
         },
         accent: {
-          DEFAULT: "var(--accent, #5E6AD2)",
-          muted: "var(--accent-muted, rgba(94, 106, 210, 0.12))",
-          strong: "var(--accent-strong, rgba(94, 106, 210, 0.24))",
+          DEFAULT: "var(--accent, #F76B15)",
+          muted: "var(--accent-muted, rgba(247, 107, 21, 0.12))",
+          strong: "var(--accent-strong, rgba(247, 107, 21, 0.24))",
         },
       },
       fontFamily: {

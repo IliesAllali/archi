@@ -68,7 +68,7 @@ db.exec(`
     slug       TEXT UNIQUE NOT NULL,
     name       TEXT NOT NULL,
     client     TEXT,
-    accent     TEXT NOT NULL DEFAULT '#5E6AD2',
+    accent     TEXT NOT NULL DEFAULT '#F76B15',
     version    TEXT NOT NULL DEFAULT 'v1',
     owner_id   TEXT NOT NULL REFERENCES users(id),
     archived   INTEGER NOT NULL DEFAULT 0,

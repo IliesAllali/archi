@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     slug,
     name,
     body.client || null,
-    body.accent || "#5E6AD2",
+    body.accent || "#F76B15",
     body.version || "v1",
     ownerId,
     now,
@@ -76,6 +76,6 @@ export async function POST(req: NextRequest) {
     name,
     client: body.client || "",
     version: body.version || "v1",
-    accent: body.accent || "#5E6AD2",
+    accent: body.accent || "#F76B15",
   }, { status: 201 })
 }

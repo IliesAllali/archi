@@ -30,7 +30,7 @@ const ENTRY_ICON: Record<EntryPointType, React.ElementType> = {
 const ENTRY_COLOR: Record<EntryPointType, string> = {
   google: "#4285F4",
   direct: "#8B8B93",
-  nav: "#5E6AD2",
+  nav: "#F76B15",
   social: "#E1306C",
   email: "#34A853",
   ads: "#FBBC04",

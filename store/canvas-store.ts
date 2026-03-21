@@ -123,7 +123,7 @@ export const useCanvasStore = create<CanvasState>()(
   immer((set, get) => ({
     projectId: "",
     projectSlug: "",
-    accent: "#5E6AD2",
+    accent: "#F76B15",
 
     nodes: [],
     nodeMap: new Map(),

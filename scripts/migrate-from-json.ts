@@ -42,7 +42,7 @@ if (!adminUser) {
   db.prepare(
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
      VALUES (?, ?, 1, ?, ?, ?, 'admin', ?, ?)`
-  ).run(adminId, adminEmail, passwordHash, 'Patch', '#5E6AD2', now, now)
+  ).run(adminId, adminEmail, passwordHash, 'Patch', '#F76B15', now, now)
   adminUser = db.prepare('SELECT * FROM users WHERE id = ?').get(adminId) as any
   console.log(`✅ Admin user created: ${adminEmail}`)
 } else {
@@ -101,7 +101,7 @@ for (const file of jsonFiles) {
     projectSlug,
     project.name || projectSlug,
     project.client || null,
-    project.accent || '#5E6AD2',
+    project.accent || '#F76B15',
     project.version || 'v1',
     adminUser.id,
     projectCreatedAt,

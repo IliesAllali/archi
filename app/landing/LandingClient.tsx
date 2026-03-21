@@ -18,7 +18,7 @@ import {
 function Logo() {
   return (
     <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="32" height="32" rx="8" fill="#5E6AD2" />
+      <rect width="32" height="32" rx="8" fill="#F76B15" />
       <path d="M16 8V16M16 16L10 22M16 16L22 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -34,11 +34,11 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="group p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-200 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50"
+    <div className="group p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-200 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-50"
       style={{ background: "white", borderColor: "#e5e7eb" }}>
       <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-colors group-hover:bg-indigo-100"
-        style={{ background: "#f0f0ff" }}>
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: "#5E6AD2" }} />
+        style={{ background: "#fff5eb" }}>
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: "#F76B15" }} />
       </div>
       <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-1.5" style={{ color: "#1a1a2e" }}>
         {title}
@@ -54,7 +54,7 @@ function Step({ num, title, desc }: { num: number; title: string; desc: string }
   return (
     <div className="flex items-start gap-4">
       <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-        style={{ background: "#5E6AD2" }}>
+        style={{ background: "#F76B15" }}>
         {num}
       </div>
       <div>
@@ -78,7 +78,7 @@ export default function LandingClient() {
           <Link href="/login" className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors hover:bg-gray-100" style={{ color: "#6b7280" }}>
             Connexion
           </Link>
-          <Link href="/signup" className="text-xs sm:text-sm font-medium px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg text-white transition-all hover:brightness-110 active:scale-95" style={{ background: "#5E6AD2" }}>
+          <Link href="/signup" className="text-xs sm:text-sm font-medium px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg text-white transition-all hover:brightness-110 active:scale-95" style={{ background: "#F76B15" }}>
             Essayer gratuitement
           </Link>
         </div>
@@ -87,7 +87,7 @@ export default function LandingClient() {
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-12 sm:pb-20 text-center">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-2xs sm:text-xs font-medium mb-4 sm:mb-6"
-          style={{ background: "#f0f0ff", color: "#5E6AD2" }}>
+          style={{ background: "#fff5eb", color: "#F76B15" }}>
           <Zap className="w-3 h-3" />
           Gratuit, open-source, IA-ready
         </div>
@@ -95,7 +95,7 @@ export default function LandingClient() {
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-4 sm:mb-5" style={{ color: "#1a1a2e" }}>
           L&apos;outil d&apos;arborescence
           <br />
-          <span style={{ color: "#5E6AD2" }}>que vos projets attendent</span>
+          <span style={{ color: "#F76B15" }}>que vos projets attendent</span>
         </h1>
 
         <p className="text-sm sm:text-base md:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed" style={{ color: "#6b7280" }}>
@@ -103,7 +103,7 @@ export default function LandingClient() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
-          <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-medium text-sm sm:text-base transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-indigo-200" style={{ background: "#5E6AD2" }}>
+          <Link href="/signup" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl text-white font-medium text-sm sm:text-base transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-orange-200" style={{ background: "#F76B15" }}>
             Créer un projet
             <ArrowRight className="w-4 h-4" />
           </Link>
@@ -125,7 +125,7 @@ export default function LandingClient() {
           <div className="px-4 sm:px-8 py-8 sm:py-12 flex items-center justify-center min-h-[180px] sm:min-h-[300px]">
             <div className="flex flex-col items-center gap-3 sm:gap-4">
               {/* Tree visualization */}
-              <div className="w-20 sm:w-28 h-8 sm:h-10 rounded-lg flex items-center justify-center text-xs sm:text-sm font-medium text-white" style={{ background: "#5E6AD2" }}>
+              <div className="w-20 sm:w-28 h-8 sm:h-10 rounded-lg flex items-center justify-center text-xs sm:text-sm font-medium text-white" style={{ background: "#F76B15" }}>
                 Accueil
               </div>
               <div className="w-px h-3 sm:h-4" style={{ background: "#4a4a6e" }} />
@@ -197,7 +197,7 @@ export default function LandingClient() {
 
       {/* Social proof */}
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center" style={{ borderTop: "1px solid #e5e7eb" }}>
-        <p className="text-xs sm:text-sm font-medium mb-2" style={{ color: "#5E6AD2" }}>
+        <p className="text-xs sm:text-sm font-medium mb-2" style={{ color: "#F76B15" }}>
           Déjà utilisé sur
         </p>
         <p className="text-lg sm:text-xl font-bold mb-4 sm:mb-6" style={{ color: "#1a1a2e" }}>
@@ -221,7 +221,7 @@ export default function LandingClient() {
           <br />
           La collaboration avancée arrive bientôt en premium.
         </p>
-        <Link href="/signup" className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl text-white font-medium transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-indigo-200 text-sm sm:text-base" style={{ background: "#5E6AD2" }}>
+        <Link href="/signup" className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl text-white font-medium transition-all hover:brightness-110 active:scale-95 shadow-lg shadow-orange-200 text-sm sm:text-base" style={{ background: "#F76B15" }}>
           Commencer maintenant
           <ArrowRight className="w-4 h-4" />
         </Link>

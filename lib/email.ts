@@ -24,7 +24,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
           Cliquez sur le bouton ci-dessous pour confirmer votre adresse email et accéder à Arbo.
         </p>
         <a href="${link}"
-           style="display:inline-block;background:#5E6AD2;color:#fff;text-decoration:none;
+           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
                   padding:12px 24px;border-radius:6px;font-weight:600">
           Confirmer mon email
         </a>
@@ -52,7 +52,7 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
           Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous.
         </p>
         <a href="${link}"
-           style="display:inline-block;background:#5E6AD2;color:#fff;text-decoration:none;
+           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
                   padding:12px 24px;border-radius:6px;font-weight:600">
           Réinitialiser mon mot de passe
         </a>
@@ -92,7 +92,7 @@ export async function sendInvitationEmail(
           <strong>"${projectName}"</strong> en tant que <strong>${roleLabel[role] || role}</strong>.
         </p>
         <a href="${link}"
-           style="display:inline-block;background:#5E6AD2;color:#fff;text-decoration:none;
+           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
                   padding:12px 24px;border-radius:6px;font-weight:600">
           Rejoindre le projet
         </a>

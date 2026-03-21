@@ -94,7 +94,7 @@ export function saveProject(project: Partial<Project> & { id: string }): void {
     ).run(
       project.name ?? '',
       project.client ?? null,
-      project.accent ?? '#5E6AD2',
+      project.accent ?? '#F76B15',
       project.version ?? 'v1',
       now,
       project.id

@@ -14,7 +14,7 @@ interface ProjectMeta {
 }
 
 const ACCENT_PRESETS = [
-  "#5E6AD2", "#3B82F6", "#8B5CF6", "#EC4899",
+  "#F76B15", "#3B82F6", "#8B5CF6", "#EC4899",
   "#F59E0B", "#10B981", "#EF4444", "#06B6D4",
 ]
 

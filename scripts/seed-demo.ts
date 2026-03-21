@@ -43,7 +43,7 @@ if (systemUser) {
   const now = Date.now();
   db.prepare(
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
-     VALUES (?, 'system@arbo.app', 1, ?, 'Arbo', '#5E6AD2', 'admin', ?, ?)`
+     VALUES (?, 'system@arbo.app', 1, ?, 'Arbo', '#F76B15', 'admin', ?, ?)`
   ).run(systemUserId, hash, now, now);
   console.log("[ok] System user created");
 }
