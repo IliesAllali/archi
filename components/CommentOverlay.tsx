@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useReactFlow } from "reactflow"
 import { Send, Check, X, Loader2, Trash2 } from "lucide-react"
 import { useCommentsStore, type CanvasComment } from "@/store/comments-store"
@@ -92,8 +92,10 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const replies = useCommentsStore(s =>
-    s.comments.filter(c => c.parentId === rootComment.id).sort((a, b) => a.createdAt - b.createdAt)
+  const comments = useCommentsStore(s => s.comments)
+  const replies = useMemo(
+    () => comments.filter(c => c.parentId === rootComment.id).sort((a, b) => a.createdAt - b.createdAt),
+    [comments, rootComment.id]
   )
   const addComment = useCommentsStore(s => s.addComment)
   const resolveComment = useCommentsStore(s => s.resolveComment)
