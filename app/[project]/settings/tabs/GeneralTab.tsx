@@ -14,8 +14,9 @@ interface ProjectMeta {
 }
 
 const ACCENT_PRESETS = [
-  "#F76B15", "#3B82F6", "#8B5CF6", "#EC4899",
-  "#F59E0B", "#10B981", "#EF4444", "#06B6D4",
+  "#F76B15", "#E5484D", "#E54D2E", "#EC4899",
+  "#8B5CF6", "#3B82F6", "#10B981", "#F59E0B",
+  "#0EA5E9", "#6D28D9", "#1A1A1E", "#78716C",
 ]
 
 export default function GeneralTab({
@@ -139,26 +140,44 @@ export default function GeneralTab({
         <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
           Couleur d&apos;accent
         </label>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           {ACCENT_PRESETS.map((color) => (
             <button
               key={color}
               onClick={() => setAccent(color)}
-              className="w-7 h-7 rounded-lg transition-all duration-100 hover:scale-110"
+              className="w-7 h-7 rounded-full transition-all duration-150 hover:scale-110 active:scale-95"
               style={{
                 backgroundColor: color,
-                outline: accent === color ? `2px solid ${color}` : "2px solid transparent",
-                outlineOffset: "2px",
+                boxShadow: accent === color
+                  ? `0 0 0 2px var(--elevated), 0 0 0 4px ${color}`
+                  : `0 1px 3px rgba(0,0,0,0.15)`,
               }}
-            />
+            >
+              {accent === color && (
+                <Check className="w-3 h-3 mx-auto" style={{ color: "#fff", filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.3))" }} />
+              )}
+            </button>
           ))}
-          <input
-            type="color"
-            value={accent}
-            onChange={(e) => setAccent(e.target.value)}
-            className="w-7 h-7 rounded-lg cursor-pointer border-0 p-0"
-            style={{ background: "transparent" }}
-          />
+          <label
+            className="w-7 h-7 rounded-full cursor-pointer transition-all duration-150 hover:scale-110 flex items-center justify-center"
+            style={{
+              background: "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+            }}
+            title="Couleur personnalis\u00e9e"
+          >
+            <input
+              type="color"
+              value={accent}
+              onChange={(e) => setAccent(e.target.value)}
+              className="sr-only"
+            />
+          </label>
+        </div>
+        {/* Live preview */}
+        <div className="flex items-center gap-2 mt-2">
+          <div className="w-4 h-4 rounded" style={{ background: accent }} />
+          <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>{accent.toUpperCase()}</span>
         </div>
       </div>
 
