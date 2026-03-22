@@ -46,17 +46,20 @@ const OVERLAY_STYLES = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.comment-pin-wrap:hover .comment-preview {
+.comment-pin-wrap:not(.is-dragging):hover .comment-preview {
   opacity: 1;
   transform: translateX(0) scale(1);
   pointer-events: auto;
 }
-.comment-pin-wrap:hover .pin-core {
-  transform: rotate(-45deg) scale(1.12);
-  box-shadow: 0 0 0 3px var(--accent-muted), 0 4px 16px rgba(0,0,0,0.25);
+.comment-pin-wrap:not(.is-dragging):hover .pin-core {
+  transform: rotate(-45deg) scale(1.1);
+  box-shadow: 0 0 0 2.5px var(--accent-muted), 0 4px 12px rgba(0,0,0,0.22);
 }
-.comment-pin-wrap .pin-core {
-  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+.pin-core {
+  transition: width 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              height 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-radius 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 200ms ease,
               opacity 200ms ease;
 }
@@ -138,35 +141,41 @@ function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, is
   return (
     <div
       ref={pinRef}
-      className={`absolute z-30 comment-pin-wrap ${isDragging ? "" : ""}`}
+      className={`absolute z-30 comment-pin-wrap${isDragging ? " is-dragging" : ""}`}
       style={{
         left: -9999,
         top: -9999,
       }}
       onMouseDown={handleMouseDown}
     >
-      {/* The teardrop pin */}
+      {/* Pin — teardrop 22px default, morphs to 14px circle on drag */}
       <div
         className="pin-core flex items-center justify-center"
         style={{
-          width: 28,
-          height: 28,
-          borderRadius: "50% 50% 50% 0",
-          transform: isDragging ? "rotate(-45deg) scale(1.2)" : "rotate(-45deg) scale(1)",
+          width: isDragging ? 14 : 22,
+          height: isDragging ? 14 : 22,
+          borderRadius: isDragging ? "50%" : "50% 50% 50% 0",
+          transform: isDragging ? "rotate(0deg) scale(1)" : "rotate(-45deg) scale(1)",
           background: comment.resolved ? "var(--text-faint)" : "var(--accent)",
-          opacity: comment.resolved ? 0.5 : 1,
+          opacity: comment.resolved ? 0.55 : 1,
           boxShadow: isDragging
-            ? "0 0 0 3px var(--accent-muted), 0 8px 24px rgba(0,0,0,0.35)"
+            ? "0 0 0 4px var(--accent-muted), 0 2px 12px rgba(0,0,0,0.3)"
             : isActive
-              ? "0 0 0 3px var(--accent-muted), 0 2px 8px rgba(0,0,0,0.2)"
-              : "0 2px 6px rgba(0,0,0,0.15)",
+              ? "0 0 0 2.5px var(--accent-muted), 0 2px 6px rgba(0,0,0,0.18)"
+              : "0 1.5px 4px rgba(0,0,0,0.15)",
           cursor: isDragging ? "grabbing" : "grab",
-          animation: "pinDrop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+          animation: isDragging ? "none" : "pinDrop 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }}
       >
         <span
-          className="text-2xs font-bold text-white select-none"
-          style={{ transform: "rotate(45deg)" }}
+          className="font-bold text-white select-none"
+          style={{
+            fontSize: isDragging ? 0 : 9,
+            lineHeight: 1,
+            transform: isDragging ? "rotate(0deg)" : "rotate(45deg)",
+            opacity: isDragging ? 0 : 1,
+            transition: "font-size 250ms ease, opacity 200ms ease, transform 250ms ease",
+          }}
         >
           {replyCount > 0 ? replyCount + 1 : index + 1}
         </span>
@@ -178,31 +187,31 @@ function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, is
           ref={previewRef}
           className="comment-preview absolute rounded-lg"
           style={{
-            left: 32,
+            left: 26,
             top: -4,
-            width: 200,
-            padding: "8px 10px",
+            width: 190,
+            padding: "6px 8px",
             background: "var(--elevated)",
             border: "1px solid var(--line-strong)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.13)",
             zIndex: 40,
           }}
         >
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+          <div className="flex items-center gap-1 mb-0.5">
+            <span className="font-semibold" style={{ fontSize: 10, color: "var(--text-secondary)" }}>
               {comment.authorName}
             </span>
-            <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+            <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
               {timeAgo(comment.createdAt)}
             </span>
             {replyCount > 0 && (
-              <span className="text-2xs ml-auto px-1 rounded" style={{ background: "var(--surface-hover)", color: "var(--text-faint)" }}>
+              <span className="ml-auto px-1 rounded" style={{ fontSize: 9, background: "var(--surface-hover)", color: "var(--text-faint)" }}>
                 +{replyCount}
               </span>
             )}
           </div>
-          <p className="text-xs leading-snug" style={{ color: "var(--text-primary)" }}>
-            {truncate(comment.content, 80)}
+          <p style={{ fontSize: 11, lineHeight: 1.35, color: "var(--text-primary)" }}>
+            {truncate(comment.content, 70)}
           </p>
         </div>
       )}
@@ -280,69 +289,69 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   return (
     <div
       ref={(el) => { (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el; threadRef(el) }}
-      className="absolute z-50 w-[280px] rounded-xl overflow-hidden thread-enter"
+      className="absolute z-50 w-[248px] rounded-lg overflow-hidden thread-enter"
       style={{
         left: -9999,
         top: -9999,
         background: "var(--elevated)",
         border: "1px solid var(--line-strong)",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)",
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--line)" }}>
+      <div className="flex items-center justify-between px-2.5 py-1.5" style={{ borderBottom: "1px solid var(--line)" }}>
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full" style={{ background: rootComment.resolved ? "var(--text-faint)" : "var(--accent)" }} />
-          <span className="text-2xs font-medium" style={{ color: "var(--text-faint)" }}>
+          <span className="font-medium" style={{ fontSize: 10, color: "var(--text-faint)" }}>
             Thread
           </span>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center">
           <button
             onClick={(e) => { e.stopPropagation(); resolveComment(projectId, rootComment.id, !rootComment.resolved) }}
-            className="p-1.5 rounded-md transition-all hover:bg-[var(--surface-hover)] active:scale-90"
+            className="p-1 rounded transition-all hover:bg-[var(--surface-hover)] active:scale-90"
             title={rootComment.resolved ? "Rouvrir" : "Résoudre"}
             style={{ color: rootComment.resolved ? "var(--success-text)" : "var(--text-faint)" }}
           >
-            <Check className="w-3.5 h-3.5" />
+            <Check className="w-3 h-3" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); deleteComment(projectId, rootComment.id); onClose() }}
-            className="p-1.5 rounded-md transition-all hover:bg-red-500/10 active:scale-90"
+            className="p-1 rounded transition-all hover:bg-red-500/10 active:scale-90"
             style={{ color: "var(--text-faint)" }}
           >
-            <Trash2 className="w-3.5 h-3.5 hover:text-red-400 transition-colors" />
+            <Trash2 className="w-3 h-3 hover:text-red-400 transition-colors" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onClose() }}
-            className="p-1.5 rounded-md transition-all hover:bg-[var(--surface-hover)] active:scale-90"
+            className="p-1 rounded transition-all hover:bg-[var(--surface-hover)] active:scale-90"
             style={{ color: "var(--text-faint)" }}
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </button>
         </div>
       </div>
 
       {/* Root comment + replies */}
-      <div className="max-h-[260px] overflow-y-auto px-3 py-2.5 space-y-2.5">
+      <div className="max-h-[220px] overflow-y-auto px-2.5 py-2 space-y-2">
         {[rootComment, ...replies].map((c, idx) => (
           <div
             key={c.id}
-            className={`reply-enter ${c.id === rootComment.id ? "" : "pl-2.5 ml-1"}`}
+            className={`reply-enter ${c.id === rootComment.id ? "" : "pl-2 ml-0.5"}`}
             style={{
               ...(c.id !== rootComment.id ? { borderLeft: "2px solid var(--line)" } : {}),
               animationDelay: `${idx * 40}ms`,
             }}
           >
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="font-semibold" style={{ fontSize: 10, color: "var(--text-secondary)" }}>
                 {c.authorName}
               </span>
-              <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+              <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
                 {timeAgo(c.createdAt)}
               </span>
             </div>
-            <p className="text-xs leading-relaxed" style={{ color: "var(--text-primary)" }}>
+            <p style={{ fontSize: 11, lineHeight: 1.4, color: "var(--text-primary)" }}>
               {c.content}
             </p>
           </div>
@@ -350,14 +359,14 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
       </div>
 
       {/* Reply input */}
-      <div className="px-3 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="px-2.5 py-2" style={{ borderTop: "1px solid var(--line)" }}>
         {!currentUser && !guestName ? (
           <input
             type="text"
             value={guestName}
             onChange={e => setGuestName(e.target.value)}
             placeholder="Ton nom"
-            className="w-full h-7 px-2.5 rounded-md text-2xs focus:outline-none transition-all"
+            className="w-full h-6 px-2 rounded text-2xs focus:outline-none transition-all"
             style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
             onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
             onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
@@ -371,7 +380,7 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
               onChange={e => setContent(e.target.value)}
               placeholder="Répondre..."
               rows={1}
-              className="flex-1 px-2.5 py-1.5 rounded-md text-2xs focus:outline-none resize-none transition-all"
+              className="flex-1 px-2 py-1 rounded text-2xs focus:outline-none resize-none transition-all"
               style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
               onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
               onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
@@ -385,7 +394,7 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
             <button
               onClick={(e) => { e.stopPropagation(); handleSubmit() }}
               disabled={sending || !content.trim()}
-              className="self-end p-1.5 rounded-md transition-all disabled:opacity-30 shrink-0 active:scale-90"
+              className="self-end p-1 rounded transition-all disabled:opacity-30 shrink-0 active:scale-90"
               style={{
                 background: content.trim() ? "var(--accent)" : "var(--surface-hover)",
                 color: content.trim() ? "#fff" : "var(--text-faint)",
@@ -463,37 +472,37 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
   return (
     <div
       ref={panelRef}
-      className="absolute z-50 w-[260px] rounded-xl overflow-hidden thread-enter"
+      className="absolute z-50 w-[230px] rounded-lg overflow-hidden thread-enter"
       style={{
         left: popoverLeft,
         top: popoverTop,
         background: "var(--elevated)",
         border: "1px solid var(--line-strong)",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)",
       }}
     >
-      <div className="px-3 py-2.5">
+      <div className="px-2.5 py-2">
         {!currentUser && !guestName ? (
           <input
             type="text"
             value={guestName}
             onChange={e => setGuestName(e.target.value)}
             placeholder="Ton nom"
-            className="w-full h-8 px-2.5 rounded-md text-xs focus:outline-none transition-all"
+            className="w-full h-6 px-2 rounded text-2xs focus:outline-none transition-all"
             style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
             onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
             onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
             onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
           />
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <textarea
               ref={inputRef}
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder="Ajouter un commentaire..."
               rows={2}
-              className="w-full px-2.5 py-2 rounded-md text-xs focus:outline-none resize-none transition-all"
+              className="w-full px-2 py-1.5 rounded text-2xs focus:outline-none resize-none transition-all"
               style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
               onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
               onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
@@ -505,20 +514,17 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
                 if (e.key === "Escape") onDone()
               }}
             />
-            <div className="flex justify-between items-center">
-              <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                Ctrl+Enter
-              </span>
+            <div className="flex justify-end">
               <button
                 onClick={(e) => { e.stopPropagation(); handleSubmit() }}
                 disabled={sending || !content.trim()}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all disabled:opacity-30 active:scale-95"
+                className="flex items-center gap-1 px-2 py-1 rounded text-2xs font-medium transition-all disabled:opacity-30 active:scale-95"
                 style={{
                   background: content.trim() ? "var(--accent)" : "var(--surface-hover)",
                   color: content.trim() ? "#fff" : "var(--text-faint)",
                 }}
               >
-                {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                {sending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Send className="w-2.5 h-2.5" />}
                 Poster
               </button>
             </div>
@@ -644,8 +650,8 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
       if (el && container) {
         const bounds = container.getBoundingClientRect()
         const screenPos = rf.flowToScreenPosition({ x: canvasPos.x, y: canvasPos.y })
-        el.style.left = `${screenPos.x - bounds.left - 14}px`
-        el.style.top = `${screenPos.y - bounds.top - 14}px`
+        el.style.left = `${screenPos.x - bounds.left - 11}px`
+        el.style.top = `${screenPos.y - bounds.top - 11}px`
       }
     }
 
@@ -696,8 +702,8 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
           y: nodeCy + comment.offsetY,
         })
 
-        el.style.left = `${screenPos.x - bounds.left - 14}px`
-        el.style.top = `${screenPos.y - bounds.top - 14}px`
+        el.style.left = `${screenPos.x - bounds.left - 11}px`
+        el.style.top = `${screenPos.y - bounds.top - 11}px`
 
         // Clamp preview bubble to viewport
         const preview = previewRefs.current.get(comment.id)
