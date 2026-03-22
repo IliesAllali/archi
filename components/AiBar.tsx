@@ -220,12 +220,12 @@ export default function AiBar({ projectId }: Props) {
           onClick={() => setOpen(true)}
           className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 hover:shadow-xl active:scale-95"
           style={{
-            background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
+            background: "var(--accent)",
             color: "#fff",
-            boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)",
+            boxShadow: "0 4px 24px var(--accent-strong)",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 32px rgba(99, 102, 241, 0.5)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(99, 102, 241, 0.35)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 32px var(--accent-strong)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 24px var(--accent-strong)"; }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Assistant IA
@@ -253,7 +253,7 @@ export default function AiBar({ projectId }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5CF6" }} />
+                <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
                   Assistant IA
                 </span>
@@ -264,8 +264,8 @@ export default function AiBar({ projectId }: Props) {
                   onClick={() => { const next = speed === "fast" ? "quality" : "fast"; setSpeed(next); storeSpeed(next); }}
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-90"
                   style={{
-                    color: speed === "fast" ? "#f59e0b" : "#8B5CF6",
-                    background: speed === "fast" ? "rgba(245,158,11,0.1)" : "rgba(139,92,246,0.1)",
+                    color: speed === "fast" ? "#f59e0b" : "var(--accent)",
+                    background: speed === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)",
                   }}
                   title={speed === "fast" ? "Mode rapide (Haiku/Mini)" : "Mode qualit\u00e9 (Sonnet/GPT-4o)"}
                 >
@@ -325,8 +325,8 @@ export default function AiBar({ projectId }: Props) {
                             key={j}
                             className="text-2xs px-1 py-0.5 rounded"
                             style={{
-                              background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "rgba(139,92,246,0.1)",
-                              color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "#8B5CF6",
+                              background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "var(--accent-muted)",
+                              color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "var(--accent)",
                             }}
                           >
                             {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
@@ -386,7 +386,7 @@ export default function AiBar({ projectId }: Props) {
             {/* Live status during AI processing */}
             {loading && statusMsg && (
               <div className="px-4 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-                <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "#8B5CF6" }} />
+                <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "var(--accent)" }} />
                 <p className="text-2xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{statusMsg}</p>
               </div>
             )}
@@ -402,8 +402,8 @@ export default function AiBar({ projectId }: Props) {
                     transition={{ duration: 0.2, delay: i * 0.03, ease: [0.16, 1, 0.3, 1] }}
                     className="text-2xs px-1.5 py-0.5 rounded-full"
                     style={{
-                      background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "rgba(139,92,246,0.1)",
-                      color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "#8B5CF6",
+                      background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "var(--accent-muted)",
+                      color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "var(--accent)",
                     }}
                   >
                     {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
@@ -443,7 +443,7 @@ export default function AiBar({ projectId }: Props) {
                   style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}
                 >
                   <div className="flex items-start gap-2.5">
-                    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#8B5CF6" }} />
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
                         {chatResponse}
@@ -499,7 +499,7 @@ export default function AiBar({ projectId }: Props) {
                   onClick={handleSubmit}
                   disabled={loading || !prompt.trim()}
                   className="self-end p-2.5 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "#fff" }}
+                  style={{ background: "var(--accent)", color: "#fff" }}
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

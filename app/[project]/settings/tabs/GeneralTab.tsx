@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, Loader2 } from "lucide-react"
 import { csrfHeaders } from "../use-csrf"
 
@@ -31,6 +31,16 @@ export default function GeneralTab({
   const [accent, setAccent] = useState(project.accent)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Live-update CSS accent when user picks a color
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", accent)
+    const r = parseInt(accent.slice(1, 3), 16) || 0
+    const g = parseInt(accent.slice(3, 5), 16) || 0
+    const b = parseInt(accent.slice(5, 7), 16) || 0
+    document.documentElement.style.setProperty("--accent-muted", `rgba(${r}, ${g}, ${b}, 0.12)`)
+    document.documentElement.style.setProperty("--accent-strong", `rgba(${r}, ${g}, ${b}, 0.24)`)
+  }, [accent])
 
   const handleSave = async () => {
     setSaving(true)

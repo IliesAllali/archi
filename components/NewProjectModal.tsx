@@ -270,7 +270,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "#fff" }}
+                      style={{ background: "var(--accent)", color: "#fff" }}
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                     </div>
@@ -480,7 +480,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           onClick={handleAiGenerate}
                           disabled={loading || !aiPrompt.trim()}
                           className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                          style={{ background: "linear-gradient(135deg, #8B5CF6, #6366F1)", color: "#fff" }}
+                          style={{ background: "var(--accent)", color: "#fff" }}
                         >
                           {loading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
