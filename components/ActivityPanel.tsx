@@ -53,7 +53,7 @@ const LABEL_MAP: Record<string, string> = {
 const COLOR_MAP: Record<string, string> = {
   create_node: "#22C55E",
   delete_node: "#EF4444",
-  reparent: "#3B82F6",
+  reparent: "#F76B15",
   bulk_import: "#F59E0B",
   restore: "#8B5CF6",
   update_node: "#06B6D4",

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   db.prepare(
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, '#3B82F6', ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, '#F76B15', ?, ?, ?)`
   ).run(userId, email, autoVerify, passwordHash, name, role, now, now)
 
   // If auto-verified (first user), log them in directly

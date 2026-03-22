@@ -22,7 +22,7 @@ const HTML = `<!DOCTYPE html>
     pre code { background: none; padding: 0; color: inherit; }
     .method { display: inline-block; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; margin-right: 8px; color: white; }
     .get { background: #10b981; }
-    .post { background: #3b82f6; }
+    .post { background: #F76B15; }
     .put { background: #f59e0b; }
     .patch { background: #8b5cf6; }
     .delete { background: #ef4444; }
@@ -30,7 +30,7 @@ const HTML = `<!DOCTYPE html>
     table { width: 100%; border-collapse: collapse; margin: 12px 0; }
     th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e0e0e0; }
     th { font-weight: 600; background: #f5f5f5; }
-    .scope { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+    .scope { display: inline-block; background: #fff5eb; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
     .warn { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
   </style>
 </head>

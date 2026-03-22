@@ -126,7 +126,7 @@ export default function AdminClient() {
         {/* Stats Grid */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} color="#3B82F6" />
+            <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} color="#F76B15" />
             <StatCard icon={FolderKanban} label="Projets" value={stats.totalProjects} color="#8B5CF6" />
             <StatCard icon={GitBranch} label="Pages" value={stats.totalNodes} color="#10B981" />
             <StatCard icon={Activity} label="Actifs (30j)" value={stats.activeUsers30d} color="#F59E0B" />
@@ -186,8 +186,8 @@ export default function AdminClient() {
                       <span
                         className="px-1.5 py-0.5 rounded text-[10px] font-semibold"
                         style={{
-                          background: user.role === "admin" ? "#EF444420" : "#3B82F620",
-                          color: user.role === "admin" ? "#EF4444" : "#3B82F6",
+                          background: user.role === "admin" ? "#EF444420" : "#F76B1520",
+                          color: user.role === "admin" ? "#EF4444" : "#F76B15",
                         }}
                       >
                         {user.role}

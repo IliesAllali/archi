@@ -35,7 +35,7 @@ db.exec(`
     email_verified INTEGER NOT NULL DEFAULT 0,
     password_hash  TEXT NOT NULL,
     name           TEXT NOT NULL,
-    color          TEXT NOT NULL DEFAULT '#3B82F6',
+    color          TEXT NOT NULL DEFAULT '#F76B15',
     role_global    TEXT NOT NULL DEFAULT 'user',
     created_at     INTEGER NOT NULL,
     updated_at     INTEGER NOT NULL

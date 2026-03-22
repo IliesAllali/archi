@@ -36,7 +36,7 @@ function FeatureCard({
   return (
     <div className="group p-4 sm:p-6 rounded-xl sm:rounded-2xl border transition-all duration-200 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-50"
       style={{ background: "white", borderColor: "#e5e7eb" }}>
-      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-colors group-hover:bg-indigo-100"
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-colors group-hover:bg-orange-100"
         style={{ background: "#fff5eb" }}>
         <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: "#F76B15" }} />
       </div>
