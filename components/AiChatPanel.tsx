@@ -2,14 +2,30 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Send, Trash2, User } from "lucide-react";
+import { Sparkles, X, Send, Trash2, User, Check, Loader2, Plus, Pencil, Trash, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+
+export interface AiAction {
+  action: "add" | "update" | "delete" | "move";
+  node_id?: string;
+  temp_id?: string;
+  parent_temp_id?: string | null;
+  parent_id?: string | null;
+  label?: string;
+  type?: string;
+  priority?: string;
+  description?: string;
+  rationale?: string;
+}
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  pendingActions?: AiAction[];
+  applied?: boolean;
+  applying?: boolean;
 }
 
 interface Props {
@@ -19,6 +35,7 @@ interface Props {
   onSend: (message: string) => void;
   onClear: () => void;
   loading: boolean;
+  onApplyActions?: (messageId: string) => void;
 }
 
 /* ── Thinking indicator (Claude-style) ─────────────────────────────────────── */
@@ -67,9 +84,14 @@ function ThinkingIndicator() {
   );
 }
 
+/* ── Action icon helper ────────────────────────────────────────────────────── */
+
+const ACTION_ICONS: Record<string, typeof Plus> = { add: Plus, update: Pencil, delete: Trash, move: ArrowRight };
+const ACTION_LABELS: Record<string, string> = { add: "Ajouter", update: "Modifier", delete: "Supprimer", move: "D\u00e9placer" };
+
 /* ── Message bubble ────────────────────────────────────────────────────────── */
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: string) => void }) {
   const isUser = msg.role === "user";
 
   return (
@@ -149,6 +171,63 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </ReactMarkdown>
           </div>
         )}
+        {/* Pending actions card */}
+        {msg.pendingActions && msg.pendingActions.length > 0 && (
+          <div
+            className="mt-3 rounded-lg overflow-hidden"
+            style={{ border: "1px solid var(--line)", background: "var(--surface-hover)" }}
+          >
+            <div className="px-3 py-2 space-y-1.5">
+              {msg.pendingActions.slice(0, 8).map((action, i) => {
+                const Icon = ACTION_ICONS[action.action] || Pencil;
+                return (
+                  <div key={i} className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-secondary)" }}>
+                    <Icon className="w-3 h-3 shrink-0" style={{ color: "var(--accent)" }} />
+                    <span className="font-medium" style={{ color: "var(--text-muted)" }}>
+                      {ACTION_LABELS[action.action] || action.action}
+                    </span>
+                    {action.label && (
+                      <span className="truncate">{action.label}</span>
+                    )}
+                  </div>
+                );
+              })}
+              {msg.pendingActions.length > 8 && (
+                <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                  +{msg.pendingActions.length - 8} autre(s)...
+                </p>
+              )}
+            </div>
+            <div className="px-3 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
+              {msg.applied ? (
+                <div className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "var(--accent)" }}>
+                  <Check className="w-3.5 h-3.5" />
+                  {msg.pendingActions.length} modification(s) appliqu\u00e9e(s)
+                </div>
+              ) : (
+                <button
+                  onClick={() => onApply?.(msg.id)}
+                  disabled={msg.applying}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  style={{ background: "var(--accent)", color: "#fff" }}
+                >
+                  {msg.applying ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Application en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      Appliquer {msg.pendingActions.length} modification(s)
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <p className="text-2xs mt-2 opacity-40">
           {new Date(msg.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </p>
@@ -159,7 +238,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 
 /* ── Panel ─────────────────────────────────────────────────────────────────── */
 
-export default function AiChatPanel({ open, onClose, messages, onSend, onClear, loading }: Props) {
+export default function AiChatPanel({ open, onClose, messages, onSend, onClear, loading, onApplyActions }: Props) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -274,7 +353,7 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
                 </div>
               )}
               {messages.map((msg) => (
-                <MessageBubble key={msg.id} msg={msg} />
+                <MessageBubble key={msg.id} msg={msg} onApply={onApplyActions} />
               ))}
               <AnimatePresence>
                 {loading && <ThinkingIndicator />}

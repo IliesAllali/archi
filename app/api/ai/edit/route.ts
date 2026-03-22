@@ -24,10 +24,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory } = body as {
+  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory, propose: rawPropose } = body as {
     prompt?: string; apiKey?: string; projectId?: string; provider?: string; speed?: string;
     history?: { role: string; content: string }[];
+    propose?: boolean;
   };
+  const proposeOnly = rawPropose === true;
   const conversationHistory = Array.isArray(rawHistory)
     ? rawHistory.filter(m => (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-10) as { role: "user" | "assistant"; content: string }[]
     : undefined;
@@ -122,6 +124,18 @@ export async function POST(req: NextRequest) {
         // Chat mode: AI answered a question instead of making modifications
         if (result.type === "chat") {
           send("done", { summary: result.summary, total: 0, type: "chat" });
+          controller.close();
+          return;
+        }
+
+        // Propose mode: return actions without applying them
+        if (proposeOnly) {
+          send("done", {
+            summary: result.summary,
+            total: result.actions.length,
+            type: "propose",
+            actions: result.actions,
+          });
           controller.close();
           return;
         }

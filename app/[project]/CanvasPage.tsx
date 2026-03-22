@@ -17,7 +17,7 @@ import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import ActivityPanel from "@/components/ActivityPanel";
 import AiBar from "@/components/AiBar";
 import AiChatPanel from "@/components/AiChatPanel";
-import type { ChatMessage } from "@/components/AiChatPanel";
+import type { ChatMessage, AiAction } from "@/components/AiChatPanel";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useCommentsStore } from "@/store/comments-store";
 import { usePresence } from "@/hooks/usePresence";
@@ -172,7 +172,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       const res = await fetch("/api/ai/edit", {
         method: "POST",
         headers,
-        body: JSON.stringify({ prompt: message, apiKey, projectId: project.id, provider, speed, history }),
+        body: JSON.stringify({ prompt: message, apiKey, projectId: project.id, provider, speed, history, propose: true }),
       });
 
       const contentType = res.headers.get("content-type") || "";
@@ -213,7 +213,8 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
               if (currentEvent === "action") {
                 editActionsCount++;
               } else if (currentEvent === "done") {
-                const isEdit = data.type !== "chat" && (data.total > 0 || editActionsCount > 0);
+                const isPropose = data.type === "propose" && data.actions?.length > 0;
+                const isEdit = !isPropose && data.type !== "chat" && (data.total > 0 || editActionsCount > 0);
 
                 // Build response message
                 let content = data.summary || "";
@@ -226,10 +227,11 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
                   role: "assistant",
                   content,
                   timestamp: Date.now(),
+                  ...(isPropose ? { pendingActions: data.actions as AiAction[] } : {}),
                 };
                 setAiChatMessages(prev => [...prev, aiMsg]);
 
-                // Reload project after edits
+                // Reload project after direct edits (non-propose)
                 if (isEdit) {
                   const projectRes = await fetch(`/api/projects/${project.id}`);
                   if (projectRes.ok) {
@@ -253,6 +255,47 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       }
     } catch { /* ignore */ } finally {
       setAiChatLoading(false);
+    }
+  }, [aiChatMessages, project.id]);
+
+  const handleApplyActions = useCallback(async (messageId: string) => {
+    const msg = aiChatMessages.find(m => m.id === messageId);
+    if (!msg?.pendingActions?.length || msg.applied || msg.applying) return;
+
+    // Mark as applying
+    setAiChatMessages(prev => prev.map(m => m.id === messageId ? { ...m, applying: true } : m));
+
+    try {
+      const { getStoredApiKey, getStoredProvider } = await import("@/lib/ai-providers");
+      const provider = getStoredProvider();
+      const apiKey = getStoredApiKey(provider);
+      const csrf = document.cookie.match(/arbo_csrf=([^;]+)/)?.[1];
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (csrf) headers["x-csrf-token"] = csrf;
+
+      const res = await fetch("/api/ai/apply", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ projectId: project.id, actions: msg.pendingActions, provider }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Erreur");
+      }
+
+      // Mark as applied
+      setAiChatMessages(prev => prev.map(m => m.id === messageId ? { ...m, applied: true, applying: false } : m));
+
+      // Reload project
+      const projectRes = await fetch(`/api/projects/${project.id}`);
+      if (projectRes.ok) {
+        const proj = await projectRes.json();
+        useCanvasStore.getState().initProject(proj);
+      }
+    } catch {
+      // Revert applying state
+      setAiChatMessages(prev => prev.map(m => m.id === messageId ? { ...m, applying: false } : m));
     }
   }, [aiChatMessages, project.id]);
 
@@ -539,6 +582,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         onSend={handleAiChatFromSidebar}
         onClear={() => setAiChatMessages([])}
         loading={aiChatLoading}
+        onApplyActions={handleApplyActions}
       />
 
       {/* AI Bar (editors only) */}
