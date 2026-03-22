@@ -591,9 +591,49 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     return () => window.removeEventListener("keydown", handler)
   }, [commentMode, setCommentMode, openThread])
 
+  // Auto-exit comment mode when clicking outside canvas (modals, panels, toolbar)
+  useEffect(() => {
+    if (!commentMode) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      // If click is inside a modal, panel, toolbar, or any non-canvas UI — exit comment mode
+      if (
+        target.closest("[role=\"dialog\"]") ||
+        target.closest("[data-panel]") ||
+        target.closest("[data-toolbar]") ||
+        target.closest("[data-no-comment]") ||
+        target.closest(".fixed:not(.comment-overlay-container)")
+      ) {
+        setCommentMode(false)
+        setNewComment(null)
+        openThread(null)
+      }
+    }
+    window.addEventListener("mousedown", handler, true)
+    return () => window.removeEventListener("mousedown", handler, true)
+  }, [commentMode, setCommentMode, openThread])
+
   // Handle canvas click in comment mode
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (!commentMode) return
+
+    // Don't place comment if clicking on interactive UI elements
+    const target = e.target as HTMLElement
+    if (
+      target.closest("button") ||
+      target.closest("a") ||
+      target.closest("input") ||
+      target.closest("textarea") ||
+      target.closest("select") ||
+      target.closest("[role=\"dialog\"]") ||
+      target.closest("[role=\"menu\"]") ||
+      target.closest("[role=\"menuitem\"]") ||
+      target.closest(".comment-thread") ||
+      target.closest(".comment-input") ||
+      target.closest(".comment-pin-wrap") ||
+      target.closest("[data-no-comment]")
+    ) return
+
     e.stopPropagation()
 
     const bounds = (e.currentTarget as HTMLElement).getBoundingClientRect()

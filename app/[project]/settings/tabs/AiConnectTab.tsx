@@ -314,7 +314,7 @@ Ma demande : `
             </ul>
           </div>
 
-          <div className="p-3 rounded-lg text-2xs" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.20)", color: "var(--text-muted)" }}>
+          <div className="p-3 rounded-lg text-2xs" style={{ background: "var(--accent-muted)", border: "1px solid var(--accent-strong)", color: "var(--text-muted)" }}>
             <strong style={{ color: "var(--accent)" }}>Bientôt :</strong> Un abonnement mensuel pour utiliser l&apos;IA sans clé API, directement intégrée.
           </div>
         </div>

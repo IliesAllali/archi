@@ -592,7 +592,7 @@ function AddNodeButtons({ nodeId, isHome }: { nodeId: string; isHome: boolean })
 
 /* ─── Main site node component ─── */
 
-function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
+function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>) {
   const isHome = data.type === "home";
   const resolved = resolveExpandedSections(data.type, data.zoningExpanded, data.zoningBlocks);
   const showExpanded = !!resolved;
@@ -656,7 +656,8 @@ function SiteNodeComponent({ data, selected, id }: NodeProps<SiteNode>) {
           "rounded overflow-visible cursor-pointer group relative",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-1px]",
-          isUtility && !selected && "opacity-65",
+          dragging && "opacity-50",
+          isUtility && !selected && !dragging && "opacity-65",
           isDropTarget && "ring-2 ring-offset-2 scale-105",
         )}
         style={{
