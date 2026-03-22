@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useReactFlow } from "reactflow"
-import { Send, Check, X, Loader2, Trash2, GripVertical } from "lucide-react"
+import { Send, Check, X, Loader2, Trash2 } from "lucide-react"
 import { useCommentsStore, type CanvasComment } from "@/store/comments-store"
 import type { Node } from "reactflow"
 
@@ -29,19 +29,65 @@ function findNearestNode(
   return best
 }
 
-// ─── CommentPin (draggable) ─────────────────────────────────────────────────
+// ─── Styles (injected once) ─────────────────────────────────────────────────
+
+const OVERLAY_STYLES = `
+@keyframes pinDrop {
+  0% { transform: rotate(-45deg) scale(0) translateY(-8px); opacity: 0; }
+  50% { transform: rotate(-45deg) scale(1.15) translateY(0); opacity: 1; }
+  70% { transform: rotate(-45deg) scale(0.95); }
+  100% { transform: rotate(-45deg) scale(1); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.comment-pin-wrap:hover .comment-preview {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
+}
+.comment-pin-wrap:hover .pin-core {
+  transform: rotate(-45deg) scale(1.12);
+  box-shadow: 0 0 0 3px var(--accent-muted), 0 4px 16px rgba(0,0,0,0.25);
+}
+.comment-pin-wrap .pin-core {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 200ms ease,
+              opacity 200ms ease;
+}
+.comment-preview {
+  opacity: 0;
+  transform: translateX(-4px) scale(0.95);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.thread-enter {
+  animation: fadeSlideIn 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.reply-enter {
+  animation: fadeIn 200ms ease both;
+}
+`
+
+// ─── CommentPin (draggable + hover preview) ─────────────────────────────────
 
 interface PinProps {
   comment: CanvasComment
   index: number
   isActive: boolean
   onClick: () => void
-  onDragStart: (commentId: string, e: React.MouseEvent) => void
+  onDragStart: (commentId: string) => void
   pinRef: (el: HTMLElement | null) => void
   isDragging: boolean
+  previewRef: (el: HTMLElement | null) => void
 }
 
-function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, isDragging }: PinProps) {
+function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, isDragging, previewRef }: PinProps) {
   const replyCount = useCommentsStore(s =>
     s.comments.filter(c => c.parentId === comment.id).length
   )
@@ -61,7 +107,7 @@ function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, is
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         if (!didDrag.current) {
           didDrag.current = true
-          onDragStart(comment.id, e)
+          onDragStart(comment.id)
         }
       }
     }
@@ -79,38 +125,88 @@ function CommentPin({ comment, index, isActive, onClick, onDragStart, pinRef, is
     window.addEventListener("mouseup", handleUp)
   }
 
+  const timeAgo = (ts: number) => {
+    const diff = Date.now() - ts
+    if (diff < 60000) return "now"
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`
+    return `${Math.floor(diff / 86400000)}d`
+  }
+
+  const truncate = (s: string, max: number) => s.length > max ? s.slice(0, max) + "\u2026" : s
+
   return (
-    <button
+    <div
       ref={pinRef}
-      onMouseDown={handleMouseDown}
-      className="absolute flex items-center justify-center z-30 group"
+      className={`absolute z-30 comment-pin-wrap ${isDragging ? "" : ""}`}
       style={{
         left: -9999,
         top: -9999,
-        width: 28,
-        height: 28,
-        borderRadius: "50% 50% 50% 0",
-        transform: `rotate(-45deg) scale(${isDragging ? 1.2 : 1})`,
-        background: comment.resolved
-          ? "var(--text-faint)"
-          : "var(--accent)",
-        opacity: comment.resolved ? 0.5 : 1,
-        boxShadow: isDragging
-          ? "0 0 0 3px var(--accent-muted), 0 8px 24px rgba(0,0,0,0.3)"
-          : isActive
-            ? "0 0 0 3px var(--accent-muted), 0 2px 8px rgba(0,0,0,0.2)"
-            : "0 2px 6px rgba(0,0,0,0.15)",
-        transition: "transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease",
-        cursor: isDragging ? "grabbing" : "grab",
       }}
+      onMouseDown={handleMouseDown}
     >
-      <span
-        className="text-2xs font-bold text-white select-none"
-        style={{ transform: "rotate(45deg)" }}
+      {/* The teardrop pin */}
+      <div
+        className="pin-core flex items-center justify-center"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: "50% 50% 50% 0",
+          transform: isDragging ? "rotate(-45deg) scale(1.2)" : "rotate(-45deg) scale(1)",
+          background: comment.resolved ? "var(--text-faint)" : "var(--accent)",
+          opacity: comment.resolved ? 0.5 : 1,
+          boxShadow: isDragging
+            ? "0 0 0 3px var(--accent-muted), 0 8px 24px rgba(0,0,0,0.35)"
+            : isActive
+              ? "0 0 0 3px var(--accent-muted), 0 2px 8px rgba(0,0,0,0.2)"
+              : "0 2px 6px rgba(0,0,0,0.15)",
+          cursor: isDragging ? "grabbing" : "grab",
+          animation: "pinDrop 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        }}
       >
-        {replyCount > 0 ? replyCount + 1 : index + 1}
-      </span>
-    </button>
+        <span
+          className="text-2xs font-bold text-white select-none"
+          style={{ transform: "rotate(45deg)" }}
+        >
+          {replyCount > 0 ? replyCount + 1 : index + 1}
+        </span>
+      </div>
+
+      {/* Hover preview bubble */}
+      {!isDragging && !isActive && (
+        <div
+          ref={previewRef}
+          className="comment-preview absolute rounded-lg"
+          style={{
+            left: 32,
+            top: -4,
+            width: 200,
+            padding: "8px 10px",
+            background: "var(--elevated)",
+            border: "1px solid var(--line-strong)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            zIndex: 40,
+          }}
+        >
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+              {comment.authorName}
+            </span>
+            <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+              {timeAgo(comment.createdAt)}
+            </span>
+            {replyCount > 0 && (
+              <span className="text-2xs ml-auto px-1 rounded" style={{ background: "var(--surface-hover)", color: "var(--text-faint)" }}>
+                +{replyCount}
+              </span>
+            )}
+          </div>
+          <p className="text-xs leading-snug" style={{ color: "var(--text-primary)" }}>
+            {truncate(comment.content, 80)}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -128,7 +224,6 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   const [content, setContent] = useState("")
   const [guestName, setGuestName] = useState("")
   const [sending, setSending] = useState(false)
-  const [visible, setVisible] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
@@ -143,13 +238,11 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   const resolveComment = useCommentsStore(s => s.resolveComment)
   const deleteComment = useCommentsStore(s => s.deleteComment)
 
-  // Animate in
   useEffect(() => {
-    requestAnimationFrame(() => setVisible(true))
-    setTimeout(() => inputRef.current?.focus(), 100)
+    setTimeout(() => inputRef.current?.focus(), 120)
   }, [])
 
-  // Close on outside click (use ref to avoid re-registering)
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as HTMLElement)) {
@@ -187,62 +280,62 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   return (
     <div
       ref={(el) => { (panelRef as React.MutableRefObject<HTMLDivElement | null>).current = el; threadRef(el) }}
-      className="absolute z-50 w-[280px] rounded-xl overflow-hidden"
+      className="absolute z-50 w-[280px] rounded-xl overflow-hidden thread-enter"
       style={{
         left: -9999,
         top: -9999,
         background: "var(--elevated)",
         border: "1px solid var(--line-strong)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0) scale(1)" : "translateY(-4px) scale(0.98)",
-        transition: "opacity 150ms ease, transform 150ms ease",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--line)" }}>
-        <span className="text-2xs font-medium" style={{ color: "var(--text-faint)" }}>
-          Thread
-        </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full" style={{ background: rootComment.resolved ? "var(--text-faint)" : "var(--accent)" }} />
+          <span className="text-2xs font-medium" style={{ color: "var(--text-faint)" }}>
+            Thread
+          </span>
+        </div>
+        <div className="flex items-center gap-0.5">
           <button
             onClick={(e) => { e.stopPropagation(); resolveComment(projectId, rootComment.id, !rootComment.resolved) }}
-            className="p-1 rounded transition-colors hover:bg-[var(--surface-hover)]"
+            className="p-1.5 rounded-md transition-all hover:bg-[var(--surface-hover)] active:scale-90"
             title={rootComment.resolved ? "Rouvrir" : "Résoudre"}
             style={{ color: rootComment.resolved ? "var(--success-text)" : "var(--text-faint)" }}
           >
-            <Check className="w-3 h-3" />
+            <Check className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); deleteComment(projectId, rootComment.id); onClose() }}
-            className="p-1 rounded transition-colors hover:bg-[var(--surface-hover)]"
+            className="p-1.5 rounded-md transition-all hover:bg-red-500/10 active:scale-90"
             style={{ color: "var(--text-faint)" }}
           >
-            <Trash2 className="w-3 h-3 hover:text-red-400" />
+            <Trash2 className="w-3.5 h-3.5 hover:text-red-400 transition-colors" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onClose() }}
-            className="p-1 rounded transition-colors hover:bg-[var(--surface-hover)]"
+            className="p-1.5 rounded-md transition-all hover:bg-[var(--surface-hover)] active:scale-90"
             style={{ color: "var(--text-faint)" }}
           >
-            <X className="w-3 h-3" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {/* Root comment + replies */}
-      <div className="max-h-[240px] overflow-y-auto px-3 py-2 space-y-2">
-        {[rootComment, ...replies].map(c => (
+      <div className="max-h-[260px] overflow-y-auto px-3 py-2.5 space-y-2.5">
+        {[rootComment, ...replies].map((c, idx) => (
           <div
             key={c.id}
-            className={c.id === rootComment.id ? "" : "pl-2"}
+            className={`reply-enter ${c.id === rootComment.id ? "" : "pl-2.5 ml-1"}`}
             style={{
               ...(c.id !== rootComment.id ? { borderLeft: "2px solid var(--line)" } : {}),
-              animation: "fadeIn 150ms ease",
+              animationDelay: `${idx * 40}ms`,
             }}
           >
             <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              <span className="text-2xs font-semibold" style={{ color: "var(--text-secondary)" }}>
                 {c.authorName}
               </span>
               <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
@@ -257,17 +350,17 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
       </div>
 
       {/* Reply input */}
-      <div className="px-3 py-2" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="px-3 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
         {!currentUser && !guestName ? (
           <input
             type="text"
             value={guestName}
             onChange={e => setGuestName(e.target.value)}
             placeholder="Ton nom"
-            className="w-full h-7 px-2.5 rounded-md text-2xs focus:outline-none transition-colors"
+            className="w-full h-7 px-2.5 rounded-md text-2xs focus:outline-none transition-all"
             style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
             onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
           />
         ) : (
@@ -278,10 +371,10 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
               onChange={e => setContent(e.target.value)}
               placeholder="Répondre..."
               rows={1}
-              className="flex-1 px-2.5 py-1.5 rounded-md text-2xs focus:outline-none resize-none transition-colors"
+              className="flex-1 px-2.5 py-1.5 rounded-md text-2xs focus:outline-none resize-none transition-all"
               style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-              onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-              onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+              onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+              onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
               onKeyDown={e => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !sending) {
                   e.preventDefault()
@@ -292,8 +385,11 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
             <button
               onClick={(e) => { e.stopPropagation(); handleSubmit() }}
               disabled={sending || !content.trim()}
-              className="self-end p-1.5 rounded-md transition-all disabled:opacity-40 shrink-0 hover:brightness-110"
-              style={{ background: "var(--accent)", color: "#fff" }}
+              className="self-end p-1.5 rounded-md transition-all disabled:opacity-30 shrink-0 active:scale-90"
+              style={{
+                background: content.trim() ? "var(--accent)" : "var(--surface-hover)",
+                color: content.trim() ? "#fff" : "var(--text-faint)",
+              }}
             >
               {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
             </button>
@@ -304,7 +400,7 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
   )
 }
 
-// ─── New comment input (when clicking canvas in comment mode) ────────────────
+// ─── New comment input ──────────────────────────────────────────────────────
 
 interface NewCommentProps {
   screenX: number
@@ -321,7 +417,6 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
   const [content, setContent] = useState("")
   const [guestName, setGuestName] = useState("")
   const [sending, setSending] = useState(false)
-  const [visible, setVisible] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const addComment = useCommentsStore(s => s.addComment)
@@ -330,7 +425,6 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
   onDoneRef.current = onDone
 
   useEffect(() => {
-    requestAnimationFrame(() => setVisible(true))
     setTimeout(() => inputRef.current?.focus(), 50)
   }, [])
 
@@ -369,16 +463,13 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
   return (
     <div
       ref={panelRef}
-      className="absolute z-50 w-[260px] rounded-xl overflow-hidden"
+      className="absolute z-50 w-[260px] rounded-xl overflow-hidden thread-enter"
       style={{
         left: popoverLeft,
         top: popoverTop,
         background: "var(--elevated)",
         border: "1px solid var(--line-strong)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0) scale(1)" : "translateY(-4px) scale(0.98)",
-        transition: "opacity 150ms ease, transform 150ms ease",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)",
       }}
     >
       <div className="px-3 py-2.5">
@@ -388,10 +479,10 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
             value={guestName}
             onChange={e => setGuestName(e.target.value)}
             placeholder="Ton nom"
-            className="w-full h-8 px-2.5 rounded-md text-xs focus:outline-none transition-colors"
+            className="w-full h-8 px-2.5 rounded-md text-xs focus:outline-none transition-all"
             style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
             onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
           />
         ) : (
@@ -402,10 +493,10 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
               onChange={e => setContent(e.target.value)}
               placeholder="Ajouter un commentaire..."
               rows={2}
-              className="w-full px-2.5 py-2 rounded-md text-xs focus:outline-none resize-none transition-colors"
+              className="w-full px-2.5 py-2 rounded-md text-xs focus:outline-none resize-none transition-all"
               style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-              onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-              onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+              onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+              onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
               onKeyDown={e => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !sending) {
                   e.preventDefault()
@@ -421,8 +512,11 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
               <button
                 onClick={(e) => { e.stopPropagation(); handleSubmit() }}
                 disabled={sending || !content.trim()}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all disabled:opacity-40 hover:brightness-110"
-                style={{ background: "var(--accent)", color: "#fff" }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all disabled:opacity-30 active:scale-95"
+                style={{
+                  background: content.trim() ? "var(--accent)" : "var(--surface-hover)",
+                  color: content.trim() ? "#fff" : "var(--text-faint)",
+                }}
               >
                 {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                 Poster
@@ -461,17 +555,15 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
 
   const rf = useReactFlow()
 
-  // DOM refs for pins and thread — we position them via rAF, no React re-renders
   const pinRefs = useRef<Map<string, HTMLElement | null>>(new Map())
+  const previewRefs = useRef<Map<string, HTMLElement | null>>(new Map())
   const threadRef = useRef<HTMLElement | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
     commentId: string
-    startCanvasX: number
-    startCanvasY: number
-    origOffsetX: number
-    origOffsetY: number
     nodeId: string
+    nodeCx: number
+    nodeCy: number
   } | null>(null)
 
   // Fetch comments on mount
@@ -509,56 +601,44 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
 
     const nodeCx = nearest.position.x + (nearest.width ?? 160) / 2
     const nodeCy = nearest.position.y + (nearest.height ?? 60) / 2
-    const offsetX = canvasPos.x - nodeCx
-    const offsetY = canvasPos.y - nodeCy
 
     setNewComment({
       screenX, screenY,
-      nodeId: nearest.id, offsetX, offsetY,
+      nodeId: nearest.id,
+      offsetX: canvasPos.x - nodeCx,
+      offsetY: canvasPos.y - nodeCy,
     })
     openThread(null)
   }, [commentMode, rf, rfNodes, openThread])
 
-  // ─── Drag handling ─────────────────────────────────────────────────────────
+  // ─── Drag handling (keeps same node, only updates offset) ──────────────────
   const handleDragStart = useCallback((commentId: string) => {
     const comment = comments.find(c => c.id === commentId)
     if (!comment) return
     setDraggingId(commentId)
     openThread(null)
 
+    // Lock to the original node
     const rfNode = rfNodes.find(n => n.id === comment.nodeId)
     if (!rfNode) return
 
     const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
     const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
 
-    dragRef.current = {
-      commentId,
-      startCanvasX: nodeCx + comment.offsetX,
-      startCanvasY: nodeCy + comment.offsetY,
-      origOffsetX: comment.offsetX,
-      origOffsetY: comment.offsetY,
-      nodeId: comment.nodeId,
-    }
+    dragRef.current = { commentId, nodeId: comment.nodeId, nodeCx, nodeCy }
+
+    let lastOffsetX = comment.offsetX
+    let lastOffsetY = comment.offsetY
 
     const handleMove = (me: MouseEvent) => {
       if (!dragRef.current) return
       const canvasPos = rf.screenToFlowPosition({ x: me.clientX, y: me.clientY })
 
-      // Find nearest node to current drag position
-      const nearest = findNearestNode(canvasPos.x, canvasPos.y, rfNodes)
-      if (!nearest) return
+      // Offset relative to the SAME node center (no node switching)
+      lastOffsetX = canvasPos.x - dragRef.current.nodeCx
+      lastOffsetY = canvasPos.y - dragRef.current.nodeCy
 
-      const nodeCx = nearest.position.x + (nearest.width ?? 160) / 2
-      const nodeCy = nearest.position.y + (nearest.height ?? 60) / 2
-      const newOffsetX = canvasPos.x - nodeCx
-      const newOffsetY = canvasPos.y - nodeCy
-
-      dragRef.current.nodeId = nearest.id
-      dragRef.current.origOffsetX = newOffsetX
-      dragRef.current.origOffsetY = newOffsetY
-
-      // Live update pin position via DOM (no React re-render)
+      // Live DOM update
       const el = pinRefs.current.get(commentId)
       const container = containerRef.current
       if (el && container) {
@@ -572,12 +652,11 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     const handleUp = () => {
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
+
       if (dragRef.current) {
-        const { commentId, origOffsetX, origOffsetY, nodeId } = dragRef.current
-        // Update store + API
-        const c = comments.find(cc => cc.id === commentId)
-        if (c && (c.offsetX !== origOffsetX || c.offsetY !== origOffsetY || c.nodeId !== nodeId)) {
-          moveComment(projectId, commentId, origOffsetX, origOffsetY)
+        const orig = comments.find(c => c.id === commentId)
+        if (orig && (orig.offsetX !== lastOffsetX || orig.offsetY !== lastOffsetY)) {
+          moveComment(projectId, commentId, lastOffsetX, lastOffsetY)
         }
         dragRef.current = null
       }
@@ -588,47 +667,54 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     window.addEventListener("mouseup", handleUp)
   }, [comments, rfNodes, rf, moveComment, projectId, openThread])
 
-  // Only show root comments as pins (not replies)
+  // Root comments only
   const rootComments = comments.filter(c => !c.parentId)
 
-  // ─── rAF-based positioning — NO React state, NO re-renders ───────────────
+  // ─── rAF positioning ──────────────────────────────────────────────────────
   useEffect(() => {
     let running = true
 
     function updatePositions() {
       if (!running) return
       const container = containerRef.current
-      if (!container) {
-        requestAnimationFrame(updatePositions)
-        return
-      }
+      if (!container) { requestAnimationFrame(updatePositions); return }
       const bounds = container.getBoundingClientRect()
 
-      // Position each pin
       for (const comment of rootComments) {
-        // Skip dragging pin — positioned via mouse handler
         if (draggingId === comment.id) continue
 
         const el = pinRefs.current.get(comment.id)
         if (!el) continue
 
         const rfNode = rfNodes.find(n => n.id === comment.nodeId)
-        if (!rfNode) {
-          el.style.left = "-9999px"
-          continue
-        }
+        if (!rfNode) { el.style.left = "-9999px"; continue }
 
         const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
         const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
-        const canvasX = nodeCx + comment.offsetX
-        const canvasY = nodeCy + comment.offsetY
-        const screenPos = rf.flowToScreenPosition({ x: canvasX, y: canvasY })
+        const screenPos = rf.flowToScreenPosition({
+          x: nodeCx + comment.offsetX,
+          y: nodeCy + comment.offsetY,
+        })
 
         el.style.left = `${screenPos.x - bounds.left - 14}px`
         el.style.top = `${screenPos.y - bounds.top - 14}px`
+
+        // Clamp preview bubble to viewport
+        const preview = previewRefs.current.get(comment.id)
+        if (preview) {
+          const pinScreenX = screenPos.x - bounds.left
+          const spaceRight = window.innerWidth - (bounds.left + pinScreenX + 32)
+          if (spaceRight < 220) {
+            preview.style.left = "auto"
+            preview.style.right = "32px"
+          } else {
+            preview.style.left = "32px"
+            preview.style.right = "auto"
+          }
+        }
       }
 
-      // Position thread popover
+      // Position thread
       const threadEl = threadRef.current
       if (threadEl && activeThreadId) {
         const root = rootComments.find(c => c.id === activeThreadId)
@@ -637,14 +723,15 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
           if (rfNode) {
             const nodeCx = rfNode.position.x + (rfNode.width ?? 160) / 2
             const nodeCy = rfNode.position.y + (rfNode.height ?? 60) / 2
-            const canvasX = nodeCx + root.offsetX
-            const canvasY = nodeCy + root.offsetY
-            const screenPos = rf.flowToScreenPosition({ x: canvasX, y: canvasY })
+            const screenPos = rf.flowToScreenPosition({
+              x: nodeCx + root.offsetX,
+              y: nodeCy + root.offsetY,
+            })
             const sx = screenPos.x - bounds.left
             const sy = screenPos.y - bounds.top
 
-            const viewportWidth = window.innerWidth
-            const popoverLeft = sx + 20 + 280 > viewportWidth ? sx - 300 : sx + 20
+            const viewportW = window.innerWidth
+            const popoverLeft = sx + 20 + 280 > viewportW ? sx - 300 : sx + 20
             const popoverTop = Math.max(8, Math.min(sy - 20, window.innerHeight - 400))
 
             threadEl.style.left = `${popoverLeft}px`
@@ -658,15 +745,11 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
 
     requestAnimationFrame(updatePositions)
     return () => { running = false }
-  }) // runs every render to pick up latest rootComments/rfNodes/activeThreadId
+  })
 
   return (
     <>
-      {/* Inline keyframes */}
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pinPop { 0% { transform: rotate(-45deg) scale(0); } 60% { transform: rotate(-45deg) scale(1.15); } 100% { transform: rotate(-45deg) scale(1); } }
-      `}</style>
+      <style>{OVERLAY_STYLES}</style>
 
       <div
         ref={containerRef}
@@ -678,7 +761,6 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
         }}
         onClick={handleOverlayClick}
       >
-        {/* Render pins */}
         {rootComments.map((comment, i) => (
           <div key={comment.id} style={{ pointerEvents: "auto" }}>
             <CommentPin
@@ -696,11 +778,12 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
               }}
               onDragStart={handleDragStart}
               pinRef={(el) => { pinRefs.current.set(comment.id, el) }}
+              previewRef={(el) => { previewRefs.current.set(comment.id, el) }}
             />
           </div>
         ))}
 
-        {/* Active thread popover */}
+        {/* Active thread */}
         {activeThreadId && (() => {
           const root = rootComments.find(c => c.id === activeThreadId)
           if (!root) return null
