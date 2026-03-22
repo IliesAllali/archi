@@ -1,18 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Send, MessageCircle, Check, Loader2 } from "lucide-react"
-
-interface Comment {
-  id: string
-  nodeId: string
-  authorName: string
-  authorId: string | null
-  content: string
-  resolved: boolean
-  createdAt: number
-}
+import { X, Send, MessageCircle, Check, Loader2, MapPin } from "lucide-react"
+import { useCommentsStore } from "@/store/comments-store"
 
 interface Props {
   projectId: string
@@ -23,40 +14,35 @@ interface Props {
   currentUser?: { id: string; name: string } | null
 }
 
-function getCsrfToken(): string | null {
-  if (typeof document === "undefined") return null
-  const match = document.cookie.match(/arbo_csrf=([^;]+)/)
-  return match ? match[1] : null
-}
-
 export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onClose, currentUser }: Props) {
-  const [comments, setComments] = useState<Comment[]>([])
-  const [loading, setLoading] = useState(false)
   const [content, setContent] = useState("")
   const [guestName, setGuestName] = useState("")
   const [sending, setSending] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const fetchComments = useCallback(async () => {
-    if (!nodeId) return
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/projects/${projectId}/comments?node_id=${nodeId}`)
-      if (res.ok) {
-        const data = await res.json()
-        setComments(data)
-      }
-    } catch { /* ignore */ }
-    setLoading(false)
-  }, [projectId, nodeId])
+  // Shared store
+  const storeComments = useCommentsStore(s => s.comments)
+  const loading = useCommentsStore(s => s.loading)
+  const fetchComments = useCommentsStore(s => s.fetchComments)
+  const addComment = useCommentsStore(s => s.addComment)
+  const resolveComment = useCommentsStore(s => s.resolveComment)
+  const openThread = useCommentsStore(s => s.openThread)
+  const activeThreadId = useCommentsStore(s => s.activeThreadId)
 
+  // Filter comments for this node (root only, no replies)
+  const comments = useMemo(
+    () => storeComments.filter(c => c.nodeId === nodeId && !c.parentId).sort((a, b) => a.createdAt - b.createdAt),
+    [storeComments, nodeId]
+  )
+
+  // Fetch from shared store on open
   useEffect(() => {
     if (open && nodeId) {
-      fetchComments()
+      fetchComments(projectId)
       setTimeout(() => inputRef.current?.focus(), 200)
     }
-  }, [open, nodeId, fetchComments])
+  }, [open, nodeId, fetchComments, projectId])
 
   useEffect(() => {
     if (listRef.current) {
@@ -70,36 +56,19 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
     if (!name) return
 
     setSending(true)
-    try {
-      const csrf = getCsrfToken()
-      const headers: Record<string, string> = { "Content-Type": "application/json" }
-      if (csrf) headers["x-csrf-token"] = csrf
-
-      const res = await fetch(`/api/projects/${projectId}/comments`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ nodeId, content: content.trim(), authorName: name }),
-      })
-      if (res.ok) {
-        const comment = await res.json()
-        setComments(prev => [...prev, comment])
-        setContent("")
-      }
-    } catch { /* ignore */ }
+    await addComment(projectId, {
+      nodeId,
+      content: content.trim(),
+      authorName: name,
+      offsetX: 0,
+      offsetY: 0,
+    })
+    setContent("")
     setSending(false)
   }
 
   const handleResolve = async (commentId: string, resolved: boolean) => {
-    const csrf = getCsrfToken()
-    const headers: Record<string, string> = { "Content-Type": "application/json" }
-    if (csrf) headers["x-csrf-token"] = csrf
-
-    await fetch(`/api/projects/${projectId}/comments/${commentId}`, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ resolved }),
-    })
-    setComments(prev => prev.map(c => c.id === commentId ? { ...c, resolved } : c))
+    await resolveComment(projectId, commentId, resolved)
   }
 
   const timeAgo = (ts: number) => {
@@ -138,7 +107,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                 </span>
               )}
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-md transition-colors" style={{ color: "var(--text-faint)" }}>
+            <button onClick={onClose} className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]" style={{ color: "var(--text-faint)" }}>
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -157,41 +126,59 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                 </p>
               </div>
             ) : (
-              comments.map(comment => (
-                <div
-                  key={comment.id}
-                  className="rounded-lg p-3 transition-opacity"
-                  style={{
-                    background: comment.resolved ? "transparent" : "var(--elevated)",
-                    border: `1px solid ${comment.resolved ? "var(--line)" : "var(--line-strong)"}`,
-                    opacity: comment.resolved ? 0.5 : 1,
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                      {comment.authorName}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                        {timeAgo(comment.createdAt)}
+              comments.map(comment => {
+                const replyCount = storeComments.filter(c => c.parentId === comment.id).length
+                const isHighlighted = activeThreadId === comment.id
+                return (
+                  <div
+                    key={comment.id}
+                    className="rounded-lg p-3 transition-all cursor-pointer"
+                    style={{
+                      background: isHighlighted ? "var(--accent-muted)" : comment.resolved ? "transparent" : "var(--elevated)",
+                      border: `1px solid ${isHighlighted ? "var(--accent)" : comment.resolved ? "var(--line)" : "var(--line-strong)"}`,
+                      opacity: comment.resolved ? 0.5 : 1,
+                    }}
+                    onClick={() => openThread(isHighlighted ? null : comment.id)}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                        {comment.authorName}
                       </span>
-                      {currentUser && (
+                      <div className="flex items-center gap-1">
+                        {replyCount > 0 && (
+                          <span className="text-2xs px-1 rounded" style={{ color: "var(--text-faint)", background: "var(--surface-hover)" }}>
+                            {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                          </span>
+                        )}
+                        <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                          {timeAgo(comment.createdAt)}
+                        </span>
+                        {currentUser && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleResolve(comment.id, !comment.resolved) }}
+                            className="p-0.5 rounded transition-colors hover:bg-[var(--surface-hover)]"
+                            title={comment.resolved ? "Rouvrir" : "Résoudre"}
+                            style={{ color: comment.resolved ? "var(--success-text)" : "var(--text-faint)" }}
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleResolve(comment.id, !comment.resolved)}
-                          className="p-0.5 rounded transition-colors"
-                          title={comment.resolved ? "Rouvrir" : "Résoudre"}
-                          style={{ color: comment.resolved ? "var(--success-text)" : "var(--text-faint)" }}
+                          onClick={(e) => { e.stopPropagation(); openThread(comment.id) }}
+                          className="p-0.5 rounded transition-colors hover:bg-[var(--surface-hover)]"
+                          title="Voir sur le canvas"
+                          style={{ color: "var(--text-faint)" }}
                         >
-                          <Check className="w-3 h-3" />
+                          <MapPin className="w-3 h-3" />
                         </button>
-                      )}
+                      </div>
                     </div>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--text-primary)" }}>
+                      {comment.content}
+                    </p>
                   </div>
-                  <p className="text-xs leading-relaxed" style={{ color: "var(--text-primary)" }}>
-                    {comment.content}
-                  </p>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 
@@ -204,8 +191,10 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                   value={guestName}
                   onChange={e => setGuestName(e.target.value)}
                   placeholder="Ton nom"
-                  className="w-full h-8 px-3 rounded-lg text-2xs focus:outline-none"
+                  className="w-full h-8 px-3 rounded-lg text-2xs focus:outline-none transition-colors"
                   style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                  onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
+                  onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
                   onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
                 />
               </div>
@@ -218,7 +207,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                   onChange={e => setContent(e.target.value)}
                   placeholder="Ajouter un commentaire..."
                   rows={2}
-                  className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none resize-none"
+                  className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none resize-none transition-colors"
                   style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
                   onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
                   onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
@@ -232,7 +221,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                 <button
                   onClick={handleSubmit}
                   disabled={sending || !content.trim()}
-                  className="self-end p-2.5 rounded-lg transition-all disabled:opacity-40 shrink-0"
+                  className="self-end p-2.5 rounded-lg transition-all disabled:opacity-40 shrink-0 hover:brightness-110"
                   style={{ background: "var(--accent)", color: "#fff" }}
                 >
                   {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
@@ -242,7 +231,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
             {!currentUser && guestName && (
               <button
                 onClick={() => setGuestName("")}
-                className="text-2xs mt-1.5 transition-colors"
+                className="text-2xs mt-1.5 transition-colors hover:underline"
                 style={{ color: "var(--text-faint)" }}
               >
                 Changer de nom

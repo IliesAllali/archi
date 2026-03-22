@@ -36,6 +36,7 @@ interface CommentsState {
   }) => Promise<CanvasComment | null>
   resolveComment: (projectId: string, commentId: string, resolved: boolean) => Promise<void>
   deleteComment: (projectId: string, commentId: string) => Promise<void>
+  moveComment: (projectId: string, commentId: string, offsetX: number, offsetY: number) => Promise<void>
 }
 
 function getCsrfToken(): string | null {
@@ -105,6 +106,22 @@ export const useCommentsStore = create<CommentsState>()((set, get) => ({
         ),
       })
     } catch { /* ignore */ }
+  },
+
+  moveComment: async (projectId, commentId, offsetX, offsetY) => {
+    // Optimistic update
+    set({
+      comments: get().comments.map(c =>
+        c.id === commentId ? { ...c, offsetX, offsetY } : c
+      ),
+    })
+    try {
+      await fetch(`/api/projects/${projectId}/comments/${commentId}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ offsetX, offsetY }),
+      })
+    } catch { /* ignore — optimistic already applied */ }
   },
 
   deleteComment: async (projectId, commentId) => {

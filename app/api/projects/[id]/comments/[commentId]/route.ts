@@ -20,6 +20,11 @@ export async function PATCH(
       .run(body.resolved ? 1 : 0, params.commentId, params.id)
   }
 
+  if (typeof body.offsetX === "number" && typeof body.offsetY === "number") {
+    db.prepare("UPDATE comments SET offset_x = ?, offset_y = ? WHERE id = ? AND project_id = ?")
+      .run(body.offsetX, body.offsetY, params.commentId, params.id)
+  }
+
   return NextResponse.json({ ok: true })
 }
 
