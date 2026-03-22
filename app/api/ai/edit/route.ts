@@ -161,6 +161,12 @@ export async function POST(req: NextRequest) {
                 parentId = tempToReal.get(action.parent_temp_id) || null;
               }
 
+              // Validate parent exists (avoid FK constraint)
+              if (parentId && !tempToReal.has(action.parent_temp_id || "")) {
+                const parentExists = db.prepare("SELECT 1 FROM nodes WHERE id = ? AND project_id = ? AND archived = 0").get(parentId, projectId);
+                if (!parentExists) parentId = null;
+              }
+
               const posRow = db
                 .prepare("SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM nodes WHERE project_id = ? AND parent_id IS ? AND archived = 0")
                 .get(projectId, parentId) as { next_pos: number };
@@ -244,6 +250,12 @@ export async function POST(req: NextRequest) {
             }
 
             if (action.action === "move" && action.node_id && action.parent_id !== undefined) {
+              // Validate parent exists (avoid FK constraint)
+              if (action.parent_id) {
+                const parentExists = db.prepare("SELECT 1 FROM nodes WHERE id = ? AND project_id = ? AND archived = 0").get(action.parent_id, projectId);
+                if (!parentExists) continue;
+              }
+
               const posRow = db
                 .prepare("SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM nodes WHERE project_id = ? AND parent_id IS ? AND archived = 0")
                 .get(projectId, action.parent_id) as { next_pos: number };

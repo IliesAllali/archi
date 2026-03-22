@@ -53,75 +53,44 @@ export function getProviderLabel(provider: AiProvider): string {
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 
-const GENERATE_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
-
-L'utilisateur va te décrire un site. Tu dois générer une arborescence complète, riche et professionnelle.
+const GENERATE_SYSTEM_FAST = `Tu es un architecte UX/UI. Génère une arborescence de site web.
 
 Règles :
-- Génère entre 10 et 30 pages selon la complexité du site
-- La première page est "Accueil" (type: "home", priority: "primary", parent_temp_id: null)
-- TOUTES les autres pages DOIVENT avoir un parent_temp_id valide. Crée une vraie hiérarchie :
-  - Niveau 1 : sections principales (enfants de "home")
-  - Niveau 2 : sous-pages (enfants de leurs sections)
-  - Niveau 3 max : pages détail
-- Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priorités : primary (pages clés du parcours), secondary (contenu), utility (légal, 404)
+- 8 à 15 pages max
+- Première page : "Accueil" (type: "home", parent_temp_id: null)
+- Hiérarchie : 3 niveaux max. Types : home, listing, detail, form, landing, search, hub, error, legal
+- Priority : primary, secondary, utility
 - Inclus toujours : Accueil, Contact, Mentions légales, 404
-- CHAQUE page doit avoir : description (2-3 phrases), rationale, cta, tags
-- Pense SEO, parcours utilisateur, et conversion
+- description : 1 phrase courte. PAS de zoningBlocks, PAS de entryPoints, PAS de rationale.
+- Sois ULTRA CONCIS.
 
-Champs de base (sur TOUTES les pages) :
-- "cta": ["Texte bouton 1", "Texte bouton 2"] — appels à l'action
-- "tags": ["SEO", "conversion"] — catégorisation
+Champs : temp_id, parent_temp_id, label, type, priority, description, cta[] (1 bouton), tags[] (1-2 mots)
 
-Champs avancés (UNIQUEMENT sur les pages de type "home" et "landing", PAS sur les autres) :
-- "entryPoints": sources de trafic EXTERNES au site uniquement. On ne veut PAS de navigation interne (pas de type "nav"). Types valides : google, direct, social, email, ads, qrcode. Exemples : "Recherche Google", "Instagram", "Newsletter", "Google Ads". N'en mets que sur home et landing.
-- "zoningBlocks": wireframe layout de la page. UNIQUEMENT sur home et landing. Skins disponibles : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
-- "zoningExpanded": (boolean) si true, le wireframe est affiché directement dans le canvas. Mets true sur les pages clés (home, landing) pour que l'utilisateur voie immédiatement la structure. Mets false ou omets le champ pour les pages secondaires.
+JSON valide uniquement, sans markdown :
+{"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","description":"Page d'accueil.","cta":["Découvrir"],"tags":["SEO"]},{"temp_id":"about","parent_temp_id":"home","label":"À propos","type":"detail","priority":"secondary","description":"Présentation.","cta":["Contact"],"tags":["branding"]}]}`;
 
-Réponds UNIQUEMENT avec un JSON valide, sans markdown.
+const GENERATE_SYSTEM_QUALITY = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
 
-Exemple — la homepage AVEC zoningBlocks visibles et entryPoints, une page standard SANS :
-{
-  "nodes": [
-    {
-      "temp_id": "home",
-      "parent_temp_id": null,
-      "label": "Accueil",
-      "type": "home",
-      "priority": "primary",
-      "description": "Page d'entrée principale du site. Présente la proposition de valeur, les features clés et oriente les visiteurs.",
-      "rationale": "Point d'entrée principal, doit convertir les visiteurs en utilisateurs",
-      "cta": ["Commencer gratuitement", "Voir la démo"],
-      "tags": ["SEO", "conversion", "branding"],
-      "entryPoints": [{"type": "direct", "label": "URL directe"}, {"type": "google", "label": "Recherche Google"}],
-      "zoningBlocks": [
-        {"id": "z1", "label": "Navigation", "skin": "nav", "height": 8},
-        {"id": "z2", "label": "Hero principal", "skin": "hero", "height": 22},
-        {"id": "z3", "label": "Logos clients", "skin": "social-proof", "height": 8},
-        {"id": "z4", "label": "Features clés", "skin": "cards", "height": 22},
-        {"id": "z5", "label": "Arguments", "skin": "arguments", "height": 15},
-        {"id": "z6", "label": "Témoignages", "skin": "social-proof", "height": 10},
-        {"id": "z7", "label": "CTA final", "skin": "cta", "height": 8},
-        {"id": "z8", "label": "Footer", "skin": "footer", "height": 7}
-      ],
-      "zoningExpanded": true
-    },
-    {
-      "temp_id": "pricing",
-      "parent_temp_id": "home",
-      "label": "Tarifs",
-      "type": "detail",
-      "priority": "primary",
-      "description": "Grille tarifaire Free vs Pro avec FAQ billing.",
-      "rationale": "Les visiteurs doivent voir les prix pour décider",
-      "cta": ["Commencer gratuitement"],
-      "tags": ["conversion", "pricing"]
-    }
-  ]
-}
+Génère une arborescence complète et professionnelle.
 
-temp_id : snake_case courts. parent_temp_id : null UNIQUEMENT pour "home".`;
+Règles :
+- 10 à 25 pages selon la complexité
+- Première page : "Accueil" (type: "home", priority: "primary", parent_temp_id: null)
+- Hiérarchie : sections principales → sous-pages → pages détail (3 niveaux max)
+- Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
+- Priority : primary (parcours clé), secondary (contenu), utility (légal/404)
+- Inclus toujours : Accueil, Contact, Mentions légales, 404
+- description : 2-3 phrases. rationale : pourquoi la page existe. cta : 1-2 boutons. tags : 2-3 mots.
+
+Champs de base (toutes les pages) : temp_id, parent_temp_id, label, type, priority, description, rationale, cta[], tags[]
+
+Champs avancés (UNIQUEMENT home et landing) :
+- entryPoints[{type,label}] — types : google, direct, social, email, ads, qrcode
+- zoningBlocks[{id,label,skin,height}] — skins : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, footer. Heights en % totalisant ~100.
+- zoningExpanded: true
+
+JSON valide uniquement, sans markdown :
+{"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","description":"Page d'accueil principale.","rationale":"Point d'entrée principal","cta":["Découvrir"],"tags":["SEO","conversion"],"entryPoints":[{"type":"google","label":"Google"}],"zoningBlocks":[{"id":"z1","label":"Nav","skin":"nav","height":8},{"id":"z2","label":"Hero","skin":"hero","height":25},{"id":"z3","label":"Cards","skin":"cards","height":30},{"id":"z4","label":"CTA","skin":"cta","height":12},{"id":"z5","label":"Footer","skin":"footer","height":8}],"zoningExpanded":true},{"temp_id":"about","parent_temp_id":"home","label":"À propos","type":"detail","priority":"secondary","description":"Présentation de l'entreprise.","rationale":"Crédibilité et confiance","cta":["Contact"],"tags":["branding"]}]}`;
 
 const EDIT_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
 
@@ -196,12 +165,13 @@ async function callLLM(
   speed: AiSpeed = "fast"
 ): Promise<string> {
   const model = getModel(provider, speed);
+  const maxTokens = speed === "quality" ? 16384 : 4096;
 
   if (provider === "anthropic") {
     const client = new Anthropic({ apiKey });
     const response = await client.messages.create({
       model,
-      max_tokens: 16384,
+      max_tokens: maxTokens,
       system,
       messages,
     });
@@ -217,7 +187,7 @@ async function callLLM(
   const client = new OpenAI(config);
   const response = await client.chat.completions.create({
     model,
-    max_tokens: 16384,
+    max_tokens: maxTokens,
     messages: [
       { role: "system", content: system },
       ...messages,
@@ -281,7 +251,8 @@ export async function generateSitemap(
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast"
 ): Promise<{ nodes: AiNode[] }> {
-  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, [{ role: "user", content: prompt }], speed);
+  const system = speed === "quality" ? GENERATE_SYSTEM_QUALITY : GENERATE_SYSTEM_FAST;
+  const text = await callLLM(provider, apiKey, system, [{ role: "user", content: prompt }], speed);
   const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
