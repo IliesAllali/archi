@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings, Zap } from "lucide-react";
+import { Sparkles, Send, X, Check, AlertTriangle, Settings, Zap } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -349,10 +349,27 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
             )}
 
             {/* Live status during AI processing */}
-            {loading && statusMsg && (
-              <div className="px-4 py-2 flex items-center gap-2" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-                <Loader2 className="w-3 h-3 animate-spin shrink-0" style={{ color: "var(--accent)" }} />
-                <p className="text-2xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>{statusMsg}</p>
+            {loading && (
+              <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                <div className="flex gap-[3px]">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="w-[5px] h-[5px] rounded-full"
+                      style={{ background: "var(--accent)" }}
+                      animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
+                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
+                    />
+                  ))}
+                </div>
+                <motion.p
+                  className="text-2xs font-medium truncate"
+                  style={{ color: "var(--text-secondary)" }}
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  {statusMsg || "R\u00e9flexion en cours..."}
+                </motion.p>
               </div>
             )}
 
@@ -436,7 +453,16 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   style={{ background: "var(--accent)", color: "#fff" }}
                 >
                   {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="w-4 h-4 flex items-center justify-center gap-[2px]">
+                      {[0, 1, 2].map((i) => (
+                        <motion.span
+                          key={i}
+                          className="w-[3px] h-[3px] rounded-full bg-white"
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
