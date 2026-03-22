@@ -202,12 +202,14 @@ export default function AiBar({ projectId }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 active:scale-95"
+          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 hover:shadow-xl active:scale-95"
           style={{
             background: "linear-gradient(135deg, #8B5CF6, #6366F1)",
             color: "#fff",
             boxShadow: "0 4px 24px rgba(99, 102, 241, 0.35)",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 32px rgba(99, 102, 241, 0.5)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(99, 102, 241, 0.35)"; }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Modifier avec l&apos;IA
@@ -244,7 +246,7 @@ export default function AiBar({ projectId }: Props) {
                 {/* Speed toggle */}
                 <button
                   onClick={() => { const next = speed === "fast" ? "quality" : "fast"; setSpeed(next); storeSpeed(next); }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-90"
                   style={{
                     color: speed === "fast" ? "#f59e0b" : "#8B5CF6",
                     background: speed === "fast" ? "rgba(245,158,11,0.1)" : "rgba(139,92,246,0.1)",
@@ -377,8 +379,11 @@ export default function AiBar({ projectId }: Props) {
             {loading && actionLog.length > 0 && (
               <div className="px-4 py-1.5 flex flex-wrap gap-1" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 {actionLog.map((a, i) => (
-                  <span
+                  <motion.span
                     key={i}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: i * 0.03, ease: [0.16, 1, 0.3, 1] }}
                     className="text-2xs px-1.5 py-0.5 rounded-full"
                     style={{
                       background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "rgba(139,92,246,0.1)",
@@ -386,18 +391,28 @@ export default function AiBar({ projectId }: Props) {
                     }}
                   >
                     {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             )}
 
             {/* Success message */}
-            {success && (
-              <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "var(--success-bg)" }}>
-                <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--success-text)" }} />
-                <p className="text-2xs" style={{ color: "var(--success-text)" }}>{success}</p>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {success && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  className="px-4 py-2.5 flex items-center gap-2"
+                  style={{ background: "var(--success-bg)" }}
+                >
+                  <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--success-text)" }} />
+                  <p className="text-2xs" style={{ color: "var(--success-text)" }}>{success}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Error message */}
             {error && (

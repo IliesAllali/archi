@@ -61,7 +61,7 @@ export default function UserMenu() {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1.5 w-56 rounded-lg overflow-hidden"
+          className="absolute right-0 top-full mt-1.5 w-56 rounded-lg overflow-hidden animate-dropdown-in"
           style={{ background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--modal-shadow)", zIndex: 100 }}
         >
           <div className="px-3 py-2.5" style={{ borderBottom: "1px solid var(--line)" }}>
@@ -72,7 +72,7 @@ export default function UserMenu() {
           <div className="py-1">
             <button
               onClick={() => { setOpen(false); router.push("/account") }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color] duration-150 ease-in-out active:scale-95 origin-center"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -82,7 +82,7 @@ export default function UserMenu() {
             </button>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color] duration-150 ease-in-out active:scale-95 origin-center"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}

@@ -421,19 +421,43 @@ function SectionAnimated({
 }: {
   title: string; icon?: React.ElementType; children: React.ReactNode; index: number;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.08 + index * 0.04, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="px-5 py-4"
+      transition={{ delay: 0.08 + index * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="px-5"
       style={{ borderBottom: "1px solid var(--line-subtle)" }}
     >
-      <div className="flex items-center gap-1.5 mb-2.5">
+      <button
+        onClick={() => setCollapsed((v) => !v)}
+        className="flex items-center gap-1.5 w-full py-4 select-none rounded-md transition-all duration-150 active:scale-[0.98]"
+        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-hover, rgba(0,0,0,0.03))"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+        style={{ marginLeft: "-4px", marginRight: "-4px", paddingLeft: "4px", paddingRight: "4px" }}
+      >
         {SectionIcon && <SectionIcon className="w-3 h-3 text-label-faint" />}
-        <h3 className="text-2xs font-medium text-label-muted uppercase tracking-wider">{title}</h3>
+        <h3 className="text-2xs font-medium text-label-muted uppercase tracking-wider flex-1 text-left">{title}</h3>
+        <motion.span
+          animate={{ rotate: collapsed ? -90 : 0 }}
+          transition={{ duration: 0.15 }}
+          className="text-label-faint text-xs"
+        >
+          &#9662;
+        </motion.span>
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-200 ease-in-out"
+        style={{
+          maxHeight: collapsed ? "0px" : "1000px",
+          opacity: collapsed ? 0 : 1,
+          paddingBottom: collapsed ? "0px" : "16px",
+        }}
+      >
+        {children}
       </div>
-      {children}
     </motion.div>
   );
 }

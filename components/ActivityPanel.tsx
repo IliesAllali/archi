@@ -202,19 +202,31 @@ export default function ActivityPanel({ projectId, open, onClose }: Props) {
                   </p>
                 </div>
               ) : (
-                entries.map((entry) => {
+                entries.map((entry, i) => {
                   const Icon = ICON_MAP[entry.type] || Activity;
                   const color = COLOR_MAP[entry.type] || "var(--text-muted)";
                   const verb = LABEL_MAP[entry.type] || entry.type;
+                  const isLive = entry.id.startsWith("live_") || entry.id.startsWith("sync_");
 
                   return (
-                    <div
+                    <motion.div
                       key={entry.id}
-                      className="flex items-start gap-2.5 py-2 rounded-md"
+                      initial={isLive ? { opacity: 0, y: -8 } : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={isLive ? { duration: 0.2, ease: "easeOut" } : { duration: 0.25, delay: i * 0.03, ease: "easeOut" }}
+                      className="flex items-start gap-2.5 py-2 px-1.5 rounded-md group"
+                      style={{ transition: "background-color 150ms ease" }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                     >
                       <div
                         className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
-                        style={{ background: `${color}15` }}
+                        style={{
+                          background: `${color}15`,
+                          transition: "box-shadow 150ms ease",
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = `0 0 0 3px ${color}25`}
+                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
                       >
                         <Icon className="w-3 h-3" style={{ color }} />
                       </div>
@@ -239,7 +251,7 @@ export default function ActivityPanel({ projectId, open, onClose }: Props) {
                           {timeAgo(entry.timestamp)}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })
               )}

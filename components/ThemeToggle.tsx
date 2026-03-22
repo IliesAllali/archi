@@ -12,7 +12,7 @@ export default function ThemeToggle() {
       className="
         w-8 h-8 rounded-lg flex items-center justify-center
         transition-all duration-200
-        hover:scale-110 active:scale-90
+        hover:scale-110 hover:shadow-theme-glow active:scale-90
       "
       style={{
         background: "var(--controls-bg)",
@@ -20,7 +20,7 @@ export default function ThemeToggle() {
       }}
       data-tooltip={theme === "dark" ? "Mode clair" : "Mode sombre"}
     >
-      <span key={theme} className="animate-spin-in flex items-center justify-center">
+      <span key={theme} className="animate-theme-toggle flex items-center justify-center">
         {theme === "dark" ? (
           <Sun className="w-3.5 h-3.5" style={{ color: "var(--controls-fill)" }} />
         ) : (

@@ -279,6 +279,28 @@ html.theme-transition *::after {
 }
 .animate-spin-in { animation: spin-in 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+/* ─── Theme toggle: 180deg rotate + scale bounce ─── */
+@keyframes theme-toggle {
+  0% { transform: rotate(-180deg) scale(0.6); opacity: 0; }
+  60% { transform: rotate(10deg) scale(1.1); opacity: 1; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+.animate-theme-toggle { animation: theme-toggle 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.hover\:shadow-theme-glow:hover { box-shadow: 0 0 10px 2px var(--accent-muted); }
+
+/* ─── Spotlight result fade-in ─── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── UserMenu dropdown slide-down ─── */
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-dropdown-in { animation: dropdown-in 150ms ease-out forwards; }
+
 /* ─── Stagger delay utility ─── */
 .stagger-1 { animation-delay: 30ms; }
 .stagger-2 { animation-delay: 60ms; }

@@ -198,9 +198,14 @@ export default function Spotlight({ nodes, onSelect }: SpotlightProps) {
                       key={node.id}
                       data-item
                       className={cn(
-                        "flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-75",
+                        "flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-[background-color] duration-150 ease-in-out active:scale-[0.98] origin-center",
                         isActive ? "bg-bg-hover" : "hover:bg-bg-hover/60"
                       )}
+                      style={{
+                        opacity: 0,
+                        animation: `fade-in 150ms ease forwards`,
+                        animationDelay: `${i * 30}ms`,
+                      }}
                       onClick={() => { onSelect(node); close(); }}
                       onMouseEnter={() => setActiveIndex(i)}
                     >

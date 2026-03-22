@@ -143,14 +143,24 @@ export default function ExportButton({ project }: ExportButtonProps) {
       }}
       data-tooltip="Exporter en PDF (cover + arbre + pages)"
     >
-      {isLoading ? (
-        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-      ) : isDone ? (
-        <Check className="w-3.5 h-3.5 shrink-0" />
-      ) : (
-        <FileDown className="w-3.5 h-3.5 shrink-0" />
-      )}
-      <span>{STATE_LABEL[state]}</span>
+      <span className="relative w-3.5 h-3.5 shrink-0">
+        <FileDown
+          className="w-3.5 h-3.5 absolute inset-0 transition-opacity duration-200"
+          style={{ opacity: !isLoading && !isDone ? 1 : 0 }}
+        />
+        <Loader2
+          className="w-3.5 h-3.5 absolute inset-0 animate-spin transition-opacity duration-200"
+          style={{ opacity: isLoading ? 1 : 0 }}
+        />
+        <Check
+          className="w-3.5 h-3.5 absolute inset-0 transition-all duration-300"
+          style={{
+            opacity: isDone ? 1 : 0,
+            transform: isDone ? "scale(1)" : "scale(0.5)",
+          }}
+        />
+      </span>
+      <span className="transition-opacity duration-200">{STATE_LABEL[state]}</span>
     </button>
   );
 }

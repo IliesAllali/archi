@@ -139,7 +139,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
               {!showCreate ? (
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 hover:brightness-110"
+                  className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 hover:brightness-110 active:scale-95"
                   style={{ backgroundColor: `${project.accent}15`, color: project.accent }}
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -168,7 +168,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                     <button
                       onClick={createLink}
                       disabled={creating}
-                      className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md text-xs font-medium transition-all disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-md text-xs font-medium transition-all disabled:opacity-50 active:scale-95"
                       style={{ backgroundColor: project.accent, color: "#fff" }}
                     >
                       {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
@@ -176,7 +176,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                     </button>
                     <button
                       onClick={() => { setShowCreate(false); setNewPassword(""); }}
-                      className="px-3 h-9 rounded-md text-xs transition-colors"
+                      className="px-3 h-9 rounded-md text-xs transition-colors active:scale-95"
                       style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
                     >
                       Annuler
@@ -195,11 +195,16 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                   <p className="text-2xs uppercase tracking-wide font-medium" style={{ color: "var(--text-faint)" }}>
                     Liens actifs
                   </p>
-                  {links.map((link) => (
-                    <div
+                  {links.map((link, linkIndex) => (
+                    <motion.div
                       key={link.id}
-                      className="flex items-center gap-2 p-2.5 rounded-lg"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: linkIndex * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex items-center gap-2 p-2.5 rounded-lg transition-colors duration-150"
                       style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-hover)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 text-2xs font-mono truncate" style={{ color: "var(--text-secondary)" }}>
@@ -219,22 +224,23 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                       </div>
                       <button
                         onClick={() => copyLink(link.token)}
-                        className="px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all shrink-0"
+                        className="px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all duration-150 shrink-0 active:scale-95"
                         style={{
                           backgroundColor: copied === link.token ? "var(--success-bg)" : `${project.accent}15`,
                           color: copied === link.token ? "var(--success-text)" : project.accent,
+                          transform: copied === link.token ? "scale(1.05)" : undefined,
                         }}
                       >
                         {copied === link.token ? <Check className="w-3 h-3" /> : "Copier"}
                       </button>
                       <button
                         onClick={() => deleteLink(link.id)}
-                        className="p-1.5 rounded-md hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                        className="p-1.5 rounded-md hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 active:scale-95"
                         style={{ color: "var(--text-faint)" }}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               ) : (
