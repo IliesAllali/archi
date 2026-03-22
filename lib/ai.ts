@@ -261,9 +261,24 @@ export async function editSitemap(
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
 
-  // Build messages array: prior conversation + current request
+  // Build messages array: prior conversation (summarized) + current request
+  // Only keep user messages from history — assistant responses were free-text chat
+  // which confuses the model into staying in chat mode. We inject a brief context instead.
+  const priorMessages: { role: "user" | "assistant"; content: string }[] = [];
+  if (conversationHistory && conversationHistory.length > 0) {
+    const recent = conversationHistory.slice(-8);
+    for (const msg of recent) {
+      if (msg.role === "user") {
+        priorMessages.push(msg);
+      } else {
+        // Summarize assistant responses to avoid format confusion
+        const truncated = msg.content.length > 200 ? msg.content.slice(0, 200) + "..." : msg.content;
+        priorMessages.push({ role: "assistant", content: `[R\u00e9ponse pr\u00e9c\u00e9dente : ${truncated}]` });
+      }
+    }
+  }
   const messages: { role: "user" | "assistant"; content: string }[] = [
-    ...(conversationHistory || []).slice(-10),
+    ...priorMessages,
     { role: "user", content: userMessage },
   ];
 

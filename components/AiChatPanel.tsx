@@ -171,9 +171,16 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
     }
   }, [messages.length, loading]);
 
-  // Focus input on open
+  // Scroll to bottom + focus input when panel opens
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 150);
+    if (open) {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+        inputRef.current?.focus();
+      }, 100);
+    }
   }, [open]);
 
   const handleSend = useCallback(() => {

@@ -177,6 +177,14 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
 
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("text/event-stream")) {
+        const errData = await res.json().catch(() => ({}));
+        const aiMsg: ChatMessage = {
+          id: `e-${Date.now()}`,
+          role: "assistant",
+          content: `\u26a0\ufe0f ${errData.error || "Erreur de connexion"}`,
+          timestamp: Date.now(),
+        };
+        setAiChatMessages(prev => [...prev, aiMsg]);
         setAiChatLoading(false);
         return;
       }
@@ -195,29 +203,48 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         buffer = lines.pop() || "";
 
         let currentEvent = "";
+        let editActionsCount = 0;
         for (const line of lines) {
           if (line.startsWith("event: ")) {
             currentEvent = line.slice(7);
           } else if (line.startsWith("data: ") && currentEvent) {
             try {
               const data = JSON.parse(line.slice(6));
-              if (currentEvent === "done") {
+              if (currentEvent === "action") {
+                editActionsCount++;
+              } else if (currentEvent === "done") {
+                const isEdit = data.type !== "chat" && (data.total > 0 || editActionsCount > 0);
+
+                // Build response message
+                let content = data.summary || "";
+                if (isEdit && editActionsCount > 0) {
+                  content = `\u2705 **${editActionsCount} modification(s) appliqu\u00e9e(s)**\n\n${content}`;
+                }
+
                 const aiMsg: ChatMessage = {
                   id: `a-${Date.now()}`,
                   role: "assistant",
-                  content: data.summary || "",
+                  content,
                   timestamp: Date.now(),
                 };
                 setAiChatMessages(prev => [...prev, aiMsg]);
 
-                // If it was an edit, also reload project
-                if (data.type !== "chat" && data.total > 0) {
+                // Reload project after edits
+                if (isEdit) {
                   const projectRes = await fetch(`/api/projects/${project.id}`);
                   if (projectRes.ok) {
                     const proj = await projectRes.json();
                     useCanvasStore.getState().initProject(proj);
                   }
                 }
+              } else if (currentEvent === "error") {
+                const aiMsg: ChatMessage = {
+                  id: `e-${Date.now()}`,
+                  role: "assistant",
+                  content: `\u26a0\ufe0f ${data.error || "Erreur lors du traitement"}`,
+                  timestamp: Date.now(),
+                };
+                setAiChatMessages(prev => [...prev, aiMsg]);
               }
             } catch { /* ignore */ }
             currentEvent = "";
