@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Check, AlertTriangle, Settings, Zap } from "lucide-react";
+import { Sparkles, Send, X, Check, AlertTriangle, Settings, Zap, Gem } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -270,10 +270,10 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                     color: speed === "fast" ? "#f59e0b" : "var(--accent)",
                     background: speed === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)",
                   }}
-                  title={speed === "fast" ? "Mode rapide (Haiku/Mini)" : "Mode qualit\u00e9 (Sonnet/GPT-4o)"}
+                  title={speed === "fast" ? "Mode rapide (Haiku/Mini)" : "Mode qualité (Sonnet/GPT-4o)"}
                 >
-                  <Zap className="w-3 h-3" />
-                  {speed === "fast" ? "Rapide" : "Qualit\u00e9"}
+                  {speed === "fast" ? <Zap className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
+                  {speed === "fast" ? "Rapide" : "Qualité"}
                 </button>
                 {/* Chat history button */}
                 {chatMessages.length > 0 && (
@@ -368,7 +368,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  {statusMsg || "R\u00e9flexion en cours..."}
+                  {statusMsg || "Réflexion en cours..."}
                 </motion.p>
               </div>
             )}

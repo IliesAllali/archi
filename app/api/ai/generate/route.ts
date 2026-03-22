@@ -69,12 +69,34 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        // Phase 1: thinking
         const aiLabel = getProviderLabel(provider);
         send("status", { phase: "thinking", message: `${aiLabel} analyse ton brief...` });
 
-        // Call AI
-        const result = await generateSitemap(apiKey, prompt, provider, speed);
+        // Stream AI response — extract labels live from partial JSON
+        let streaming = false;
+        const streamedLabels = new Set<string>();
+        const labelRegex = /"label"\s*:\s*"([^"]+)"/g;
+
+        const onChunk = (chunk: string) => {
+          if (!streaming) {
+            streaming = true;
+            send("status", { phase: "streaming", message: "G\u00e9n\u00e9ration de l'arborescence..." });
+          }
+          // Try to extract new labels from the accumulated text
+          // We re-run regex on the chunk for speed but it's fine for label extraction
+          let match;
+          const testStr = chunk;
+          while ((match = labelRegex.exec(testStr)) !== null) {
+            const label = match[1];
+            if (!streamedLabels.has(label)) {
+              streamedLabels.add(label);
+              send("stream_node", { label, count: streamedLabels.size });
+            }
+          }
+          labelRegex.lastIndex = 0;
+        };
+
+        const result = await generateSitemap(apiKey, prompt, provider, speed, onChunk);
 
         // Phase 2: creating project
         send("status", { phase: "creating", message: `${result.nodes.length} pages g\u00e9n\u00e9r\u00e9es, cr\u00e9ation du projet...` });

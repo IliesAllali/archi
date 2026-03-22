@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, ChevronDown } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, ChevronDown, Zap, Gem, Plus } from "lucide-react"
 import { Events } from "@/lib/posthog"
 import {
   AI_PROVIDERS,
@@ -49,6 +49,14 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const [aiStatus, setAiStatus] = useState("")
   const [aiActions, setAiActions] = useState<{ label: string; index: number; total: number }[]>([])
   const promptRef = useRef<HTMLTextAreaElement>(null)
+  const actionsListRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll actions list
+  useEffect(() => {
+    if (actionsListRef.current) {
+      actionsListRef.current.scrollTop = actionsListRef.current.scrollHeight
+    }
+  }, [aiActions.length])
 
   const providerConfig = getProviderConfig(provider)
 
@@ -184,9 +192,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
               const data = JSON.parse(line.slice(6))
               if (currentEvent === "status") {
                 setAiStatus(data.message)
+              } else if (currentEvent === "stream_node") {
+                // Live node appearing from streaming
+                setAiActions(prev => [...prev, { label: data.label, index: data.count, total: 0 }])
+                setAiStatus(`${data.count} page(s) détectée(s)...`)
               } else if (currentEvent === "action") {
                 setAiActions(prev => [...prev, { label: data.label, index: data.index, total: data.total }])
-                setAiStatus(`${data.index}/${data.total} pages cr\u00e9\u00e9es`)
+                setAiStatus(`${data.index}/${data.total} pages créées`)
               } else if (currentEvent === "done") {
                 Events.projectCreated(false)
                 router.push(`/${data.projectId}`)
@@ -315,23 +327,111 @@ export default function NewProjectModal({ open, onClose }: Props) {
               {mode === "ai" && (
                 <div className="space-y-3 pt-1">
                   {aiStep === "generating" ? (
-                    <div className="flex flex-col items-center justify-center py-8 gap-3">
-                      <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--accent)" }} />
-                      <div className="text-center">
-                        <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                          {aiStatus || "Connexion au fournisseur IA..."}
-                        </p>
-                      </div>
-                      {aiActions.length > 0 && (
-                        <div className="w-full max-w-[280px] flex flex-col gap-1 max-h-[120px] overflow-y-auto">
-                          {aiActions.map((a, i) => (
-                            <div key={i} className="flex items-center gap-2 text-2xs" style={{ color: "var(--text-muted)" }}>
-                              <span className="w-4 h-4 rounded flex items-center justify-center text-white shrink-0" style={{ background: "#22c55e", fontSize: 9 }}>+</span>
-                              <span className="truncate">{a.label}</span>
+                    <div className="flex flex-col items-center py-6 gap-4">
+                      {/* Thinking animation */}
+                      {aiActions.length === 0 && (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="relative w-12 h-12 flex items-center justify-center">
+                            <motion.div
+                              className="absolute inset-0 rounded-full"
+                              style={{ border: "2px solid var(--accent)", opacity: 0.2 }}
+                              animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0, 0.2] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <motion.div
+                              className="absolute inset-1 rounded-full"
+                              style={{ border: "2px solid var(--accent)", opacity: 0.3 }}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                            />
+                            <Sparkles className="w-5 h-5" style={{ color: "var(--accent)" }} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-[3px]">
+                              {[0, 1, 2].map((i) => (
+                                <motion.span
+                                  key={i}
+                                  className="w-[5px] h-[5px] rounded-full"
+                                  style={{ background: "var(--accent)" }}
+                                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
+                                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
+                                />
+                              ))}
                             </div>
-                          ))}
+                            <motion.p
+                              className="text-xs font-medium"
+                              style={{ color: "var(--text-secondary)" }}
+                              animate={{ opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                            >
+                              {aiStatus || "L'IA analyse ton brief..."}
+                            </motion.p>
+                          </div>
                         </div>
                       )}
+
+                      {/* Pages appearing live */}
+                      {aiActions.length > 0 && (
+                        <div className="w-full space-y-2">
+                          {/* Progress header */}
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                              {aiStatus || `${aiActions.length} pages`}
+                            </p>
+                            {aiActions[aiActions.length - 1]?.total > 0 && (
+                              <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                                {aiActions[aiActions.length - 1]?.index}/{aiActions[aiActions.length - 1]?.total}
+                              </p>
+                            )}
+                          </div>
+                          {/* Progress bar — determinate if total known, indeterminate pulse otherwise */}
+                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
+                            {aiActions[aiActions.length - 1]?.total > 0 ? (
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: "var(--accent)" }}
+                                initial={{ width: "0%" }}
+                                animate={{ width: `${(aiActions[aiActions.length - 1]?.index / aiActions[aiActions.length - 1]?.total) * 100}%` }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                              />
+                            ) : (
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: "var(--accent)", width: "40%" }}
+                                animate={{ x: ["-40%", "250%"] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Page list */}
+                          <div ref={actionsListRef} className="flex flex-col gap-1 max-h-[160px] overflow-y-auto mt-2 pr-1">
+                            <AnimatePresence>
+                              {aiActions.map((a, i) => (
+                                <motion.div
+                                  key={i}
+                                  initial={{ opacity: 0, x: -12, height: 0 }}
+                                  animate={{ opacity: 1, x: 0, height: "auto" }}
+                                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                  className="flex items-center gap-2 py-1 px-2 rounded-md"
+                                  style={{ background: i === aiActions.length - 1 ? "var(--accent-muted)" : "transparent" }}
+                                >
+                                  <div
+                                    className="w-4 h-4 rounded flex items-center justify-center shrink-0"
+                                    style={{ background: "var(--accent)", color: "#fff" }}
+                                  >
+                                    <Plus className="w-2.5 h-2.5" />
+                                  </div>
+                                  <span className="text-2xs truncate" style={{ color: i === aiActions.length - 1 ? "var(--text-primary)" : "var(--text-muted)" }}>
+                                    {a.label}
+                                  </span>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      )}
+
                       {error && (
                         <p className="text-2xs text-center px-4" style={{ color: "var(--error-text)" }}>{error}</p>
                       )}
@@ -411,14 +511,14 @@ export default function NewProjectModal({ open, onClose }: Props) {
                                 key={s}
                                 type="button"
                                 onClick={() => { setSpeedState(s); storeSpeed(s) }}
-                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
+                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150 flex items-center justify-center gap-1.5"
                                 style={{
                                   background: speed === s ? "var(--accent)" : "var(--surface)",
                                   color: speed === s ? "#fff" : "var(--text-secondary)",
                                   border: `1px solid ${speed === s ? "var(--accent)" : "var(--line-strong)"}`,
                                 }}
                               >
-                                {s === "fast" ? "\u26A1 Rapide" : "\u2728 Qualit\u00e9"}
+                                {s === "fast" ? <><Zap className="w-3 h-3" /> Rapide</> : <><Gem className="w-3 h-3" /> Qualité</>}
                               </button>
                             ))}
                           </div>

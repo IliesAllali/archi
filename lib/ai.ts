@@ -162,13 +162,32 @@ async function callLLM(
   apiKey: string,
   system: string,
   messages: { role: "user" | "assistant"; content: string }[],
-  speed: AiSpeed = "fast"
+  speed: AiSpeed = "fast",
+  onChunk?: (chunk: string) => void
 ): Promise<string> {
   const model = getModel(provider, speed);
   const maxTokens = speed === "quality" ? 16384 : 4096;
 
   if (provider === "anthropic") {
     const client = new Anthropic({ apiKey });
+
+    if (onChunk) {
+      const stream = client.messages.stream({
+        model,
+        max_tokens: maxTokens,
+        system,
+        messages,
+      });
+      let full = "";
+      for await (const event of stream) {
+        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          full += event.delta.text;
+          onChunk(event.delta.text);
+        }
+      }
+      return full;
+    }
+
     const response = await client.messages.create({
       model,
       max_tokens: maxTokens,
@@ -185,6 +204,28 @@ async function callLLM(
   }
 
   const client = new OpenAI(config);
+
+  if (onChunk) {
+    const stream = await client.chat.completions.create({
+      model,
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [
+        { role: "system", content: system },
+        ...messages,
+      ],
+    });
+    let full = "";
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content || "";
+      if (text) {
+        full += text;
+        onChunk(text);
+      }
+    }
+    return full;
+  }
+
   const response = await client.chat.completions.create({
     model,
     max_tokens: maxTokens,
@@ -249,10 +290,11 @@ export async function generateSitemap(
   apiKey: string,
   prompt: string,
   provider: AiProvider = "anthropic",
-  speed: AiSpeed = "fast"
+  speed: AiSpeed = "fast",
+  onChunk?: (chunk: string) => void
 ): Promise<{ nodes: AiNode[] }> {
   const system = speed === "quality" ? GENERATE_SYSTEM_QUALITY : GENERATE_SYSTEM_FAST;
-  const text = await callLLM(provider, apiKey, system, [{ role: "user", content: prompt }], speed);
+  const text = await callLLM(provider, apiKey, system, [{ role: "user", content: prompt }], speed, onChunk);
   const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
@@ -268,7 +310,8 @@ export async function editSitemap(
   currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast",
-  conversationHistory?: { role: "user" | "assistant"; content: string }[]
+  conversationHistory?: { role: "user" | "assistant"; content: string }[],
+  onChunk?: (chunk: string) => void
 ): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
@@ -294,7 +337,7 @@ export async function editSitemap(
     { role: "user", content: userMessage },
   ];
 
-  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, messages, speed);
+  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, messages, speed, onChunk);
   const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string; type?: string };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {

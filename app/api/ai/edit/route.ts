@@ -83,8 +83,15 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        // Phase 1: thinking
         send("status", { phase: "thinking", message: "L'IA analyse l'arborescence..." });
+
+        let streaming = false;
+        const onChunk = (_chunk: string) => {
+          if (!streaming) {
+            streaming = true;
+            send("status", { phase: "streaming", message: "R\u00e9daction de la r\u00e9ponse..." });
+          }
+        };
 
         // Get current tree
         const dbNodes = getActiveNodes(projectId);
@@ -117,7 +124,8 @@ export async function POST(req: NextRequest) {
           currentTree as { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
           provider,
           speed,
-          conversationHistory
+          conversationHistory,
+          onChunk
         );
         const aiLabel = getProviderLabel(provider);
 
