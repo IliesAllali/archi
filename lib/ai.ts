@@ -169,15 +169,21 @@ Exemples de zoningBlocks (sections d'une page) :
 - Landing type : nav(8) → hero(25) → arguments(20) → social-proof(12) → form(20) → footer(7)
 - Listing type : nav(8) → breadcrumb(5) → filtres(10) → grille(55) → pagination(8) → footer(8)
 
+Si l'utilisateur pose une QUESTION (avis, analyse, conseil, suggestion) au lieu de demander une modification concrète :
+- Réponds avec "type": "chat" et "actions": []
+- Mets ta réponse complète dans "summary" (texte riche, détaillé, utile)
+- Tu peux analyser l'arborescence, donner ton avis UX, suggérer des améliorations, etc.
+
 Réponds UNIQUEMENT avec un JSON valide, sans markdown :
 {
+  "type": "edit" ou "chat",
   "actions": [
     { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...], "zoningExpanded": true },
     { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
     { "action": "delete", "node_id": "REAL_ID" },
     { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" }
   ],
-  "summary": "Courte explication de ce qui a été fait"
+  "summary": "Courte explication de ce qui a été fait (ou réponse complète si type chat)"
 }`;
 
 // ─── Unified LLM call ───────────────────────────────────────────────────────
@@ -250,18 +256,19 @@ export async function editSitemap(
   currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast"
-): Promise<{ actions: AiEditAction[]; summary: string }> {
+): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
 
   const text = await callLLM(provider, apiKey, EDIT_SYSTEM, userMessage, speed);
-  const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string };
+  const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string; type?: string };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {
     throw new Error("Invalid AI response: missing actions array");
   }
 
-  return { actions: parsed.actions, summary: parsed.summary || "" };
+  const responseType = parsed.type === "chat" ? "chat" : "edit";
+  return { actions: parsed.actions, summary: parsed.summary || "", type: responseType };
 }
 
 // ─── Build context prompt for manual copy-paste mode ─────────────────────────

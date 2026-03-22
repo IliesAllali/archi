@@ -31,6 +31,7 @@ export default function AiBar({ projectId }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [chatResponse, setChatResponse] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
   const [needsKey, setNeedsKey] = useState(false);
@@ -85,6 +86,7 @@ export default function AiBar({ projectId }: Props) {
     setLoading(true);
     setError("");
     setSuccess("");
+    setChatResponse("");
     setStatusMsg("");
     setActionLog([]);
 
@@ -150,24 +152,38 @@ export default function AiBar({ projectId }: Props) {
                 setActionLog((prev) => [...prev, action]);
                 setStatusMsg(`${data.index}/${data.index} ${data.type === "add" ? "+" : data.type === "delete" ? "-" : "\u270F"} ${data.label || data.id}`);
               } else if (currentEvent === "done") {
-                // Reload project with final tree
-                const projectRes = await fetch(`/api/projects/${projectId}`);
-                if (projectRes.ok) {
-                  const project = await projectRes.json();
-                  initProject(project);
+                if (data.type === "chat") {
+                  // AI answered a question — show the response
+                  setChatResponse(data.summary || "");
+                  setHistory(prev => [{
+                    prompt: currentPrompt,
+                    summary: data.summary || "R\u00e9ponse IA",
+                    actions: [],
+                    time: Date.now(),
+                  }, ...prev.slice(0, 9)]);
+                  setPrompt("");
+                  setStatusMsg("");
+                  Events.aiActionPerformed("chat", "built-in");
+                } else {
+                  // Reload project with final tree
+                  const projectRes = await fetch(`/api/projects/${projectId}`);
+                  if (projectRes.ok) {
+                    const project = await projectRes.json();
+                    initProject(project);
+                  }
+                  const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
+                  setSuccess(summary);
+                  setHistory(prev => [{
+                    prompt: currentPrompt,
+                    summary,
+                    actions: localActions,
+                    time: Date.now(),
+                  }, ...prev.slice(0, 9)]);
+                  setPrompt("");
+                  setStatusMsg("");
+                  Events.aiActionPerformed("edit_tree", "built-in");
+                  setTimeout(() => setSuccess(""), 4000);
                 }
-                const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
-                setSuccess(summary);
-                setHistory(prev => [{
-                  prompt: currentPrompt,
-                  summary,
-                  actions: localActions,
-                  time: Date.now(),
-                }, ...prev.slice(0, 9)]);
-                setPrompt("");
-                setStatusMsg("");
-                Events.aiActionPerformed("edit_tree", "built-in");
-                setTimeout(() => setSuccess(""), 4000);
               } else if (currentEvent === "error") {
                 setError(data.error);
                 if (data.error?.includes("Cl")) setNeedsKey(true);
@@ -212,7 +228,7 @@ export default function AiBar({ projectId }: Props) {
           onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(99, 102, 241, 0.35)"; }}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Modifier avec l&apos;IA
+          Assistant IA
           <kbd className="ml-1 px-1.5 py-0.5 rounded text-2xs font-mono hidden sm:inline" style={{ background: "rgba(255,255,255,0.2)" }}>
             Ctrl+I
           </kbd>
@@ -239,7 +255,7 @@ export default function AiBar({ projectId }: Props) {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5" style={{ color: "#8B5CF6" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                  Éditer avec l&apos;IA
+                  Assistant IA
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -414,6 +430,37 @@ export default function AiBar({ projectId }: Props) {
               )}
             </AnimatePresence>
 
+            {/* Chat response */}
+            <AnimatePresence mode="wait">
+              {chatResponse && (
+                <motion.div
+                  key="chat"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="px-4 py-3 max-h-[200px] overflow-y-auto"
+                  style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#8B5CF6" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
+                        {chatResponse}
+                      </p>
+                      <button
+                        onClick={() => setChatResponse("")}
+                        className="mt-2 text-2xs px-2 py-0.5 rounded-md transition-colors"
+                        style={{ color: "var(--text-faint)", background: "var(--elevated)" }}
+                      >
+                        Fermer
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Error message */}
             {error && (
               <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "var(--error-glow)" }}>
@@ -429,7 +476,7 @@ export default function AiBar({ projectId }: Props) {
                   ref={inputRef}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ex : Ajoute une page FAQ sous Contact, Réorganise le blog en catégories..."
+                  placeholder="Ex : Ajoute une page FAQ, Que penses-tu de mon arbo ?, Réorganise le blog..."
                   rows={2}
                   disabled={loading}
                   className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"

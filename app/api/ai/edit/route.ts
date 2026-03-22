@@ -114,6 +114,13 @@ export async function POST(req: NextRequest) {
         );
         const aiLabel = getProviderLabel(provider);
 
+        // Chat mode: AI answered a question instead of making modifications
+        if (result.type === "chat") {
+          send("done", { summary: result.summary, total: 0, type: "chat" });
+          controller.close();
+          return;
+        }
+
         // Phase 2: applying actions one by one
         send("status", { phase: "applying", message: `${result.actions.length} modification(s) trouv\u00e9es`, total: result.actions.length });
 
