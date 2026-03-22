@@ -12,9 +12,10 @@ interface Props {
   open: boolean
   onClose: () => void
   currentUser?: { id: string; name: string } | null
+  nodeLabels?: Record<string, string>
 }
 
-export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onClose, currentUser }: Props) {
+export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onClose, currentUser, nodeLabels = {} }: Props) {
   const [content, setContent] = useState("")
   const [guestName, setGuestName] = useState("")
   const [sending, setSending] = useState(false)
@@ -30,19 +31,21 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
   const openThread = useCommentsStore(s => s.openThread)
   const activeThreadId = useCommentsStore(s => s.activeThreadId)
 
-  // Filter comments for this node (root only, no replies)
+  // Filter comments for this node (root only, no replies) — or all if no node
   const comments = useMemo(
-    () => storeComments.filter(c => c.nodeId === nodeId && !c.parentId).sort((a, b) => a.createdAt - b.createdAt),
+    () => storeComments
+      .filter(c => !c.parentId && (nodeId ? c.nodeId === nodeId : true))
+      .sort((a, b) => a.createdAt - b.createdAt),
     [storeComments, nodeId]
   )
 
   // Fetch from shared store on open
   useEffect(() => {
-    if (open && nodeId) {
+    if (open) {
       fetchComments(projectId)
       setTimeout(() => inputRef.current?.focus(), 200)
     }
-  }, [open, nodeId, fetchComments, projectId])
+  }, [open, fetchComments, projectId])
 
   useEffect(() => {
     if (listRef.current) {
@@ -99,7 +102,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
             <div className="flex items-center gap-2 min-w-0">
               <MessageCircle className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent)" }} />
               <span className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {nodeLabel || "Commentaires"}
+                {nodeLabel || "Tous les commentaires"}
               </span>
               {comments.length > 0 && (
                 <span className="text-2xs px-1.5 py-0.5 rounded-full" style={{ background: "var(--surface-hover)", color: "var(--text-faint)" }}>
@@ -122,7 +125,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
               <div className="text-center py-8">
                 <MessageCircle className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--text-faint)" }} />
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Aucun commentaire sur cette page.
+                  {nodeId ? "Aucun commentaire sur cette page." : "Aucun commentaire dans ce projet."}
                 </p>
               </div>
             ) : (
@@ -140,6 +143,11 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                     }}
                     onClick={() => openThread(isHighlighted ? null : comment.id)}
                   >
+                    {!nodeId && nodeLabels[comment.nodeId] && (
+                      <p className="text-2xs mb-1 truncate" style={{ color: "var(--accent)", opacity: 0.7 }}>
+                        {nodeLabels[comment.nodeId]}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
                         {comment.authorName}

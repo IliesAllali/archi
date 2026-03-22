@@ -138,8 +138,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
   );
 
   const openComments = useCallback((nodeId: string | null) => {
-    if (!nodeId) return;
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodeId ? nodes.find(n => n.id === nodeId) : null;
     setCommentsNodeId(nodeId);
     setCommentsNodeLabel(node?.label || null);
     setCommentsOpen(true);
@@ -298,6 +297,12 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       setAiChatMessages(prev => prev.map(m => m.id === messageId ? { ...m, applying: false } : m));
     }
   }, [aiChatMessages, project.id]);
+
+  const nodeLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const n of nodes) map[n.id] = n.label;
+    return map;
+  }, [nodes]);
 
   const isDemo = project.slug === "demo-ecommerce";
 
@@ -459,7 +464,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
                   Historique
                 </button>
                 <button
-                  onClick={() => { openComments(selectedNodeId || nodes[0]?.id || null); setMenuOpen(false); }}
+                  onClick={() => { openComments(selectedNodeId || null); setMenuOpen(false); }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
                   style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
@@ -572,6 +577,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         open={commentsOpen}
         onClose={() => setCommentsOpen(false)}
         currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+        nodeLabels={nodeLabels}
       />
 
       {/* AI Chat Panel */}
