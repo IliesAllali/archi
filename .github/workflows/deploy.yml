@@ -23,8 +23,15 @@ jobs:
             echo "→ Pull latest code"
             git pull origin main
 
-            echo "→ Rebuild & restart container"
-            docker compose up -d --build
+            echo "→ Build image"
+            docker compose build
+
+            echo "→ Stop & remove old container"
+            docker compose down --remove-orphans || true
+            docker rm -f arbo-tool 2>/dev/null || true
+
+            echo "→ Start new container"
+            docker compose up -d
 
             echo "→ Wait for healthy container"
             sleep 5
