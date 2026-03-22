@@ -24,9 +24,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed } = body as {
+  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory } = body as {
     prompt?: string; apiKey?: string; projectId?: string; provider?: string; speed?: string;
+    history?: { role: string; content: string }[];
   };
+  const conversationHistory = Array.isArray(rawHistory)
+    ? rawHistory.filter(m => (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-10) as { role: "user" | "assistant"; content: string }[]
+    : undefined;
   const provider: AiProvider = VALID_PROVIDERS.includes(rawProvider as AiProvider)
     ? (rawProvider as AiProvider) : "anthropic";
   const speed: AiSpeed = VALID_SPEEDS.includes(rawSpeed as AiSpeed)
@@ -110,7 +114,8 @@ export async function POST(req: NextRequest) {
           apiKey, prompt,
           currentTree as { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
           provider,
-          speed
+          speed,
+          conversationHistory
         );
         const aiLabel = getProviderLabel(provider);
 

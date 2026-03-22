@@ -16,6 +16,8 @@ import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
 import ActivityPanel from "@/components/ActivityPanel";
 import AiBar from "@/components/AiBar";
+import AiChatPanel from "@/components/AiChatPanel";
+import type { ChatMessage } from "@/components/AiChatPanel";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useCommentsStore } from "@/store/comments-store";
 import { usePresence } from "@/hooks/usePresence";
@@ -63,6 +65,9 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
   const [commentsNodeId, setCommentsNodeId] = useState<string | null>(null);
   const [commentsNodeLabel, setCommentsNodeLabel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [aiChatMessages, setAiChatMessages] = useState<ChatMessage[]>([]);
+  const [aiChatLoading, setAiChatLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const initProject = useCanvasStore((s) => s.initProject);
@@ -139,6 +144,90 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
     setCommentsNodeLabel(node?.label || null);
     setCommentsOpen(true);
   }, [nodes]);
+
+  // AI Chat handlers
+  const handleAiChatMessage = useCallback((userMsg: ChatMessage, aiMsg: ChatMessage) => {
+    setAiChatMessages(prev => [...prev, userMsg, aiMsg]);
+  }, []);
+
+  const handleAiChatFromSidebar = useCallback(async (message: string) => {
+    const now = Date.now();
+    const userMsg: ChatMessage = { id: `u-${now}`, role: "user", content: message, timestamp: now };
+    setAiChatMessages(prev => [...prev, userMsg]);
+    setAiChatLoading(true);
+
+    try {
+      const { getStoredApiKey, getStoredProvider, getStoredSpeed } = await import("@/lib/ai-providers");
+      const provider = getStoredProvider();
+      const apiKey = getStoredApiKey(provider);
+      const speed = getStoredSpeed();
+      if (!apiKey) { setAiChatLoading(false); return; }
+
+      const csrf = document.cookie.match(/arbo_csrf=([^;]+)/)?.[1];
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (csrf) headers["x-csrf-token"] = csrf;
+
+      const history = [...aiChatMessages, userMsg].map(m => ({ role: m.role, content: m.content }));
+
+      const res = await fetch("/api/ai/edit", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ prompt: message, apiKey, projectId: project.id, provider, speed, history }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("text/event-stream")) {
+        setAiChatLoading(false);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) { setAiChatLoading(false); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7);
+          } else if (line.startsWith("data: ") && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (currentEvent === "done") {
+                const aiMsg: ChatMessage = {
+                  id: `a-${Date.now()}`,
+                  role: "assistant",
+                  content: data.summary || "",
+                  timestamp: Date.now(),
+                };
+                setAiChatMessages(prev => [...prev, aiMsg]);
+
+                // If it was an edit, also reload project
+                if (data.type !== "chat" && data.total > 0) {
+                  const projectRes = await fetch(`/api/projects/${project.id}`);
+                  if (projectRes.ok) {
+                    const proj = await projectRes.json();
+                    useCanvasStore.getState().initProject(proj);
+                  }
+                }
+              }
+            } catch { /* ignore */ }
+            currentEvent = "";
+          }
+        }
+      }
+    } catch { /* ignore */ } finally {
+      setAiChatLoading(false);
+    }
+  }, [aiChatMessages, project.id]);
 
   const isDemo = project.slug === "demo-ecommerce";
 
@@ -415,8 +504,25 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
       />
 
+      {/* AI Chat Panel */}
+      <AiChatPanel
+        open={aiChatOpen}
+        onClose={() => setAiChatOpen(false)}
+        messages={aiChatMessages}
+        onSend={handleAiChatFromSidebar}
+        onClear={() => setAiChatMessages([])}
+        loading={aiChatLoading}
+      />
+
       {/* AI Bar (editors only) */}
-      {!isDemo && !readOnly && <AiBar projectId={project.id} />}
+      {!isDemo && !readOnly && (
+        <AiBar
+          projectId={project.id}
+          chatMessages={aiChatMessages}
+          onChatMessage={handleAiChatMessage}
+          onOpenChat={() => setAiChatOpen(true)}
+        />
+      )}
     </div>
   );
 }

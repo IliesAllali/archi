@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings, ChevronUp, ChevronDown, Zap } from "lucide-react";
+import { Sparkles, Loader2, Send, X, Check, AlertTriangle, Settings, Zap } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -14,6 +14,7 @@ import {
   storeSpeed,
 } from "@/lib/ai-providers";
 import type { AiProvider, AiSpeed } from "@/lib/ai-providers";
+import type { ChatMessage } from "./AiChatPanel";
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -23,23 +24,23 @@ function getCsrfToken(): string | null {
 
 interface Props {
   projectId: string;
+  chatMessages: ChatMessage[];
+  onChatMessage: (userMsg: ChatMessage, aiMsg: ChatMessage) => void;
+  onOpenChat: () => void;
 }
 
-export default function AiBar({ projectId }: Props) {
+export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenChat }: Props) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [chatResponse, setChatResponse] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
   const [needsKey, setNeedsKey] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [provider, setProvider] = useState<AiProvider>("anthropic");
   const [speed, setSpeed] = useState<AiSpeed>("fast");
-  const [history, setHistory] = useState<{ prompt: string; summary: string; actions: { type: string; label?: string }[]; time: number }[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
 
@@ -86,12 +87,13 @@ export default function AiBar({ projectId }: Props) {
     setLoading(true);
     setError("");
     setSuccess("");
-    setChatResponse("");
     setStatusMsg("");
     setActionLog([]);
 
-    // Local accumulator for history (state setters are async)
     const localActions: { type: string; label?: string }[] = [];
+
+    // Build conversation history for the API
+    const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
 
     try {
       const csrf = getCsrfToken();
@@ -107,10 +109,10 @@ export default function AiBar({ projectId }: Props) {
           projectId,
           provider,
           speed,
+          history,
         }),
       });
 
-      // Non-SSE error (auth, rate limit, bad request)
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("text/event-stream")) {
         const data = await res.json().catch(() => ({}));
@@ -122,7 +124,6 @@ export default function AiBar({ projectId }: Props) {
         return;
       }
 
-      // Read SSE stream
       const reader = res.body?.getReader();
       if (!reader) { setError("Erreur de connexion"); setLoading(false); return; }
 
@@ -153,19 +154,27 @@ export default function AiBar({ projectId }: Props) {
                 setStatusMsg(`${data.index}/${data.index} ${data.type === "add" ? "+" : data.type === "delete" ? "-" : "\u270F"} ${data.label || data.id}`);
               } else if (currentEvent === "done") {
                 if (data.type === "chat") {
-                  // AI answered a question — show the response
-                  setChatResponse(data.summary || "");
-                  setHistory(prev => [{
-                    prompt: currentPrompt,
-                    summary: data.summary || "R\u00e9ponse IA",
-                    actions: [],
-                    time: Date.now(),
-                  }, ...prev.slice(0, 9)]);
+                  // Chat response — push to sidebar conversation
+                  const now = Date.now();
+                  const userMsg: ChatMessage = {
+                    id: `u-${now}`,
+                    role: "user",
+                    content: currentPrompt,
+                    timestamp: now,
+                  };
+                  const aiMsg: ChatMessage = {
+                    id: `a-${now}`,
+                    role: "assistant",
+                    content: data.summary || "",
+                    timestamp: now + 1,
+                  };
+                  onChatMessage(userMsg, aiMsg);
+                  onOpenChat();
                   setPrompt("");
                   setStatusMsg("");
                   Events.aiActionPerformed("chat", "built-in");
                 } else {
-                  // Reload project with final tree
+                  // Edit — reload project
                   const projectRes = await fetch(`/api/projects/${projectId}`);
                   if (projectRes.ok) {
                     const project = await projectRes.json();
@@ -173,12 +182,6 @@ export default function AiBar({ projectId }: Props) {
                   }
                   const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
                   setSuccess(summary);
-                  setHistory(prev => [{
-                    prompt: currentPrompt,
-                    summary,
-                    actions: localActions,
-                    time: Date.now(),
-                  }, ...prev.slice(0, 9)]);
                   setPrompt("");
                   setStatusMsg("");
                   Events.aiActionPerformed("edit_tree", "built-in");
@@ -199,7 +202,7 @@ export default function AiBar({ projectId }: Props) {
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, projectId, provider, speed, initProject]);
+  }, [prompt, projectId, provider, speed, initProject, chatMessages, onChatMessage, onOpenChat]);
 
   const handleSaveKey = () => {
     if (!keyInput.trim()) return;
@@ -272,15 +275,15 @@ export default function AiBar({ projectId }: Props) {
                   <Zap className="w-3 h-3" />
                   {speed === "fast" ? "Rapide" : "Qualit\u00e9"}
                 </button>
-                {/* History toggle */}
-                {history.length > 0 && (
+                {/* Chat history button */}
+                {chatMessages.length > 0 && (
                   <button
-                    onClick={() => setShowHistory((v) => !v)}
-                    className="p-1 rounded-md transition-colors"
-                    style={{ color: "var(--text-faint)" }}
-                    title="Historique IA"
+                    onClick={onOpenChat}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150"
+                    style={{ color: "var(--text-muted)", background: "var(--surface)" }}
+                    title="Ouvrir le chat"
                   >
-                    {showHistory ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                    Chat ({Math.floor(chatMessages.length / 2) || chatMessages.length})
                   </button>
                 )}
                 <button
@@ -301,49 +304,11 @@ export default function AiBar({ projectId }: Props) {
               </div>
             </div>
 
-            {/* History panel */}
-            {showHistory && history.length > 0 && (
-              <div className="px-3 sm:px-4 py-2.5 max-h-[180px] overflow-y-auto" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-                <p className="text-2xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>
-                  Historique ({history.length})
-                </p>
-                <div className="flex flex-col gap-2">
-                  {history.map((h, i) => (
-                    <div key={i} className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-2">
-                        <p className="text-2xs font-medium truncate flex-1" style={{ color: "var(--text-primary)" }}>
-                          &quot;{h.prompt}&quot;
-                        </p>
-                        <span className="text-2xs shrink-0" style={{ color: "var(--text-faint)" }}>
-                          {new Date(h.time).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <p className="text-2xs" style={{ color: "var(--text-muted)" }}>{h.summary}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {h.actions.map((a, j) => (
-                          <span
-                            key={j}
-                            className="text-2xs px-1 py-0.5 rounded"
-                            style={{
-                              background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "var(--accent-muted)",
-                              color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "var(--accent)",
-                            }}
-                          >
-                            {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* API Key input (if needed) */}
             {needsKey && (
               <div className="px-3 sm:px-4 py-2.5 sm:py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Clé API {providerConfig.label.split(" (")[0]}
+                  Cl&eacute; API {providerConfig.label.split(" (")[0]}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -357,7 +322,7 @@ export default function AiBar({ projectId }: Props) {
                       color: "var(--text-primary)",
                       border: "1px solid var(--line-strong)",
                     }}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveKey() }}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveKey(); }}
                   />
                   <button
                     onClick={handleSaveKey}
@@ -369,7 +334,7 @@ export default function AiBar({ projectId }: Props) {
                   </button>
                 </div>
                 <p className="text-2xs mt-1.5" style={{ color: "var(--text-faint)" }}>
-                  Stockée dans ton navigateur uniquement.{" "}
+                  Stock&eacute;e dans ton navigateur uniquement.{" "}
                   <a
                     href={providerConfig.url}
                     target="_blank"
@@ -377,7 +342,7 @@ export default function AiBar({ projectId }: Props) {
                     className="underline"
                     style={{ color: "var(--accent)" }}
                   >
-                    Obtenir une clé
+                    Obtenir une cl&eacute;
                   </a>
                 </p>
               </div>
@@ -430,37 +395,6 @@ export default function AiBar({ projectId }: Props) {
               )}
             </AnimatePresence>
 
-            {/* Chat response */}
-            <AnimatePresence mode="wait">
-              {chatResponse && (
-                <motion.div
-                  key="chat"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  className="px-4 py-3 max-h-[200px] overflow-y-auto"
-                  style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <Sparkles className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-primary)" }}>
-                        {chatResponse}
-                      </p>
-                      <button
-                        onClick={() => setChatResponse("")}
-                        className="mt-2 text-2xs px-2 py-0.5 rounded-md transition-colors"
-                        style={{ color: "var(--text-faint)", background: "var(--elevated)" }}
-                      >
-                        Fermer
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Error message */}
             {error && (
               <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "var(--error-glow)" }}>
@@ -476,7 +410,7 @@ export default function AiBar({ projectId }: Props) {
                   ref={inputRef}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Ex : Ajoute une page FAQ, Que penses-tu de mon arbo ?, Réorganise le blog..."
+                  placeholder="Modifie l'arbo ou pose une question..."
                   rows={2}
                   disabled={loading}
                   className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"
@@ -485,8 +419,8 @@ export default function AiBar({ projectId }: Props) {
                     color: "var(--text-primary)",
                     border: "1px solid var(--line)",
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)" }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !loading) {
                       e.preventDefault();

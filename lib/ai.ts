@@ -192,7 +192,7 @@ async function callLLM(
   provider: AiProvider,
   apiKey: string,
   system: string,
-  userMessage: string,
+  messages: { role: "user" | "assistant"; content: string }[],
   speed: AiSpeed = "fast"
 ): Promise<string> {
   const model = getModel(provider, speed);
@@ -203,7 +203,7 @@ async function callLLM(
       model,
       max_tokens: 4096,
       system,
-      messages: [{ role: "user", content: userMessage }],
+      messages,
     });
     return response.content[0].type === "text" ? response.content[0].text : "";
   }
@@ -220,7 +220,7 @@ async function callLLM(
     max_tokens: 4096,
     messages: [
       { role: "system", content: system },
-      { role: "user", content: userMessage },
+      ...messages,
     ],
   });
 
@@ -240,7 +240,7 @@ export async function generateSitemap(
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast"
 ): Promise<{ nodes: AiNode[] }> {
-  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, prompt, speed);
+  const text = await callLLM(provider, apiKey, GENERATE_SYSTEM, [{ role: "user", content: prompt }], speed);
   const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
@@ -255,12 +255,19 @@ export async function editSitemap(
   prompt: string,
   currentTree: { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
   provider: AiProvider = "anthropic",
-  speed: AiSpeed = "fast"
+  speed: AiSpeed = "fast",
+  conversationHistory?: { role: "user" | "assistant"; content: string }[]
 ): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
 
-  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, userMessage, speed);
+  // Build messages array: prior conversation + current request
+  const messages: { role: "user" | "assistant"; content: string }[] = [
+    ...(conversationHistory || []).slice(-10),
+    { role: "user", content: userMessage },
+  ];
+
+  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, messages, speed);
   const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string; type?: string };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {

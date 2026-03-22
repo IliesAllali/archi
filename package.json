@@ -33,6 +33,7 @@
     "posthog-node": "^5.28.2",
     "react": "^18",
     "react-dom": "^18",
+    "react-markdown": "^10.1.0",
     "reactflow": "^11.11.4",
     "resend": "^6.9.3",
     "socket.io": "^4.8.3",
