@@ -201,7 +201,7 @@ async function callLLM(
     const client = new Anthropic({ apiKey });
     const response = await client.messages.create({
       model,
-      max_tokens: 4096,
+      max_tokens: 16384,
       system,
       messages,
     });
@@ -217,7 +217,7 @@ async function callLLM(
   const client = new OpenAI(config);
   const response = await client.chat.completions.create({
     model,
-    max_tokens: 4096,
+    max_tokens: 16384,
     messages: [
       { role: "system", content: system },
       ...messages,
@@ -228,8 +228,49 @@ async function callLLM(
 }
 
 function parseJSON(text: string): unknown {
-  const cleaned = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
-  return JSON.parse(cleaned);
+  // 1. Try to extract JSON from markdown code blocks
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  let cleaned = codeBlockMatch ? codeBlockMatch[1].trim() : text.trim();
+
+  // 2. Strip leading/trailing non-JSON text (find first { and last })
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+
+  // 3. Try direct parse
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // 4. Try to repair truncated JSON by closing open structures
+    let repaired = cleaned;
+    // Count open brackets/braces
+    let openBraces = 0, openBrackets = 0;
+    let inString = false, escape = false;
+    for (const ch of repaired) {
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === "{") openBraces++;
+      else if (ch === "}") openBraces--;
+      else if (ch === "[") openBrackets++;
+      else if (ch === "]") openBrackets--;
+    }
+
+    // If we're inside a string, close it
+    if (inString) repaired += '"';
+
+    // Remove trailing comma before closing
+    repaired = repaired.replace(/,\s*$/, "");
+
+    // Close open brackets and braces
+    for (let i = 0; i < openBrackets; i++) repaired += "]";
+    for (let i = 0; i < openBraces; i++) repaired += "}";
+
+    return JSON.parse(repaired);
+  }
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
