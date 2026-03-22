@@ -219,7 +219,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
                 // Build response message
                 let content = data.summary || "";
                 if (isEdit && editActionsCount > 0) {
-                  content = `\u2705 **${editActionsCount} modification(s) appliqu\u00e9e(s)**\n\n${content}`;
+                  content = `✅ **${editActionsCount} modification(s) appliquée(s)**\n\n${content}`;
                 }
 
                 const aiMsg: ChatMessage = {

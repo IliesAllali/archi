@@ -87,7 +87,7 @@ function ThinkingIndicator() {
 /* ── Action icon helper ────────────────────────────────────────────────────── */
 
 const ACTION_ICONS: Record<string, typeof Plus> = { add: Plus, update: Pencil, delete: Trash, move: ArrowRight };
-const ACTION_LABELS: Record<string, string> = { add: "Ajouter", update: "Modifier", delete: "Supprimer", move: "D\u00e9placer" };
+const ACTION_LABELS: Record<string, string> = { add: "Ajouter", update: "Modifier", delete: "Supprimer", move: "Déplacer" };
 
 /* ── Message bubble ────────────────────────────────────────────────────────── */
 
@@ -202,7 +202,7 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
               {msg.applied ? (
                 <div className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "var(--accent)" }}>
                   <Check className="w-3.5 h-3.5" />
-                  {msg.pendingActions.length} modification(s) appliqu\u00e9e(s)
+                  {msg.pendingActions.length} modification(s) appliquée(s)
                 </div>
               ) : (
                 <button
