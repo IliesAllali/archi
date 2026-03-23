@@ -377,7 +377,7 @@ export default function AccountClient() {
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-3.5 h-3.5" style={{ color: barColor }} />
                       <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                        {remaining} cr{"\u00E9"}dit{remaining !== 1 ? "s" : ""} IA restant{remaining !== 1 ? "s" : ""}
+                        {remaining} crédit{remaining !== 1 ? "s" : ""} IA restant{remaining !== 1 ? "s" : ""}
                       </span>
                     </div>
                     <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
@@ -400,18 +400,18 @@ export default function AccountClient() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1">
                       <Zap className="w-2.5 h-2.5" style={{ color: "#f59e0b" }} />
-                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Rapide = 1 cr{"\u00E9"}dit</span>
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Rapide = 1 crédit</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
-                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Qualit{"\u00E9"} = 3 cr{"\u00E9"}dits</span>
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Qualité = 3 crédits</span>
                     </div>
                   </div>
 
                   {/* Empty state */}
                   {isEmpty && (
                     <p className="text-2xs" style={{ color: "#ef4444" }}>
-                      Cr{"\u00E9"}dits {"\u00E9"}puis{"\u00E9"}s. Ajoute ta cl{"\u00E9"} API perso ci-dessous pour continuer.
+                      Crédits épuisés. Ajoute ta clé API perso ci-dessous pour continuer.
                     </p>
                   )}
                 </div>
@@ -426,7 +426,7 @@ export default function AccountClient() {
               >
                 <Key className="w-3 h-3" style={{ color: "#2ea043" }} />
                 <span className="text-2xs" style={{ color: "#2ea043" }}>
-                  Cl{"\u00E9"} API perso active — cr{"\u00E9"}dits non consomm{"\u00E9"}s
+                  Clé API perso active — crédits non consommés
                 </span>
               </div>
             )}
@@ -497,15 +497,15 @@ export default function AccountClient() {
         {/* ─── API Keys ────────────────────────────────────── */}
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Cl{"\u00E9"}s API</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Clés API</h3>
             <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Tes cl{"\u00E9"}s permettent {"\u00E0"} Arbo d{"'"}utiliser l{"'"}IA de ton choix. Les cl{"\u00E9"}s locales restent sur ce navigateur.
+              Tes clés permettent à Arbo d&apos;utiliser l&apos;IA de ton choix. Les clés locales restent sur ce navigateur.
             </p>
           </div>
 
           {saved && (
             <div className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--success-text)" }}>
-              <Check className="w-3 h-3" /> Cl{"\u00E9"} ajout{"\u00E9"}e
+              <Check className="w-3 h-3" /> Clé ajoutée
             </div>
           )}
 
@@ -514,7 +514,7 @@ export default function AccountClient() {
             <div className="space-y-1.5">
               <p className="text-2xs font-medium flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
                 <HardDrive className="w-3 h-3" />
-                Cl{"\u00E9"}s locales (BYOK)
+                Clés locales (BYOK)
               </p>
               {localKeys.map(lk => (
                 <div key={lk.provider} className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: "var(--surface)", border: "1px solid rgba(46,160,67,0.25)" }}>
@@ -533,9 +533,9 @@ export default function AccountClient() {
                 </div>
               ))}
               <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                G{"\u00E9"}r{"\u00E9"}e dans{" "}
+                Gérée dans{" "}
                 <Link href="/" className="underline" style={{ color: "var(--accent)" }}>
-                  Param{"\u00E8"}tres &gt; IA
+                  Paramètres &gt; IA
                 </Link>
                 {" "}de chaque projet.
               </p>
@@ -548,7 +548,7 @@ export default function AccountClient() {
               {localKeys.length > 0 && (
                 <p className="text-2xs font-medium flex items-center gap-1.5 mt-2" style={{ color: "var(--text-muted)" }}>
                   <Key className="w-3 h-3" />
-                  Cl{"\u00E9"}s serveur
+                  Clés serveur
                 </p>
               )}
               {keys.map(k => (

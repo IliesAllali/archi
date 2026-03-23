@@ -164,7 +164,7 @@ export default function GeneralTab({
               background: "conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
               boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
             }}
-            title="Couleur personnalis\u00e9e"
+            title="Couleur personnalisée"
           >
             <input
               type="color"

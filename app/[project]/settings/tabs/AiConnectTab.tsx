@@ -235,8 +235,8 @@ Ma demande : `
   const byokProviderConfig = getProviderConfig(byokProvider)
 
   const sections = [
-    { id: "builtin" as const, icon: Zap, label: "Cr\u00e9dits IA", desc: "Quota offert" },
-    { id: "byok" as const, icon: Key, label: "Cl\u00e9 API perso", desc: "Anthropic, OpenAI, Mistral" },
+    { id: "builtin" as const, icon: Zap, label: "Crédits IA", desc: "Quota offert" },
+    { id: "byok" as const, icon: Key, label: "Clé API perso", desc: "Anthropic, OpenAI, Mistral" },
     { id: "mcp" as const, icon: Terminal, label: "Serveur MCP", desc: "Claude Desktop, Cursor, etc." },
     { id: "copypaste" as const, icon: ClipboardPaste, label: "Copier-coller", desc: "ChatGPT, autre IA" },
   ]

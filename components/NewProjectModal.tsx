@@ -99,7 +99,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la cr\u00e9ation")
+        setError("Erreur lors de la création")
       }
     } catch {
       setError("Erreur de connexion")
@@ -111,7 +111,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
   // ─── AI generate ──────────────────────────────────────────────────────────
 
   const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) { setError("D\u00e9cris ton site"); return }
+    if (!aiPrompt.trim()) { setError("Décris ton site"); return }
 
     // Use BYOK key if available, otherwise server credits
     const provider = getStoredProvider()
@@ -145,7 +145,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
         const data = await res.json().catch(() => ({}))
         // If credits exhausted, guide user
         if (res.status === 402) {
-          setError("Cr\u00e9dits \u00e9puis\u00e9s. Ajoute ta cl\u00e9 API dans Param\u00e8tres > IA pour continuer.")
+          setError("Crédits épuisés. Ajoute ta clé API dans Paramètres > IA pour continuer.")
         } else {
           setError(data.error || "Erreur de connexion au serveur")
         }
@@ -180,10 +180,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 setAiStatus(data.message)
               } else if (currentEvent === "stream_node") {
                 setAiActions(prev => [...prev, { label: data.label, index: data.count, total: 0 }])
-                setAiStatus(`${data.count} page(s) d\u00e9tect\u00e9e(s)...`)
+                setAiStatus(`${data.count} page(s) détectée(s)...`)
               } else if (currentEvent === "action") {
                 setAiActions(prev => [...prev, { label: data.label, index: data.index, total: data.total }])
-                setAiStatus(`${data.index}/${data.total} pages cr\u00e9\u00e9es`)
+                setAiStatus(`${data.index}/${data.total} pages créées`)
               } else if (currentEvent === "done") {
                 Events.projectCreated(false)
                 router.push(`/${data.projectId}`)
@@ -241,7 +241,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "G\u00e9n\u00e9rer avec l'IA" : "Projet vide"}
+                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "Générer avec l'IA" : "Projet vide"}
               </h3>
               <button
                 onClick={onClose}

@@ -106,7 +106,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
       if (!contentType.includes("text/event-stream")) {
         const data = await res.json().catch(() => ({}));
         if (res.status === 402) {
-          setError("Cr\u00e9dits \u00e9puis\u00e9s. Ajoute ta cl\u00e9 API dans Param\u00e8tres > IA.");
+          setError("Crédits épuisés. Ajoute ta clé API dans Paramètres > IA.");
         } else {
           setError(data.error || "Erreur de modification");
         }
@@ -168,7 +168,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                     const project = await projectRes.json();
                     initProject(project);
                   }
-                  const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
+                  const summary = data.summary || `${data.total} modification(s) appliquée(s)`;
                   setSuccess(summary);
                   setPrompt("");
                   setStatusMsg("");
@@ -248,10 +248,10 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                     color: speed === "fast" ? "#f59e0b" : "var(--accent)",
                     background: speed === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)",
                   }}
-                  title={speed === "fast" ? "Mode rapide (1 cr\u00e9dit)" : "Mode qualit\u00e9 (3 cr\u00e9dits)"}
+                  title={speed === "fast" ? "Mode rapide (1 crédit)" : "Mode qualité (3 crédits)"}
                 >
                   {speed === "fast" ? <Zap className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
-                  {speed === "fast" ? "Rapide" : "Qualit\u00e9"}
+                  {speed === "fast" ? "Rapide" : "Qualité"}
                 </button>
                 {/* Credits badge */}
                 <AiCreditsBadge />
@@ -296,7 +296,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  {statusMsg || "R\u00e9flexion en cours..."}
+                  {statusMsg || "Réflexion en cours..."}
                 </motion.p>
               </div>
             )}

@@ -4,10 +4,10 @@ import { useCanvasStore } from "@/store/canvas-store";
 import { Check, Loader2, AlertCircle, Cloud } from "lucide-react";
 
 const statusConfig = {
-  saved: { icon: "cloud", label: "Sauvegard\u00e9", color: "var(--text-faint)" },
+  saved: { icon: "cloud", label: "Sauvegardé", color: "var(--text-faint)" },
   saving: { icon: "loader", label: "Sauvegarde...", color: "var(--text-muted)" },
-  error: { icon: "alert", label: "Non sauvegard\u00e9", color: "#EF4444" },
-  unsaved: { icon: "dot", label: "Modifi\u00e9", color: "var(--text-muted)" },
+  error: { icon: "alert", label: "Non sauvegardé", color: "#EF4444" },
+  unsaved: { icon: "dot", label: "Modifié", color: "var(--text-muted)" },
 } as const;
 
 export default function SaveStatusBadge() {
@@ -61,7 +61,7 @@ export default function SaveStatusBadge() {
         onClick={() => useCanvasStore.setState({ saveStatus: "unsaved", pendingSave: true })}
         className="flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs transition-colors duration-150 hover:bg-red-500/10"
         style={{ color: config.color }}
-        title={saveError || "Erreur de sauvegarde \u2014 cliquer pour r\u00e9essayer"}
+        title={saveError || "Erreur de sauvegarde — cliquer pour réessayer"}
       >
         {inner}
       </button>

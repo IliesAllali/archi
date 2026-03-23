@@ -39,7 +39,7 @@ export default function AiCreditsBadge({ className = "", onByokActive }: Props) 
       <div
         className={`flex items-center gap-1 px-2 py-1 rounded-md text-2xs ${className}`}
         style={{ color: "var(--text-faint)" }}
-        title="Cl\u00e9 API personnelle active"
+        title="Clé API personnelle active"
       >
         <Key className="w-3 h-3" />
         <span>BYOK</span>
@@ -70,7 +70,7 @@ export default function AiCreditsBadge({ className = "", onByokActive }: Props) 
           ? "#eab308"
           : "var(--accent)",
       }}
-      title={`${remaining}/${total} cr\u00e9dits IA restants`}
+      title={`${remaining}/${total} crédits IA restants`}
     >
       <Sparkles className="w-3 h-3" />
       <span>{remaining}/{total}</span>

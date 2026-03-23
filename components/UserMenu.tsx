@@ -83,7 +83,7 @@ export default function UserMenu() {
                 <div className="flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3" style={{ color: credits.creditsRemaining <= 0 ? "#ef4444" : credits.creditsRemaining <= 3 ? "#eab308" : "var(--accent)" }} />
                   <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
-                    {credits.creditsRemaining} cr{"\u00E9"}dit{credits.creditsRemaining !== 1 ? "s" : ""} IA
+                    {credits.creditsRemaining} crédit{credits.creditsRemaining !== 1 ? "s" : ""} IA
                   </span>
                 </div>
                 <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
