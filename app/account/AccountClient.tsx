@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X } from "lucide-react"
+import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown } from "lucide-react"
+import { motion } from "framer-motion"
 import Logo from "@/components/Logo"
 
 function getCsrfToken(): string | null {
@@ -13,6 +14,7 @@ function getCsrfToken(): string | null {
 
 interface UserData { id: string; name: string; email: string; color: string; avatar: string | null; role: string }
 interface ApiKey { id: string; provider: string; key_hint: string; label: string | null; created_at: number }
+interface Credits { creditsTotal: number; creditsUsed: number; creditsRemaining: number }
 
 const PROVIDERS = [
   { id: "openai", label: "OpenAI", placeholder: "sk-...", url: "https://platform.openai.com/api-keys" },
@@ -28,6 +30,7 @@ const AVATAR_COLORS = [
 export default function AccountClient() {
   const [user, setUser] = useState<UserData | null>(null)
   const [keys, setKeys] = useState<ApiKey[]>([])
+  const [credits, setCredits] = useState<Credits | null>(null)
   const [loading, setLoading] = useState(true)
 
   // API key form
@@ -65,11 +68,13 @@ export default function AccountClient() {
       fetch("/api/me").then(r => r.json()),
       fetch("/api/me/api-keys").then(r => r.json()),
       fetch("/api/demo").then(r => r.json()).catch(() => ({ exists: false })),
-    ]).then(([u, k, d]) => {
+      fetch("/api/me/ai-credits").then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([u, k, d, c]) => {
       setUser(u)
       setKeys(Array.isArray(k) ? k : [])
       setNameValue(u?.name || "")
       setHasDemo(!!d?.exists)
+      setCredits(c)
     }).finally(() => setLoading(false))
   }, [])
 
@@ -318,6 +323,101 @@ export default function AccountClient() {
             </div>
           </section>
         )}
+
+        {/* ─── Plan & AI ────────────────────────────────────── */}
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Plan & IA</h3>
+          <div className="p-4 rounded-lg space-y-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+            {/* Current plan */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--accent-muted)" }}>
+                  <Crown className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Free</p>
+                  <p className="text-2xs" style={{ color: "var(--text-faint)" }}>3 projets, watermark</p>
+                </div>
+              </div>
+              <span
+                className="px-2 py-0.5 rounded-full text-2xs font-medium"
+                style={{ background: "var(--accent-muted)", color: "var(--accent)" }}
+              >
+                Actif
+              </span>
+            </div>
+
+            {/* AI Credits */}
+            {credits && (() => {
+              const remaining = credits.creditsRemaining
+              const total = credits.creditsTotal
+              const pct = total > 0 ? (remaining / total) * 100 : 0
+              const isEmpty = remaining <= 0
+              const isLow = remaining <= 3 && remaining > 0
+              const barColor = isEmpty ? "#ef4444" : isLow ? "#eab308" : "var(--accent)"
+              const barBg = isEmpty ? "rgba(239,68,68,0.1)" : isLow ? "rgba(234,179,8,0.1)" : "var(--accent-muted)"
+
+              return (
+                <div className="space-y-2.5" style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5" style={{ color: barColor }} />
+                      <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                        {remaining} cr{"\u00E9"}dit{remaining !== 1 ? "s" : ""} IA restant{remaining !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
+                      {remaining}/{total}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "rgba(128,128,128,0.12)" }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: barColor }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  {/* Cost legend */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <Zap className="w-2.5 h-2.5" style={{ color: "#f59e0b" }} />
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Rapide = 1 cr{"\u00E9"}dit</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>Qualit{"\u00E9"} = 3 cr{"\u00E9"}dits</span>
+                    </div>
+                  </div>
+
+                  {/* Empty state */}
+                  {isEmpty && (
+                    <p className="text-2xs" style={{ color: "#ef4444" }}>
+                      Cr{"\u00E9"}dits {"\u00E9"}puis{"\u00E9"}s. Ajoute ta cl{"\u00E9"} API perso ci-dessous pour continuer.
+                    </p>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* BYOK status */}
+            {keys.length > 0 && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-md"
+                style={{ background: "rgba(46,160,67,0.08)", border: "1px solid rgba(46,160,67,0.2)" }}
+              >
+                <Key className="w-3 h-3" style={{ color: "#2ea043" }} />
+                <span className="text-2xs" style={{ color: "#2ea043" }}>
+                  Cl{"\u00E9"} API perso active ({keys.length}) — cr{"\u00E9"}dits non consomm{"\u00E9"}s
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* ─── Password ────────────────────────────────────── */}
         <section className="space-y-3">

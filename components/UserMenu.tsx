@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, Settings } from "lucide-react"
+import { LogOut, Settings, Sparkles } from "lucide-react"
 import { resetUser } from "@/lib/posthog"
 
 interface UserData {
@@ -14,14 +14,22 @@ interface UserData {
   role: string
 }
 
+interface Credits {
+  creditsTotal: number
+  creditsUsed: number
+  creditsRemaining: number
+}
+
 export default function UserMenu() {
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
+  const [credits, setCredits] = useState<Credits | null>(null)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch("/api/me").then(r => r.ok ? r.json() : null).then(setUser)
+    fetch("/api/me/ai-credits").then(r => r.ok ? r.json() : null).then(setCredits).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -68,6 +76,32 @@ export default function UserMenu() {
             <p className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>{user.name}</p>
             <p className="text-2xs truncate" style={{ color: "var(--text-faint)" }}>{user.email}</p>
           </div>
+
+          {credits && (
+            <div className="px-3 py-2" style={{ borderBottom: "1px solid var(--line)" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3" style={{ color: credits.creditsRemaining <= 0 ? "#ef4444" : credits.creditsRemaining <= 3 ? "#eab308" : "var(--accent)" }} />
+                  <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
+                    {credits.creditsRemaining} cr{"\u00E9"}dit{credits.creditsRemaining !== 1 ? "s" : ""} IA
+                  </span>
+                </div>
+                <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
+                  {credits.creditsRemaining}/{credits.creditsTotal}
+                </span>
+              </div>
+              {/* Mini bar */}
+              <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: "rgba(128,128,128,0.12)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${credits.creditsTotal > 0 ? (credits.creditsRemaining / credits.creditsTotal) * 100 : 0}%`,
+                    background: credits.creditsRemaining <= 0 ? "#ef4444" : credits.creditsRemaining <= 3 ? "#eab308" : "var(--accent)",
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="py-1">
             <button
