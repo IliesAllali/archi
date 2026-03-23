@@ -74,6 +74,16 @@ function createDb(): Database.Database {
       db.exec("ALTER TABLE comments ADD COLUMN offset_y REAL DEFAULT 0")
       db.exec("ALTER TABLE comments ADD COLUMN parent_id TEXT")
     }
+
+    // AI credits table (discovery quota for new users)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS ai_credits (
+        user_id         TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        credits_total   INTEGER NOT NULL DEFAULT 20,
+        credits_used    INTEGER NOT NULL DEFAULT 0,
+        created_at      INTEGER NOT NULL
+      );
+    `)
   } catch {
     // Migrations may fail at build time (no full schema) — that's OK
   }

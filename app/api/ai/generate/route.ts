@@ -5,6 +5,7 @@ import { db, saveSnapshot } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 import { sanitizeText } from "@/lib/sanitize";
+import { checkCredits, deductCredits, getServerAiKey } from "@/lib/ai-credits";
 
 export const dynamic = "force-dynamic"
 
@@ -32,9 +33,31 @@ export async function POST(req: NextRequest) {
   const speed: AiSpeed = VALID_SPEEDS.includes(rawSpeed as AiSpeed)
     ? (rawSpeed as AiSpeed) : "fast";
 
-  if (!prompt || !apiKey) {
+  if (!prompt) {
     return NextResponse.json(
-      { error: "prompt and apiKey are required" },
+      { error: "prompt is required" },
+      { status: 400 }
+    );
+  }
+
+  // Determine which API key to use
+  const useCredits = apiKey === "arbo_credits"
+  let resolvedApiKey = apiKey || ""
+
+  if (useCredits) {
+    const serverKey = getServerAiKey()
+    if (!serverKey) {
+      return NextResponse.json(
+        { error: "Les cr\u00e9dits IA ne sont pas disponibles sur cette instance." },
+        { status: 503 }
+      );
+    }
+    resolvedApiKey = serverKey
+  }
+
+  if (!resolvedApiKey) {
+    return NextResponse.json(
+      { error: "apiKey is required" },
       { status: 400 }
     );
   }
@@ -50,6 +73,17 @@ export async function POST(req: NextRequest) {
   const payload = await verifyAccessToken(token);
   if (!payload) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check AI credits if using server key
+  if (useCredits) {
+    const credits = checkCredits(payload.sub, speed);
+    if (!credits.canUse) {
+      return NextResponse.json(
+        { error: `Cr\u00e9dits IA \u00e9puis\u00e9s (${credits.remaining} restants). Ajoute ta propre cl\u00e9 API dans les param\u00e8tres.` },
+        { status: 402 }
+      );
+    }
   }
 
   // Rate limit
@@ -96,7 +130,7 @@ export async function POST(req: NextRequest) {
           }
         };
 
-        const result = await generateSitemap(apiKey, prompt, provider, speed, onChunk);
+        const result = await generateSitemap(resolvedApiKey, prompt, useCredits ? "anthropic" : provider, speed, onChunk);
 
         // Phase 2: creating project
         send("status", { phase: "creating", message: `${result.nodes.length} pages g\u00e9n\u00e9r\u00e9es, cr\u00e9ation du projet...` });
@@ -186,6 +220,11 @@ export async function POST(req: NextRequest) {
 
         // Save version snapshot
         saveSnapshot(projectId, "ai_generate", aiLabel, "ai");
+
+        // Deduct AI credits if using server key
+        if (useCredits) {
+          deductCredits(payload.sub, speed);
+        }
 
         // Phase 4: done
         send("done", { projectId, slug, nodeCount: result.nodes.length });

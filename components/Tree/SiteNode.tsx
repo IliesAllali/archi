@@ -111,10 +111,12 @@ export function getCardHeight(type: string, label = "", zoningExpanded?: boolean
   const resolved = resolveExpandedSections(type, zoningExpanded, zoningBlocks);
   if (resolved?.blocks) return blocksHeight(resolved.blocks);
   if (resolved?.sections) return sectionsHeight(resolved.sections);
+  // Compact card: estimate line count from label length
+  // font-size 11px in ~72px usable width ≈ ~9 chars per line
   const usablePx = CARD_WIDTH - 38;
-  const charsPerLine = Math.max(1, Math.floor(usablePx / 8));
-  const lines = Math.max(1, Math.ceil((label || " ").length / charsPerLine));
-  return 9 + lines * 17 + 9;
+  const charsPerLine = Math.max(1, Math.floor(usablePx / 7));
+  const lines = Math.min(3, Math.max(1, Math.ceil((label || " ").length / charsPerLine)));
+  return 9 + lines * 15 + 9;
 }
 
 /* ─── Wireframe skin components ─── */
@@ -662,7 +664,7 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
         )}
         style={{
           width: cardW,
-          ...(showExpanded ? { height: cardH } : {}),
+          height: cardH,
           background: isDropTarget ? "var(--accent-muted)" : "var(--card-bg)",
           boxShadow: isDropTarget
             ? `0 0 0 2px var(--accent), 0 6px 24px rgba(0,0,0,0.18)`
@@ -694,12 +696,20 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
             <InlineLabelEditor nodeId={id} initialLabel={data.label} />
           ) : (
             <p
-              className="font-bold flex-1"
+              className={cn("font-bold flex-1 min-w-0", showExpanded && "truncate")}
               style={{
-                fontSize: "13px",
-                lineHeight: "18px",
+                fontSize: showExpanded ? "13px" : "11px",
+                lineHeight: showExpanded ? "18px" : "15px",
                 color: selected ? "var(--title-selected)" : "var(--title-color)",
+                ...(!showExpanded ? {
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                  wordBreak: "break-word" as const,
+                } : {}),
               }}
+              title={data.label}
             >
               {data.label}
             </p>

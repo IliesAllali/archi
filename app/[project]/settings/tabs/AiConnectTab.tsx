@@ -1,8 +1,17 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Copy, Check, Plus, Loader2, Trash2, Key, Sparkles, ClipboardPaste, Terminal, Upload, AlertTriangle } from "lucide-react"
+import { Copy, Check, Plus, Loader2, Trash2, Key, Sparkles, ClipboardPaste, Terminal, Upload, AlertTriangle, Zap } from "lucide-react"
 import { Events } from "@/lib/posthog"
+import {
+  AI_PROVIDERS,
+  getStoredProvider,
+  storeProvider,
+  getStoredApiKey,
+  storeApiKey as storeProviderApiKey,
+  getProviderConfig,
+} from "@/lib/ai-providers"
+import type { AiProvider } from "@/lib/ai-providers"
 
 interface Token {
   id: string
@@ -17,19 +26,10 @@ function getCsrfToken(): string | null {
   return match ? match[1] : null
 }
 
-function getStoredApiKey(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("arbo_anthropic_key") || ""
-}
-
-function storeApiKey(key: string) {
-  if (typeof window === "undefined") return
-  if (key.trim()) localStorage.setItem("arbo_anthropic_key", key.trim())
-  else localStorage.removeItem("arbo_anthropic_key")
-}
+// Local key helpers removed — now using centralized ai-providers imports
 
 export default function AiConnectTab({ projectId }: { projectId: string }) {
-  const [section, setSection] = useState<"builtin" | "mcp" | "copypaste">("builtin")
+  const [section, setSection] = useState<"builtin" | "byok" | "mcp" | "copypaste">("builtin")
 
   // MCP state
   const [tokens, setTokens] = useState<Token[]>([])
@@ -42,8 +42,12 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
   const [activeTab, setActiveTab] = useState<"claude" | "claude-code" | "cursor" | "chatgpt">("claude")
 
   // BYOK state
-  const [anthropicKey, setAnthropicKey] = useState("")
+  const [byokProvider, setByokProvider] = useState<AiProvider>("anthropic")
+  const [byokKey, setByokKey] = useState("")
   const [keySaved, setKeySaved] = useState(false)
+
+  // Credits state
+  const [credits, setCredits] = useState<{ creditsTotal: number; creditsUsed: number; creditsRemaining: number } | null>(null)
 
   // Copy-paste state
   const [copyPromptText, setCopyPromptText] = useState("")
@@ -62,7 +66,14 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
   }, [projectId])
 
   useEffect(() => {
-    setAnthropicKey(getStoredApiKey())
+    const p = getStoredProvider()
+    setByokProvider(p)
+    setByokKey(getStoredApiKey(p))
+    // Fetch credits
+    fetch("/api/me/ai-credits")
+      .then(r => r.json())
+      .then(data => setCredits(data))
+      .catch(() => {})
   }, [])
 
   // Build copy prompt when section changes to copypaste
@@ -147,9 +158,16 @@ Ma demande : `
   }
 
   const handleSaveKey = () => {
-    storeApiKey(anthropicKey)
+    storeProviderApiKey(byokKey, byokProvider)
     setKeySaved(true)
     setTimeout(() => setKeySaved(false), 2000)
+  }
+
+  const handleByokProviderChange = (p: AiProvider) => {
+    setByokProvider(p)
+    storeProvider(p)
+    setByokKey(getStoredApiKey(p))
+    setKeySaved(false)
   }
 
   const handleImportJson = async () => {
@@ -214,8 +232,11 @@ Ma demande : `
     { id: "chatgpt" as const, label: "ChatGPT" },
   ]
 
+  const byokProviderConfig = getProviderConfig(byokProvider)
+
   const sections = [
-    { id: "builtin" as const, icon: Sparkles, label: "IA intégrée", desc: "Clé API Anthropic (BYOK)" },
+    { id: "builtin" as const, icon: Zap, label: "Cr\u00e9dits IA", desc: "Quota offert" },
+    { id: "byok" as const, icon: Key, label: "Cl\u00e9 API perso", desc: "Anthropic, OpenAI, Mistral" },
     { id: "mcp" as const, icon: Terminal, label: "Serveur MCP", desc: "Claude Desktop, Cursor, etc." },
     { id: "copypaste" as const, icon: ClipboardPaste, label: "Copier-coller", desc: "ChatGPT, autre IA" },
   ]
@@ -257,30 +278,109 @@ Ma demande : `
         })}
       </div>
 
-      {/* ─── Section: Built-in AI (BYOK) ─────────────────────────────────── */}
+      {/* ─── Section: AI Credits ─────────────────────────────────────────── */}
       {section === "builtin" && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg space-y-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+            <div>
+              <h4 className="text-xs font-medium mb-1" style={{ color: "var(--text-primary)" }}>
+                Cr&eacute;dits IA
+              </h4>
+              <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
+                Chaque compte re&ccedil;oit des cr&eacute;dits gratuits pour tester l&apos;IA. 1 g&eacute;n&eacute;ration rapide = 1 cr&eacute;dit, 1 g&eacute;n&eacute;ration qualit&eacute; = 3 cr&eacute;dits.
+              </p>
+            </div>
+
+            {credits && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                    {credits.creditsRemaining}/{credits.creditsTotal} cr&eacute;dits restants
+                  </span>
+                  <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                    {credits.creditsUsed} utilis&eacute;(s)
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${credits.creditsTotal > 0 ? (credits.creditsRemaining / credits.creditsTotal) * 100 : 0}%`,
+                      background: credits.creditsRemaining <= 3 ? (credits.creditsRemaining <= 0 ? "#ef4444" : "#eab308") : "var(--accent)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 rounded-lg space-y-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+            <h4 className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+              Comment &ccedil;a marche ?
+            </h4>
+            <ul className="text-2xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
+              <li>1. &Agrave; la cr&eacute;ation d&apos;un projet, choisis &laquo; G&eacute;n&eacute;rer avec l&apos;IA &raquo;</li>
+              <li>2. Sur le canvas, utilise <kbd className="px-1 py-0.5 rounded text-2xs font-mono" style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}>Ctrl+I</kbd> pour modifier l&apos;arbre</li>
+              <li>3. Quand tes cr&eacute;dits sont &eacute;puis&eacute;s, ajoute ta propre cl&eacute; API (onglet &laquo; Cl&eacute; API perso &raquo;)</li>
+            </ul>
+          </div>
+
+          <div className="p-3 rounded-lg text-2xs" style={{ background: "var(--accent-muted)", border: "1px solid var(--accent-strong)", color: "var(--text-muted)" }}>
+            <strong style={{ color: "var(--accent)" }}>Bient&ocirc;t :</strong> Abonnement Pro pour un quota IA mensuel illimit&eacute;, sans cl&eacute; API.
+          </div>
+        </div>
+      )}
+
+      {/* ─── Section: BYOK (Bring Your Own Key) ───────────────────────────── */}
+      {section === "byok" && (
         <div className="space-y-4">
           <div className="p-4 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
             <div>
               <h4 className="text-xs font-medium mb-1" style={{ color: "var(--text-primary)" }}>
-                Clé API Anthropic
+                Cl&eacute; API personnelle
               </h4>
               <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                Ta clé est stockée uniquement dans ton navigateur. Elle n&apos;est jamais envoyée à nos serveurs, seulement utilisée pour appeler Claude directement.
+                Utilise ta propre cl&eacute; API pour des g&eacute;n&eacute;rations illimit&eacute;es. Ta cl&eacute; reste dans ton navigateur, jamais stock&eacute;e sur nos serveurs.
               </p>
             </div>
+
+            {/* Provider selector */}
+            <div>
+              <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
+                Fournisseur
+              </label>
+              <div className="flex gap-1.5">
+                {AI_PROVIDERS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleByokProviderChange(p.id)}
+                    className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
+                    style={{
+                      background: byokProvider === p.id ? "var(--accent)" : "var(--elevated)",
+                      color: byokProvider === p.id ? "#fff" : "var(--text-secondary)",
+                      border: `1px solid ${byokProvider === p.id ? "var(--accent)" : "var(--line-strong)"}`,
+                    }}
+                  >
+                    {p.label.split(" (")[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Key input */}
             <div className="flex gap-2">
               <input
                 type="password"
-                value={anthropicKey}
-                onChange={(e) => { setAnthropicKey(e.target.value); setKeySaved(false) }}
-                placeholder="sk-ant-..."
+                value={byokKey}
+                onChange={(e) => { setByokKey(e.target.value); setKeySaved(false) }}
+                placeholder={byokProviderConfig.placeholder}
                 className="flex-1 h-9 px-3 rounded-lg text-xs font-mono focus:outline-none"
                 style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
               />
               <button
                 onClick={handleSaveKey}
-                disabled={!anthropicKey.trim()}
+                disabled={!byokKey.trim()}
                 className="px-4 h-9 rounded-lg text-xs font-medium transition-all disabled:opacity-40"
                 style={{
                   background: keySaved ? "#16a34a" : "var(--accent)",
@@ -292,30 +392,19 @@ Ma demande : `
             </div>
             <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
               <a
-                href="https://console.anthropic.com/settings/keys"
+                href={byokProviderConfig.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
                 style={{ color: "var(--accent)" }}
               >
-                Obtenir une clé sur console.anthropic.com
+                Obtenir une cl&eacute; sur {byokProviderConfig.url.replace("https://", "").split("/")[0]}
               </a>
             </p>
           </div>
 
-          <div className="p-4 rounded-lg space-y-2" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-            <h4 className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-              Comment ça marche ?
-            </h4>
-            <ul className="text-2xs space-y-1.5" style={{ color: "var(--text-muted)" }}>
-              <li>1. Entre ta clé API Anthropic ci-dessus</li>
-              <li>2. À la création d&apos;un projet, choisis &laquo; Générer avec l&apos;IA &raquo;</li>
-              <li>3. Sur le canvas, utilise <kbd className="px-1 py-0.5 rounded text-2xs font-mono" style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}>Ctrl+I</kbd> pour modifier l&apos;arbre avec l&apos;IA</li>
-            </ul>
-          </div>
-
-          <div className="p-3 rounded-lg text-2xs" style={{ background: "var(--accent-muted)", border: "1px solid var(--accent-strong)", color: "var(--text-muted)" }}>
-            <strong style={{ color: "var(--accent)" }}>Bientôt :</strong> Un abonnement mensuel pour utiliser l&apos;IA sans clé API, directement intégrée.
+          <div className="p-3 rounded-lg text-2xs" style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-muted)" }}>
+            Quand une cl&eacute; est configur&eacute;e, elle est utilis&eacute;e automatiquement &agrave; la place des cr&eacute;dits. Tes cr&eacute;dits ne sont pas consomm&eacute;s.
           </div>
         </div>
       )}

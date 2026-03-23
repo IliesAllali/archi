@@ -4,19 +4,17 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, ChevronDown, Zap, Gem, Plus } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, Zap, Gem, Plus } from "lucide-react"
 import { Events } from "@/lib/posthog"
 import {
-  AI_PROVIDERS,
   getStoredProvider,
-  storeProvider,
   getStoredApiKey,
   storeApiKey,
-  getProviderConfig,
   getStoredSpeed,
   storeSpeed,
 } from "@/lib/ai-providers"
-import type { AiProvider, AiSpeed } from "@/lib/ai-providers"
+import type { AiSpeed } from "@/lib/ai-providers"
+import AiCreditsBadge from "./AiCreditsBadge"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -41,9 +39,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
   // AI mode state
   const [aiPrompt, setAiPrompt] = useState("")
   const [aiProjectName, setAiProjectName] = useState("")
-  const [provider, setProviderState] = useState<AiProvider>("anthropic")
-  const [apiKey, setApiKey] = useState("")
-  const [showKeyInput, setShowKeyInput] = useState(false)
   const [speed, setSpeedState] = useState<AiSpeed>("fast")
   const [aiStep, setAiStep] = useState<"prompt" | "generating">("prompt")
   const [aiStatus, setAiStatus] = useState("")
@@ -58,17 +53,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
     }
   }, [aiActions.length])
 
-  const providerConfig = getProviderConfig(provider)
-
-  const handleProviderChange = (p: AiProvider) => {
-    setProviderState(p)
-    storeProvider(p)
-    const key = getStoredApiKey(p)
-    setApiKey(key)
-    setShowKeyInput(!key)
-    setError("")
-  }
-
   useEffect(() => {
     if (open) {
       setMode("choice")
@@ -81,12 +65,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setAiStep("prompt")
       setAiStatus("")
       setAiActions([])
-      const p = getStoredProvider()
-      setProviderState(p)
       setSpeedState(getStoredSpeed())
-      const stored = getStoredApiKey(p)
-      setApiKey(stored)
-      setShowKeyInput(!stored)
     }
   }, [open])
 
@@ -120,7 +99,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       } else if (res.status === 401 || res.status === 403) {
         router.push("/login?redirect=/")
       } else {
-        setError("Erreur lors de la création")
+        setError("Erreur lors de la cr\u00e9ation")
       }
     } catch {
       setError("Erreur de connexion")
@@ -132,10 +111,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
   // ─── AI generate ──────────────────────────────────────────────────────────
 
   const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) { setError("Décris ton site"); return }
-    if (!apiKey.trim()) { setError("Clé API requise"); setShowKeyInput(true); return }
+    if (!aiPrompt.trim()) { setError("D\u00e9cris ton site"); return }
 
-    storeApiKey(apiKey, provider)
+    // Use BYOK key if available, otherwise server credits
+    const provider = getStoredProvider()
+    const byokKey = getStoredApiKey(provider)
+    const resolvedKey = byokKey || "arbo_credits"
+
     setLoading(true)
     setError("")
     setAiStep("generating")
@@ -152,17 +134,21 @@ export default function NewProjectModal({ open, onClose }: Props) {
         headers,
         body: JSON.stringify({
           prompt: aiPrompt.trim(),
-          apiKey: apiKey.trim(),
+          apiKey: resolvedKey,
           projectName: aiProjectName.trim() || undefined,
-          provider,
+          provider: byokKey ? provider : "anthropic",
           speed,
         }),
       })
 
       if (!res.ok) {
-        // Pre-stream errors (auth, rate limit) still return JSON
         const data = await res.json().catch(() => ({}))
-        setError(data.error || "Erreur de connexion au serveur")
+        // If credits exhausted, guide user
+        if (res.status === 402) {
+          setError("Cr\u00e9dits \u00e9puis\u00e9s. Ajoute ta cl\u00e9 API dans Param\u00e8tres > IA pour continuer.")
+        } else {
+          setError(data.error || "Erreur de connexion au serveur")
+        }
         setAiStep("prompt")
         setLoading(false)
         return
@@ -193,12 +179,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
               if (currentEvent === "status") {
                 setAiStatus(data.message)
               } else if (currentEvent === "stream_node") {
-                // Live node appearing from streaming
                 setAiActions(prev => [...prev, { label: data.label, index: data.count, total: 0 }])
-                setAiStatus(`${data.count} page(s) détectée(s)...`)
+                setAiStatus(`${data.count} page(s) d\u00e9tect\u00e9e(s)...`)
               } else if (currentEvent === "action") {
                 setAiActions(prev => [...prev, { label: data.label, index: data.index, total: data.total }])
-                setAiStatus(`${data.index}/${data.total} pages créées`)
+                setAiStatus(`${data.index}/${data.total} pages cr\u00e9\u00e9es`)
               } else if (currentEvent === "done") {
                 Events.projectCreated(false)
                 router.push(`/${data.projectId}`)
@@ -256,7 +241,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "Générer avec l\’IA" : "Projet vide"}
+                {mode === "choice" ? "Nouveau projet" : mode === "ai" ? "G\u00e9n\u00e9rer avec l'IA" : "Projet vide"}
               </h3>
               <button
                 onClick={onClose}
@@ -288,10 +273,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                        Générer avec l&apos;IA
+                        G&eacute;n&eacute;rer avec l&apos;IA
                       </p>
                       <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
-                        Décris ton site, l&apos;IA crée l&apos;arborescence
+                        D&eacute;cris ton site, l&apos;IA cr&eacute;e l&apos;arborescence
                       </p>
                     </div>
                     <ArrowRight className="w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--text-faint)" }} />
@@ -373,7 +358,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       {/* Pages appearing live */}
                       {aiActions.length > 0 && (
                         <div className="w-full space-y-2">
-                          {/* Progress header */}
                           <div className="flex items-center justify-between mb-1">
                             <p className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
                               {aiStatus || `${aiActions.length} pages`}
@@ -384,7 +368,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
                               </p>
                             )}
                           </div>
-                          {/* Progress bar — determinate if total known, indeterminate pulse otherwise */}
                           <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
                             {aiActions[aiActions.length - 1]?.total > 0 ? (
                               <motion.div
@@ -404,7 +387,6 @@ export default function NewProjectModal({ open, onClose }: Props) {
                             )}
                           </div>
 
-                          {/* Page list */}
                           <div ref={actionsListRef} className="flex flex-col gap-1 max-h-[160px] overflow-y-auto mt-2 pr-1">
                             <AnimatePresence>
                               {aiActions.map((a, i) => (
@@ -458,13 +440,13 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       {/* Prompt */}
                       <div>
                         <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
-                          Décris ton site
+                          D&eacute;cris ton site
                         </label>
                         <textarea
                           ref={promptRef}
                           value={aiPrompt}
                           onChange={(e) => { setAiPrompt(e.target.value); if (error) setError("") }}
-                          placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fidélité et click & collect"
+                          placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fid&eacute;lit&eacute; et click & collect"
                           rows={3}
                           className="w-full px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none"
                           style={inputStyle}
@@ -472,96 +454,30 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
                           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAiGenerate() }}
                         />
-                        <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-                          Ctrl+Enter pour générer
-                        </p>
                       </div>
 
-                      {/* Provider + Speed selector */}
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                            Fournisseur IA
-                          </label>
-                          <div className="flex gap-1.5">
-                            {AI_PROVIDERS.map((p) => (
-                              <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => handleProviderChange(p.id)}
-                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150"
-                                style={{
-                                  background: provider === p.id ? "var(--accent)" : "var(--surface)",
-                                  color: provider === p.id ? "#fff" : "var(--text-secondary)",
-                                  border: `1px solid ${provider === p.id ? "var(--accent)" : "var(--line-strong)"}`,
-                                }}
-                              >
-                                {p.label.split(" (")[0]}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="w-[130px] shrink-0">
-                          <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                            Vitesse
-                          </label>
-                          <div className="flex gap-1.5">
-                            {(["fast", "quality"] as const).map((s) => (
-                              <button
-                                key={s}
-                                type="button"
-                                onClick={() => { setSpeedState(s); storeSpeed(s) }}
-                                className="flex-1 h-9 rounded-lg text-2xs font-medium transition-all duration-150 flex items-center justify-center gap-1.5"
-                                style={{
-                                  background: speed === s ? "var(--accent)" : "var(--surface)",
-                                  color: speed === s ? "#fff" : "var(--text-secondary)",
-                                  border: `1px solid ${speed === s ? "var(--accent)" : "var(--line-strong)"}`,
-                                }}
-                              >
-                                {s === "fast" ? <><Zap className="w-3 h-3" /> Rapide</> : <><Gem className="w-3 h-3" /> Qualité</>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {showKeyInput ? (
-                        <div>
-                          <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
-                            Clé API {providerConfig.label.split(" (")[0]}
-                          </label>
-                          <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => { setApiKey(e.target.value); if (error) setError("") }}
-                            placeholder={providerConfig.placeholder}
-                            className="w-full h-9 px-3 rounded-lg text-xs font-mono focus:outline-none transition-all"
-                            style={inputStyle}
-                            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
-                            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
-                          />
-                          <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
-                            Stockée localement uniquement.{" "}
-                            <a
-                              href={providerConfig.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="underline"
-                              style={{ color: "var(--accent)" }}
+                      {/* Speed toggle + Credits badge — clean row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-1.5">
+                          {(["fast", "quality"] as const).map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => { setSpeedState(s); storeSpeed(s) }}
+                              className="h-8 px-3 rounded-lg text-2xs font-medium transition-all duration-150 flex items-center gap-1.5"
+                              style={{
+                                background: speed === s ? (s === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)") : "var(--surface)",
+                                color: speed === s ? (s === "fast" ? "#f59e0b" : "var(--accent)") : "var(--text-faint)",
+                                border: `1px solid ${speed === s ? (s === "fast" ? "rgba(245,158,11,0.3)" : "var(--accent-strong)") : "var(--line)"}`,
+                              }}
                             >
-                              Obtenir une clé
-                            </a>
-                          </p>
+                              {s === "fast" ? <><Zap className="w-3 h-3" /> Rapide</> : <><Gem className="w-3 h-3" /> Qualit&eacute;</>}
+                              {s === "quality" && <span className="text-2xs opacity-60">3x</span>}
+                            </button>
+                          ))}
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowKeyInput(true)}
-                          className="text-2xs transition-colors"
-                          style={{ color: "var(--text-faint)" }}
-                        >
-                          Changer la clé API
-                        </button>
-                      )}
+                        <AiCreditsBadge />
+                      </div>
 
                       {error && (
                         <p className="text-2xs" style={{ color: "var(--error-text)" }}>{error}</p>
@@ -587,9 +503,14 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           ) : (
                             <Wand2 className="w-3.5 h-3.5" />
                           )}
-                          Générer l&apos;arborescence
+                          G&eacute;n&eacute;rer l&apos;arborescence
                         </button>
                       </div>
+
+                      {/* Subtle hint about BYOK */}
+                      <p className="text-2xs text-center pt-1" style={{ color: "var(--text-faint)" }}>
+                        Ctrl+Enter pour g&eacute;n&eacute;rer &middot; Cl&eacute; API perso dans Param&egrave;tres &gt; IA
+                      </p>
                     </>
                   )}
                 </div>
@@ -657,7 +578,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       ) : (
                         <FileText className="w-3.5 h-3.5" />
                       )}
-                      Créer le projet
+                      Cr&eacute;er le projet
                     </button>
                   </div>
                 </div>

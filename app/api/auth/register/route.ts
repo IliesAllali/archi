@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
      VALUES (?, ?, ?, ?, ?, '#F76B15', ?, ?, ?)`
   ).run(userId, email, autoVerify, passwordHash, name, role, now, now)
 
+  // Give new user free AI credits (discovery quota)
+  db.prepare(
+    `INSERT INTO ai_credits (user_id, credits_total, credits_used, created_at) VALUES (?, 20, 0, ?)`
+  ).run(userId, now)
+
   // If auto-verified (first user), log them in directly
   if (autoVerify) {
     const res = NextResponse.json({

@@ -5,6 +5,7 @@ import { db, getActiveNodes, saveSnapshot } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
+import { checkCredits, deductCredits, getServerAiKey } from "@/lib/ai-credits";
 
 export const dynamic = "force-dynamic"
 
@@ -38,9 +39,31 @@ export async function POST(req: NextRequest) {
   const speed: AiSpeed = VALID_SPEEDS.includes(rawSpeed as AiSpeed)
     ? (rawSpeed as AiSpeed) : "fast";
 
-  if (!prompt || !apiKey || !projectId) {
+  if (!prompt || !projectId) {
     return NextResponse.json(
-      { error: "prompt, apiKey, and projectId are required" },
+      { error: "prompt and projectId are required" },
+      { status: 400 }
+    );
+  }
+
+  // Determine which API key to use
+  const useCredits = apiKey === "arbo_credits"
+  let resolvedApiKey = apiKey || ""
+
+  if (useCredits) {
+    const serverKey = getServerAiKey()
+    if (!serverKey) {
+      return NextResponse.json(
+        { error: "Les cr\u00e9dits IA ne sont pas disponibles sur cette instance." },
+        { status: 503 }
+      );
+    }
+    resolvedApiKey = serverKey
+  }
+
+  if (!resolvedApiKey) {
+    return NextResponse.json(
+      { error: "apiKey is required" },
       { status: 400 }
     );
   }
@@ -64,6 +87,17 @@ export async function POST(req: NextRequest) {
     .get(projectId, payload.sub) as { role: string } | undefined;
   if (!member) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Check AI credits if using server key
+  if (useCredits) {
+    const credits = checkCredits(payload.sub, speed);
+    if (!credits.canUse) {
+      return NextResponse.json(
+        { error: `Cr\u00e9dits IA \u00e9puis\u00e9s (${credits.remaining} restants). Ajoute ta propre cl\u00e9 API dans les param\u00e8tres.` },
+        { status: 402 }
+      );
+    }
   }
 
   // Rate limit
@@ -120,24 +154,26 @@ export async function POST(req: NextRequest) {
 
         // Call AI
         const result = await editSitemap(
-          apiKey, prompt,
+          resolvedApiKey, prompt,
           currentTree as { id: string; label: string; type: string; parent_id: string | null; children: string[] }[],
-          provider,
+          useCredits ? "anthropic" : provider,
           speed,
           conversationHistory,
           onChunk
         );
-        const aiLabel = getProviderLabel(provider);
+        const aiLabel = getProviderLabel(useCredits ? "anthropic" : provider);
 
         // Chat mode: AI answered a question instead of making modifications
         if (result.type === "chat") {
+          if (useCredits) deductCredits(payload.sub, speed);
           send("done", { summary: result.summary, total: 0, type: "chat" });
           controller.close();
           return;
         }
 
-        // Propose mode: return actions without applying them
+        // Propose mode: return actions without applying them (still costs credits — the AI call happened)
         if (proposeOnly) {
+          if (useCredits) deductCredits(payload.sub, speed);
           send("done", {
             summary: result.summary,
             total: result.actions.length,
@@ -283,6 +319,11 @@ export async function POST(req: NextRequest) {
 
         // Save version snapshot
         saveSnapshot(projectId as string, "ai_edit", aiLabel, "ai");
+
+        // Deduct AI credits if using server key
+        if (useCredits) {
+          deductCredits(payload.sub, speed);
+        }
 
         // Phase 3: done — send final tree
         const updatedNodes = getActiveNodes(projectId);

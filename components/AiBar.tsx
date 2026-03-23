@@ -2,19 +2,18 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Check, AlertTriangle, Settings, Zap, Gem } from "lucide-react";
+import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
   getStoredProvider,
   getStoredApiKey,
-  storeApiKey,
-  getProviderConfig,
   getStoredSpeed,
   storeSpeed,
 } from "@/lib/ai-providers";
-import type { AiProvider, AiSpeed } from "@/lib/ai-providers";
+import type { AiSpeed } from "@/lib/ai-providers";
 import type { ChatMessage } from "./AiChatPanel";
+import AiCreditsBadge from "./AiCreditsBadge";
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -37,9 +36,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
   const [success, setSuccess] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
-  const [needsKey, setNeedsKey] = useState(false);
-  const [keyInput, setKeyInput] = useState("");
-  const [provider, setProvider] = useState<AiProvider>("anthropic");
   const [speed, setSpeed] = useState<AiSpeed>("fast");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
@@ -64,24 +60,17 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
     if (open) {
       setError("");
       setSuccess("");
-      const p = getStoredProvider();
-      setProvider(p);
       setSpeed(getStoredSpeed());
-      const key = getStoredApiKey(p);
-      setNeedsKey(!key);
-      setKeyInput(key);
     }
   }, [open]);
 
   const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
 
-    const apiKey = getStoredApiKey(provider);
-    if (!apiKey) {
-      setNeedsKey(true);
-      setError("Cl\u00e9 API requise");
-      return;
-    }
+    // Use BYOK key if available, otherwise server credits
+    const provider = getStoredProvider();
+    const byokKey = getStoredApiKey(provider);
+    const apiKey = byokKey || "arbo_credits";
 
     const currentPrompt = prompt.trim();
     setLoading(true);
@@ -107,7 +96,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
           prompt: currentPrompt,
           apiKey,
           projectId,
-          provider,
+          provider: byokKey ? provider : "anthropic",
           speed,
           history,
         }),
@@ -116,10 +105,11 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("text/event-stream")) {
         const data = await res.json().catch(() => ({}));
-        if (res.status === 401 && data.error?.includes("Cl")) {
-          setNeedsKey(true);
+        if (res.status === 402) {
+          setError("Cr\u00e9dits \u00e9puis\u00e9s. Ajoute ta cl\u00e9 API dans Param\u00e8tres > IA.");
+        } else {
+          setError(data.error || "Erreur de modification");
         }
-        setError(data.error || "Erreur de modification");
         setLoading(false);
         return;
       }
@@ -154,7 +144,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                 setStatusMsg(`${data.index}/${data.index} ${data.type === "add" ? "+" : data.type === "delete" ? "-" : "\u270F"} ${data.label || data.id}`);
               } else if (currentEvent === "done") {
                 if (data.type === "chat") {
-                  // Chat response — push to sidebar conversation
                   const now = Date.now();
                   const userMsg: ChatMessage = {
                     id: `u-${now}`,
@@ -174,7 +163,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   setStatusMsg("");
                   Events.aiActionPerformed("chat", "built-in");
                 } else {
-                  // Edit — reload project
                   const projectRes = await fetch(`/api/projects/${projectId}`);
                   if (projectRes.ok) {
                     const project = await projectRes.json();
@@ -189,7 +177,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                 }
               } else if (currentEvent === "error") {
                 setError(data.error);
-                if (data.error?.includes("Cl")) setNeedsKey(true);
               }
             } catch { /* ignore parse errors */ }
             currentEvent = "";
@@ -202,16 +189,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, projectId, provider, speed, initProject, chatMessages, onChatMessage, onOpenChat]);
-
-  const handleSaveKey = () => {
-    if (!keyInput.trim()) return;
-    storeApiKey(keyInput, provider);
-    setNeedsKey(false);
-    setError("");
-  };
-
-  const providerConfig = getProviderConfig(provider);
+  }, [prompt, projectId, speed, initProject, chatMessages, onChatMessage, onOpenChat]);
 
   return (
     <>
@@ -270,11 +248,13 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                     color: speed === "fast" ? "#f59e0b" : "var(--accent)",
                     background: speed === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)",
                   }}
-                  title={speed === "fast" ? "Mode rapide (Haiku/Mini)" : "Mode qualité (Sonnet/GPT-4o)"}
+                  title={speed === "fast" ? "Mode rapide (1 cr\u00e9dit)" : "Mode qualit\u00e9 (3 cr\u00e9dits)"}
                 >
                   {speed === "fast" ? <Zap className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
-                  {speed === "fast" ? "Rapide" : "Qualité"}
+                  {speed === "fast" ? "Rapide" : "Qualit\u00e9"}
                 </button>
+                {/* Credits badge */}
+                <AiCreditsBadge />
                 {/* Chat history button */}
                 {chatMessages.length > 0 && (
                   <button
@@ -287,14 +267,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   </button>
                 )}
                 <button
-                  onClick={() => setNeedsKey((v) => !v)}
-                  className="p-1 rounded-md transition-colors"
-                  style={{ color: "var(--text-faint)" }}
-                  title="Cl\u00e9 API"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                </button>
-                <button
                   onClick={() => setOpen(false)}
                   className="p-1 rounded-md transition-colors"
                   style={{ color: "var(--text-faint)" }}
@@ -303,50 +275,6 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                 </button>
               </div>
             </div>
-
-            {/* API Key input (if needed) */}
-            {needsKey && (
-              <div className="px-3 sm:px-4 py-2.5 sm:py-3" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-                <label className="text-2xs font-medium block mb-1.5" style={{ color: "var(--text-muted)" }}>
-                  Cl&eacute; API {providerConfig.label.split(" (")[0]}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    value={keyInput}
-                    onChange={(e) => setKeyInput(e.target.value)}
-                    placeholder={providerConfig.placeholder}
-                    className="flex-1 h-8 px-3 rounded-lg text-2xs font-mono focus:outline-none"
-                    style={{
-                      background: "var(--elevated)",
-                      color: "var(--text-primary)",
-                      border: "1px solid var(--line-strong)",
-                    }}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveKey(); }}
-                  />
-                  <button
-                    onClick={handleSaveKey}
-                    disabled={!keyInput.trim()}
-                    className="px-3 h-8 rounded-lg text-2xs font-medium transition-all disabled:opacity-40"
-                    style={{ background: "var(--accent)", color: "#fff" }}
-                  >
-                    OK
-                  </button>
-                </div>
-                <p className="text-2xs mt-1.5" style={{ color: "var(--text-faint)" }}>
-                  Stock&eacute;e dans ton navigateur uniquement.{" "}
-                  <a
-                    href={providerConfig.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                    style={{ color: "var(--accent)" }}
-                  >
-                    Obtenir une cl&eacute;
-                  </a>
-                </p>
-              </div>
-            )}
 
             {/* Live status during AI processing */}
             {loading && (
@@ -368,7 +296,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  {statusMsg || "Réflexion en cours..."}
+                  {statusMsg || "R\u00e9flexion en cours..."}
                 </motion.p>
               </div>
             )}
