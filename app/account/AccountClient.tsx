@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown } from "lucide-react"
+import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown, HardDrive } from "lucide-react"
 import { motion } from "framer-motion"
 import Logo from "@/components/Logo"
+import { AI_PROVIDERS, getStoredApiKey, type AiProvider } from "@/lib/ai-providers"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -58,6 +59,9 @@ export default function AccountClient() {
   const [savingPw, setSavingPw] = useState(false)
   const [pwSaved, setPwSaved] = useState(false)
 
+  // Local BYOK keys (localStorage)
+  const [localKeys, setLocalKeys] = useState<{ provider: AiProvider; hint: string }[]>([])
+
   // Demo
   const [hasDemo, setHasDemo] = useState(false)
   const [deletingDemo, setDeletingDemo] = useState(false)
@@ -76,6 +80,16 @@ export default function AccountClient() {
       setHasDemo(!!d?.exists)
       setCredits(c)
     }).finally(() => setLoading(false))
+
+    // Detect localStorage BYOK keys
+    const detected: { provider: AiProvider; hint: string }[] = []
+    for (const p of AI_PROVIDERS) {
+      const k = getStoredApiKey(p.id)
+      if (k) {
+        detected.push({ provider: p.id, hint: k.slice(0, 6) + "..." + k.slice(-4) })
+      }
+    }
+    setLocalKeys(detected)
   }, [])
 
   const headers = (): Record<string, string> => {
@@ -405,14 +419,14 @@ export default function AccountClient() {
             })()}
 
             {/* BYOK status */}
-            {keys.length > 0 && (
+            {(localKeys.length > 0 || keys.length > 0) && (
               <div
                 className="flex items-center gap-2 px-3 py-2 rounded-md"
                 style={{ background: "rgba(46,160,67,0.08)", border: "1px solid rgba(46,160,67,0.2)" }}
               >
                 <Key className="w-3 h-3" style={{ color: "#2ea043" }} />
                 <span className="text-2xs" style={{ color: "#2ea043" }}>
-                  Cl{"\u00E9"} API perso active ({keys.length}) — cr{"\u00E9"}dits non consomm{"\u00E9"}s
+                  Cl{"\u00E9"} API perso active — cr{"\u00E9"}dits non consomm{"\u00E9"}s
                 </span>
               </div>
             )}
@@ -483,20 +497,60 @@ export default function AccountClient() {
         {/* ─── API Keys ────────────────────────────────────── */}
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Clés API</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Cl{"\u00E9"}s API</h3>
             <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-              Tes clés sont chiffrées et jamais partagées. Elles permettent à Arbo d{"'"}utiliser l{"'"}IA de ton choix.
+              Tes cl{"\u00E9"}s permettent {"\u00E0"} Arbo d{"'"}utiliser l{"'"}IA de ton choix. Les cl{"\u00E9"}s locales restent sur ce navigateur.
             </p>
           </div>
 
           {saved && (
             <div className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--success-text)" }}>
-              <Check className="w-3 h-3" /> Clé ajoutée
+              <Check className="w-3 h-3" /> Cl{"\u00E9"} ajout{"\u00E9"}e
             </div>
           )}
 
+          {/* Local BYOK keys (from localStorage) */}
+          {localKeys.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-2xs font-medium flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+                <HardDrive className="w-3 h-3" />
+                Cl{"\u00E9"}s locales (BYOK)
+              </p>
+              {localKeys.map(lk => (
+                <div key={lk.provider} className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: "var(--surface)", border: "1px solid rgba(46,160,67,0.25)" }}>
+                  <div className="flex items-center gap-2.5">
+                    <Key className="w-3.5 h-3.5" style={{ color: "#2ea043" }} />
+                    <div>
+                      <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                        {AI_PROVIDERS.find(p => p.id === lk.provider)?.label || lk.provider}
+                      </span>
+                      <span className="text-2xs ml-2 font-mono" style={{ color: "var(--text-faint)" }}>{lk.hint}</span>
+                    </div>
+                  </div>
+                  <span className="text-2xs px-1.5 py-0.5 rounded" style={{ background: "rgba(46,160,67,0.1)", color: "#2ea043" }}>
+                    active
+                  </span>
+                </div>
+              ))}
+              <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                G{"\u00E9"}r{"\u00E9"}e dans{" "}
+                <Link href="/" className="underline" style={{ color: "var(--accent)" }}>
+                  Param{"\u00E8"}tres &gt; IA
+                </Link>
+                {" "}de chaque projet.
+              </p>
+            </div>
+          )}
+
+          {/* Server-stored keys */}
           {keys.length > 0 && (
             <div className="space-y-1.5">
+              {localKeys.length > 0 && (
+                <p className="text-2xs font-medium flex items-center gap-1.5 mt-2" style={{ color: "var(--text-muted)" }}>
+                  <Key className="w-3 h-3" />
+                  Cl{"\u00E9"}s serveur
+                </p>
+              )}
               {keys.map(k => (
                 <div key={k.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
                   <div className="flex items-center gap-2.5">
