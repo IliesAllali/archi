@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles } from "lucide-react"
 import Logo from "@/components/Logo"
 import GeneralTab from "./tabs/GeneralTab"
@@ -40,6 +40,7 @@ export default function SettingsClient({
   project: ProjectMeta
   currentUserId: string
 }) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const tab = searchParams.get("tab")
@@ -47,6 +48,11 @@ export default function SettingsClient({
     return "general"
   })
   const [projectName, setProjectName] = useState(project.name)
+
+  const handleBack = useCallback(() => {
+    router.push(`/${project.slug || project.id}`)
+    router.refresh()
+  }, [router, project.slug, project.id])
 
   return (
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
@@ -59,13 +65,13 @@ export default function SettingsClient({
         }}
       >
         <div className="flex items-center gap-1.5 min-w-0">
-          <Link
-            href={`/${project.id}`}
+          <button
+            onClick={handleBack}
             className="p-1.5 rounded-md hover:bg-bg-hover transition-colors duration-100 active:scale-95 shrink-0"
             style={{ color: "var(--text-faint)" }}
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-          </Link>
+          </button>
           <div
             className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
             style={{
