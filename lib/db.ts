@@ -84,6 +84,16 @@ function createDb(): Database.Database {
         created_at      INTEGER NOT NULL
       );
     `)
+
+    // Seed credits for existing users who don't have any yet
+    if (usersExist) {
+      const now = Date.now()
+      db.exec(`
+        INSERT OR IGNORE INTO ai_credits (user_id, credits_total, credits_used, created_at)
+        SELECT id, 20, 0, ${now} FROM users
+        WHERE id NOT IN (SELECT user_id FROM ai_credits)
+      `)
+    }
   } catch {
     // Migrations may fail at build time (no full schema) — that's OK
   }
