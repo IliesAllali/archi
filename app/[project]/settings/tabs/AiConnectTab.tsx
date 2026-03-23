@@ -83,35 +83,57 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
         .then(r => r.json())
         .then(project => {
           const nodes = project.nodes || []
+
+          interface CopyNode {
+            label: string; type: string; id: string; children: string[]
+            priority?: string; description?: string; notes?: string
+            rationale?: string; cta?: string[]; tags?: string[]; group?: string
+          }
+
           const treeStr = nodes
-            .map((n: { label: string; type: string; id: string; children: string[] }) => {
+            .map((n: CopyNode) => {
               const depth = getNodeDepth(n.id, nodes)
               const indent = "  ".repeat(depth)
-              return `${indent}- ${n.label} (type: ${n.type}, id: ${n.id})`
+              const meta: string[] = [`type: ${n.type}`, `id: ${n.id}`]
+              if (n.priority && n.priority !== "secondary") meta.push(`priority: ${n.priority}`)
+              if (n.description) meta.push(`desc: "${n.description}"`)
+              if (n.tags?.length) meta.push(`tags: [${n.tags.join(", ")}]`)
+              if (n.group) meta.push(`group: "${n.group}"`)
+              if (n.cta?.length) meta.push(`ctas: [${n.cta.join(", ")}]`)
+              if (n.notes) meta.push(`notes: "${n.notes}"`)
+              if (n.rationale) meta.push(`rationale: "${n.rationale}"`)
+              return `${indent}- ${n.label} (${meta.join(", ")})`
             })
             .join("\n")
 
+          const totalPages = nodes.length
+          const types = [...new Set(nodes.map((n: CopyNode) => n.type))].join(", ")
+
           setCopyPromptText(
-`Je travaille sur l'arborescence du site "${project.name}" avec l'outil Arbo.
+`I'm working on the sitemap for "${project.name}" using Arbo (visual sitemap builder).
 
-Voici l'arbre actuel :
-${treeStr || "(vide)"}
+Project: ${project.name}${project.client ? ` | Client: ${project.client}` : ""}
+Pages: ${totalPages} | Types used: ${types}
 
-Je veux que tu me proposes des modifications. Réponds UNIQUEMENT avec ce format JSON (pas de markdown, pas d'explication avant/après) :
+Current tree:
+${treeStr || "(empty)"}
+
+Propose modifications. Reply ONLY with this JSON format (no markdown, no explanation before/after):
 
 {
   "actions": [
-    { "action": "add", "temp_id": "identifiant_court", "parent_id": "ID_DU_PARENT", "label": "Nom de la page", "type": "detail", "priority": "secondary", "description": "Description courte" },
-    { "action": "update", "node_id": "ID_EXISTANT", "label": "Nouveau nom" },
-    { "action": "delete", "node_id": "ID_EXISTANT" },
-    { "action": "move", "node_id": "ID_EXISTANT", "parent_id": "NOUVEL_ID_PARENT" }
+    { "action": "add", "temp_id": "short_id", "parent_id": "PARENT_ID", "label": "Page name", "type": "detail", "priority": "secondary", "description": "Short description" },
+    { "action": "update", "node_id": "EXISTING_ID", "label": "New name", "description": "New description", "tags": ["tag1"] },
+    { "action": "delete", "node_id": "EXISTING_ID" },
+    { "action": "move", "node_id": "EXISTING_ID", "parent_id": "NEW_PARENT_ID" }
   ]
 }
 
-Types de page : home, listing, detail, form, landing, quiz, search, hub, error, legal
-Priorités : primary, secondary, utility
+Page types: home, listing, detail, form, landing, quiz, search, hub, error, legal
+Priorities: primary, secondary, utility
+Update supports: label, description, type, priority, tags, notes, rationale, cta, group
 
-Ma demande : `
+My request: `
           )
         })
     }
