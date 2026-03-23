@@ -356,9 +356,9 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Modifie l'arbo ou pose une question..."
-                  rows={2}
+                  rows={1}
                   disabled={loading}
-                  className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"
+                  className="flex-1 px-2.5 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"
                   style={{
                     background: "var(--surface)",
                     color: "var(--text-primary)",
@@ -367,7 +367,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                   onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !loading) {
+                    if (e.key === "Enter" && !e.shiftKey && !loading) {
                       e.preventDefault();
                       handleSubmit();
                     }
@@ -377,7 +377,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
                 <button
                   onClick={handleSubmit}
                   disabled={loading || !prompt.trim()}
-                  className="self-end p-2.5 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   style={{ background: "var(--accent)", color: "#fff" }}
                 >
                   {loading ? (
@@ -398,7 +398,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
               </div>
               <div className="hidden sm:flex items-center justify-between mt-2">
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Ctrl+Enter pour envoyer
+                  Enter pour envoyer, Shift+Enter pour retour ligne
                 </p>
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
                   Esc pour fermer
