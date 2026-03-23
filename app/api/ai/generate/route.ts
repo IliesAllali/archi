@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
 
         // Stream AI response — extract labels live from partial JSON
         let streaming = false;
+        let fullText = "";
         const streamedLabels = new Set<string>();
         const labelRegex = /"label"\s*:\s*"([^"]+)"/g;
 
@@ -82,18 +83,17 @@ export async function POST(req: NextRequest) {
             streaming = true;
             send("status", { phase: "streaming", message: "G\u00e9n\u00e9ration de l'arborescence..." });
           }
-          // Try to extract new labels from the accumulated text
-          // We re-run regex on the chunk for speed but it's fine for label extraction
+          fullText += chunk;
+          // Extract labels from accumulated text so split tokens are matched
           let match;
-          const testStr = chunk;
-          while ((match = labelRegex.exec(testStr)) !== null) {
+          labelRegex.lastIndex = 0;
+          while ((match = labelRegex.exec(fullText)) !== null) {
             const label = match[1];
             if (!streamedLabels.has(label)) {
               streamedLabels.add(label);
               send("stream_node", { label, count: streamedLabels.size });
             }
           }
-          labelRegex.lastIndex = 0;
         };
 
         const result = await generateSitemap(apiKey, prompt, provider, speed, onChunk);

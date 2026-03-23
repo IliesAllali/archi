@@ -413,7 +413,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                                   initial={{ opacity: 0, x: -12, height: 0 }}
                                   animate={{ opacity: 1, x: 0, height: "auto" }}
                                   transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                                  className="flex items-center gap-2 py-1 px-2 rounded-md"
+                                  className="flex items-center gap-2 py-1 px-2 rounded-md min-w-0 overflow-hidden"
                                   style={{ background: i === aiActions.length - 1 ? "var(--accent-muted)" : "transparent" }}
                                 >
                                   <div
@@ -422,7 +422,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                                   >
                                     <Plus className="w-2.5 h-2.5" />
                                   </div>
-                                  <span className="text-2xs truncate" style={{ color: i === aiActions.length - 1 ? "var(--text-primary)" : "var(--text-muted)" }}>
+                                  <span className="text-2xs truncate min-w-0 block overflow-hidden" style={{ color: i === aiActions.length - 1 ? "var(--text-primary)" : "var(--text-muted)" }}>
                                     {a.label}
                                   </span>
                                 </motion.div>
