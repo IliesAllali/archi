@@ -10,6 +10,7 @@
 
   /* Light mode (default) */
   --canvas-bg: #f5f5f7;
+  --nav-rgb: 245,245,247;
   --surface: #ffffff;
   --surface-hover: #f0f0f2;
   --elevated: #fafafa;
@@ -56,6 +57,7 @@
 
 [data-theme="dark"] {
   --canvas-bg: #09090b;
+  --nav-rgb: 9,9,11;
   --surface: #111113;
   --surface-hover: #1a1a1e;
   --elevated: #18181b;
