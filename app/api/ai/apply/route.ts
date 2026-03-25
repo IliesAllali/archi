@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
             lastModifiedByName: aiLabel,
           };
           const raw = action as unknown as Record<string, unknown>;
+          if (raw.group !== undefined) nodeData.group = raw.group;
           if (raw.cta) nodeData.cta = raw.cta;
           if (raw.tags) nodeData.tags = raw.tags;
           if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest) {
             if (action.priority !== undefined) data.priority = action.priority;
             if (action.description !== undefined) data.description = action.description;
             if (raw.rationale !== undefined) data.rationale = raw.rationale;
+            if (raw.group !== undefined) data.group = raw.group;
             if (raw.cta !== undefined) data.cta = raw.cta;
             if (raw.tags !== undefined) data.tags = raw.tags;
             if (raw.entryPoints !== undefined) data.entryPoints = raw.entryPoints;
