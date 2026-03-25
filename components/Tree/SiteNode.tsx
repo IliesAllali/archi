@@ -696,8 +696,8 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
           className={cn("flex justify-between gap-1 px-[7px]", showExpanded ? "items-center" : "items-start")}
           style={{
             ...(showExpanded ? { height: TITLE_HEIGHT } : { padding: "7px 7px" }),
-            background: isHome ? "var(--accent-muted)" : titleTint,
-            borderBottom: isHome ? "1px solid var(--accent-strong)" : "1px solid var(--card-title-border)",
+            background: isHome && isAccentVar ? "var(--accent-muted)" : titleTint,
+            borderBottom: isHome && isAccentVar ? "1px solid var(--accent-strong)" : "1px solid var(--card-title-border)",
           }}
         >
           {isEditing ? (
