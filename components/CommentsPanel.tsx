@@ -15,9 +15,15 @@ interface Props {
   nodeLabels?: Record<string, string>
 }
 
+const GUEST_NAME_KEY = "arbo_guest_name"
+
 export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onClose, currentUser, nodeLabels = {} }: Props) {
   const [content, setContent] = useState("")
-  const [guestName, setGuestName] = useState("")
+  const [guestName, setGuestName] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem(GUEST_NAME_KEY) || ""
+    return ""
+  })
+  const [guestConfirmed, setGuestConfirmed] = useState(() => !!guestName)
   const [sending, setSending] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -192,58 +198,81 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
 
           {/* Input area */}
           <div className="shrink-0 px-4 py-3" style={{ borderTop: "1px solid var(--line)" }}>
-            {!currentUser && !guestName && (
-              <div className="mb-2">
-                <input
-                  type="text"
-                  value={guestName}
-                  onChange={e => setGuestName(e.target.value)}
-                  placeholder="Ton nom"
-                  className="w-full h-8 px-3 rounded-lg text-2xs focus:outline-none transition-colors"
-                  style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-                  onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-                  onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
-                  onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
-                />
+            {!currentUser && !guestConfirmed ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-2xs" style={{ color: "var(--text-muted)" }}>Comment souhaitez-vous apparaitre ?</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={guestName}
+                    onChange={e => setGuestName(e.target.value)}
+                    placeholder="Pr\u00E9nom ou pseudo"
+                    className="flex-1 h-8 px-3 rounded-lg text-xs focus:outline-none transition-colors"
+                    style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && guestName.trim().length >= 2) {
+                        localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                        setGuestConfirmed(true)
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => {
+                      if (guestName.trim().length >= 2) {
+                        localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                        setGuestConfirmed(true)
+                      }
+                    }}
+                    disabled={guestName.trim().length < 2}
+                    className="px-3 h-8 rounded-lg text-xs font-medium transition-all disabled:opacity-40 hover:brightness-110"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
-            )}
-            {(!currentUser && !guestName) ? null : (
-              <div className="flex gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={content}
-                  onChange={e => setContent(e.target.value)}
-                  placeholder="Ajouter un commentaire..."
-                  rows={2}
-                  className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none resize-none transition-colors"
-                  style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-                  onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
-                  onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !sending) {
-                      e.preventDefault()
-                      handleSubmit()
-                    }
-                  }}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={sending || !content.trim()}
-                  className="self-end p-2.5 rounded-lg transition-all disabled:opacity-40 shrink-0 hover:brightness-110"
-                  style={{ background: "var(--accent)", color: "#fff" }}
-                >
-                  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            )}
-            {!currentUser && guestName && (
-              <button
-                onClick={() => setGuestName("")}
-                className="text-2xs mt-1.5 transition-colors hover:underline"
-                style={{ color: "var(--text-faint)" }}
-              >
-                Changer de nom
-              </button>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <textarea
+                    ref={inputRef}
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                    placeholder="Ajouter un commentaire..."
+                    rows={2}
+                    className="flex-1 px-3 py-2 rounded-lg text-xs focus:outline-none resize-none transition-colors"
+                    style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                    onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)" }}
+                    onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !sending) {
+                        e.preventDefault()
+                        handleSubmit()
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleSubmit}
+                    disabled={sending || !content.trim()}
+                    className="self-end p-2.5 rounded-lg transition-all disabled:opacity-40 shrink-0 hover:brightness-110"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                {!currentUser && guestConfirmed && (
+                  <button
+                    onClick={() => { setGuestConfirmed(false); setGuestName("") }}
+                    className="text-2xs mt-1.5 transition-colors hover:underline"
+                    style={{ color: "var(--text-faint)" }}
+                  >
+                    {guestName} \u00B7 Changer de nom
+                  </button>
+                )}
+              </>
             )}
           </div>
         </motion.div>

@@ -229,9 +229,15 @@ interface ThreadProps {
   threadRef: (el: HTMLElement | null) => void
 }
 
+const GUEST_NAME_KEY = "arbo_guest_name"
+
 function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef }: ThreadProps) {
   const [content, setContent] = useState("")
-  const [guestName, setGuestName] = useState("")
+  const [guestName, setGuestName] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem(GUEST_NAME_KEY) || ""
+    return ""
+  })
+  const [guestConfirmed, setGuestConfirmed] = useState(() => !!guestName)
   const [sending, setSending] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -360,25 +366,46 @@ function CommentThread({ rootComment, projectId, currentUser, onClose, threadRef
 
       {/* Reply input */}
       <div className="px-2.5 py-2" style={{ borderTop: "1px solid var(--line)" }}>
-        {!currentUser && !guestName ? (
-          <input
-            type="text"
-            value={guestName}
-            onChange={e => setGuestName(e.target.value)}
-            placeholder="Ton nom"
-            className="w-full h-6 px-2 rounded text-2xs focus:outline-none transition-all"
-            style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
-            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
-            onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
-          />
+        {!currentUser && !guestConfirmed ? (
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={guestName}
+              onChange={e => setGuestName(e.target.value)}
+              placeholder="Pr\u00E9nom ou pseudo"
+              className="flex-1 h-6 px-2 rounded text-2xs focus:outline-none transition-all"
+              style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+              onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+              onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
+              onKeyDown={e => {
+                if (e.key === "Enter" && guestName.trim().length >= 2) {
+                  localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                  setGuestConfirmed(true)
+                }
+              }}
+              autoFocus
+            />
+            <button
+              onClick={() => {
+                if (guestName.trim().length >= 2) {
+                  localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                  setGuestConfirmed(true)
+                }
+              }}
+              disabled={guestName.trim().length < 2}
+              className="px-2 h-6 rounded text-2xs font-medium transition-all disabled:opacity-30"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              OK
+            </button>
+          </div>
         ) : (
           <div className="flex gap-1.5">
             <textarea
               ref={inputRef}
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="Répondre..."
+              placeholder="R\u00E9pondre..."
               rows={1}
               className="flex-1 px-2 py-1 rounded text-2xs focus:outline-none resize-none transition-all"
               style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
@@ -424,7 +451,11 @@ interface NewCommentProps {
 
 function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId, currentUser, onDone }: NewCommentProps) {
   const [content, setContent] = useState("")
-  const [guestName, setGuestName] = useState("")
+  const [guestName, setGuestName] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem(GUEST_NAME_KEY) || ""
+    return ""
+  })
+  const [guestConfirmed, setGuestConfirmed] = useState(() => !!guestName)
   const [sending, setSending] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -482,18 +513,44 @@ function NewCommentInput({ screenX, screenY, nodeId, offsetX, offsetY, projectId
       }}
     >
       <div className="px-2.5 py-2">
-        {!currentUser && !guestName ? (
-          <input
-            type="text"
-            value={guestName}
-            onChange={e => setGuestName(e.target.value)}
-            placeholder="Ton nom"
-            className="w-full h-6 px-2 rounded text-2xs focus:outline-none transition-all"
-            style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
-            onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
-            onKeyDown={e => { if (e.key === "Enter" && guestName.trim()) inputRef.current?.focus() }}
-          />
+        {!currentUser && !guestConfirmed ? (
+          <div className="space-y-1.5">
+            <p className="text-2xs" style={{ color: "var(--text-muted)" }}>Comment souhaitez-vous apparaitre ?</p>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={guestName}
+                onChange={e => setGuestName(e.target.value)}
+                placeholder="Pr\u00E9nom ou pseudo"
+                className="flex-1 h-6 px-2 rounded text-2xs focus:outline-none transition-all"
+                style={{ background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                onFocus={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--accent-muted)" }}
+                onBlur={e => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && guestName.trim().length >= 2) {
+                    localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                    setGuestConfirmed(true)
+                    setTimeout(() => inputRef.current?.focus(), 50)
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  if (guestName.trim().length >= 2) {
+                    localStorage.setItem(GUEST_NAME_KEY, guestName.trim())
+                    setGuestConfirmed(true)
+                    setTimeout(() => inputRef.current?.focus(), 50)
+                  }
+                }}
+                disabled={guestName.trim().length < 2}
+                className="px-2 h-6 rounded text-2xs font-medium transition-all disabled:opacity-30"
+                style={{ background: "var(--accent)", color: "#fff" }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-1.5">
             <textarea
@@ -572,9 +629,11 @@ export default function CommentOverlay({ projectId, currentUser, rfNodes }: Over
     nodeCy: number
   } | null>(null)
 
-  // Fetch comments on mount
+  // Fetch comments on mount + poll every 5s for live updates
   useEffect(() => {
     fetchComments(projectId)
+    const interval = setInterval(() => fetchComments(projectId), 5000)
+    return () => clearInterval(interval)
   }, [projectId, fetchComments])
 
   // Escape to exit comment mode
