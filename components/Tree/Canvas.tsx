@@ -501,11 +501,13 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   // Refs to track link modes inside callbacks without stale closures
   const linkModeRef = useRef(false);
   const crossLinkModeRef = useRef(false);
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const onNodeDragStart: NodeDragHandler = useCallback(
-    (event, _draggedNode) => {
+    (event, draggedNode) => {
       isDraggingRef.current = true;
       setIsDragging(true);
+      dragStartPosRef.current = { x: draggedNode.position.x, y: draggedNode.position.y };
       baseNodesRef.current = rfNodesRef.current.map((n) => ({
         ...n,
         position: { ...n.position },
@@ -709,6 +711,13 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
       setIsDragging(false);
       lastLinkHoverRef.current = null;
 
+      // Check if actual movement happened (ignore micro-drags / clicks)
+      const startPos = dragStartPosRef.current;
+      const dx = startPos ? Math.abs(draggedNode.position.x - startPos.x) : 0;
+      const dy = startPos ? Math.abs(draggedNode.position.y - startPos.y) : 0;
+      const didMove = dx > 5 || dy > 5;
+      dragStartPosRef.current = null;
+
       const intent = useCanvasStore.getState().dropIntent;
       setDropIntent(null);
 
@@ -722,6 +731,15 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           })
       );
       setRfEdges(baseEdgesRef.current);
+
+      // If no real movement, bail — it was just a click
+      if (!didMove) {
+        linkModeRef.current = false; crossLinkModeRef.current = false;
+        setLinkMode(false); setCrossLinkMode(false);
+        setStackedParents([]); stackedParentsRef.current = [];
+        setStackedCrossLinks([]); stackedCrossLinksRef.current = [];
+        return;
+      }
 
       if (draggedNode.id.startsWith("ep_")) {
         linkModeRef.current = false; crossLinkModeRef.current = false;
