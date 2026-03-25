@@ -54,6 +54,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const [importProjectName, setImportProjectName] = useState("")
   const [importStatus, setImportStatus] = useState<"idle" | "loading" | "done" | "spa_detected">("idle")
   const [importResult, setImportResult] = useState<{ urlsFound: number; nodesCreated: number } | null>(null)
+  const [importMaxDepth, setImportMaxDepth] = useState<number>(0) // 0 = no limit
+  const [importGroupSimilar, setImportGroupSimilar] = useState(false)
 
   // Auto-scroll actions list
   useEffect(() => {
@@ -81,6 +83,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setImportUrls("")
       setImportProjectName("")
       setImportStatus("idle")
+      setImportMaxDepth(0)
+      setImportGroupSimilar(false)
       setImportResult(null)
     }
   }, [open])
@@ -259,6 +263,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
       if (importMode === "crawl") {
         importBody.url = importUrl.trim()
+        if (importMaxDepth > 0) importBody.maxDepth = importMaxDepth
+        if (importGroupSimilar) importBody.groupSimilar = true
       } else if (importMode === "sitemap") {
         importBody.xml = importXml.trim()
       } else if (importMode === "urls") {
@@ -788,9 +794,12 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
                         <motion.div
                           className="h-full rounded-full"
-                          style={{ background: "var(--accent)", width: "40%" }}
-                          animate={{ x: ["-40%", "250%"] }}
-                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                          style={{ background: "var(--accent)", width: "30%" }}
+                          animate={{
+                            x: ["-100%", "0%", "250%", "400%"],
+                            opacity: [0, 1, 1, 0],
+                          }}
+                          transition={{ duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1], times: [0, 0.15, 0.85, 1] }}
                         />
                       </div>
 
@@ -896,6 +905,38 @@ export default function NewProjectModal({ open, onClose }: Props) {
                           <p className="text-2xs mt-1" style={{ color: "var(--text-faint)" }}>
                             On cherche d'abord le sitemap.xml, sinon on crawle les liens
                           </p>
+
+                          {/* Crawl options */}
+                          <div className="flex items-center gap-4 mt-3">
+                            <div className="flex items-center gap-2">
+                              <label className="text-2xs font-medium" style={{ color: "var(--text-muted)" }}>
+                                Profondeur max
+                              </label>
+                              <select
+                                value={importMaxDepth}
+                                onChange={(e) => setImportMaxDepth(Number(e.target.value))}
+                                className="h-7 px-2 rounded-md text-2xs focus:outline-none transition-all"
+                                style={{ background: "var(--surface)", border: "1px solid var(--line-strong)", color: "var(--text-primary)" }}
+                              >
+                                <option value={0}>Illimit\u00e9e</option>
+                                <option value={2}>2 niveaux</option>
+                                <option value={3}>3 niveaux</option>
+                                <option value={4}>4 niveaux</option>
+                                <option value={5}>5 niveaux</option>
+                              </select>
+                            </div>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={importGroupSimilar}
+                                onChange={(e) => setImportGroupSimilar(e.target.checked)}
+                                className="w-3.5 h-3.5 rounded accent-[var(--accent)]"
+                              />
+                              <span className="text-2xs font-medium" style={{ color: "var(--text-muted)" }}>
+                                Regrouper les pages similaires
+                              </span>
+                            </label>
+                          </div>
                         </div>
                       )}
 

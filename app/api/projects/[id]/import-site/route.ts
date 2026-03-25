@@ -20,7 +20,7 @@ interface TreeNode {
  * Convert a flat list of URL paths into a tree structure.
  * e.g. ["/", "/about", "/blog", "/blog/post-1"] → nested tree
  */
-function urlsToTree(urls: string[]): TreeNode[] {
+function urlsToTree(urls: string[], options?: { groupSimilar?: boolean; maxTreeDepth?: number }): TreeNode[] {
   const root: TreeNode = { label: "Home", slug: "", path: "/", children: [] }
 
   // Normalize and deduplicate
@@ -58,7 +58,75 @@ function urlsToTree(urls: string[]): TreeNode[] {
     }
   }
 
+  // Group similar pages: if a node has many children with no sub-children,
+  // collapse them into a single "[Section] (N pages)" node
+  if (options?.groupSimilar) {
+    groupSimilarChildren(root)
+  }
+
+  // Trim tree depth if requested
+  if (options?.maxTreeDepth && options.maxTreeDepth > 0) {
+    trimTreeDepth(root, 0, options.maxTreeDepth)
+  }
+
   return [root]
+}
+
+/**
+ * Group similar leaf children under a parent.
+ * If a node has 5+ leaf children (no sub-children), collapse them
+ * into a single summary node like "Blog (47 pages)".
+ */
+function groupSimilarChildren(node: TreeNode): void {
+  // Recurse first
+  for (const child of node.children) {
+    groupSimilarChildren(child)
+  }
+
+  // Find leaf children (no sub-children of their own)
+  const leaves = node.children.filter(c => c.children.length === 0)
+  const branches = node.children.filter(c => c.children.length > 0)
+
+  if (leaves.length >= 5) {
+    // Replace all leaves with a single summary node
+    const summaryNode: TreeNode = {
+      label: `${node.label} (${leaves.length} pages)`,
+      slug: `_grouped_${node.slug}`,
+      path: node.path + "/*",
+      children: [],
+    }
+    node.children = [...branches, summaryNode]
+  }
+}
+
+/**
+ * Trim tree beyond a max depth. Nodes at maxDepth that have children
+ * get a summary child node with the count.
+ */
+function trimTreeDepth(node: TreeNode, currentDepth: number, maxDepth: number): void {
+  if (currentDepth >= maxDepth) {
+    if (node.children.length > 0) {
+      const count = countDescendants(node)
+      node.children = [{
+        label: `${count} sous-pages`,
+        slug: "_trimmed",
+        path: node.path + "/...",
+        children: [],
+      }]
+    }
+    return
+  }
+  for (const child of node.children) {
+    trimTreeDepth(child, currentDepth + 1, maxDepth)
+  }
+}
+
+function countDescendants(node: TreeNode): number {
+  let count = 0
+  for (const child of node.children) {
+    count += 1 + countDescendants(child)
+  }
+  return count
 }
 
 function slugToLabel(slug: string): string {
@@ -338,7 +406,7 @@ export async function POST(
           }, { status: 422 })
         } else {
           // Standard crawl with cheerio
-          urls = await crawlSite(payload.url, payload.maxPages || 200)
+          urls = await crawlSite(payload.url, payload.maxPages || 200, payload.maxDepth || 5)
         }
       }
 
@@ -367,7 +435,10 @@ export async function POST(
     if (urls.length > 500) urls = urls.slice(0, 500)
 
     // Convert to tree and insert
-    const tree = urlsToTree(urls)
+    const tree = urlsToTree(urls, {
+      groupSimilar: payload.groupSimilar === true,
+      maxTreeDepth: payload.maxDepth ? Number(payload.maxDepth) : undefined,
+    })
     const nodesCreated = insertTree(params.id, tree, userId, userName)
 
     emitToProject(params.id, "nodes-updated", { source: "import" })
