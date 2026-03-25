@@ -560,42 +560,32 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
       // ─── MODIFIER+DRAG: link/crosslink modes ──────────────────────────
       if (linkModeRef.current || crossLinkModeRef.current) {
-        // Find closest node under cursor (not just drop intent parent)
-        const dragCx = draggedNode.position.x + (draggedNode.width ?? 110) / 2;
-        const dragCy = draggedNode.position.y + (draggedNode.height ?? 60) / 2;
-        let closestId: string | null = null;
-        let closestDist = 160;
-        for (const rfNode of baseNodesRef.current) {
-          if (rfNode.id === draggedNode.id || rfNode.id.startsWith("ep_") || rfNode.id === DROP_INDICATOR_ID) continue;
-          const ncx = rfNode.position.x + (rfNode.width ?? 110) / 2;
-          const ncy = rfNode.position.y + (rfNode.height ?? 60) / 2;
-          const dist = Math.sqrt((dragCx - ncx) ** 2 + (dragCy - ncy) ** 2);
-          if (dist < closestDist) { closestDist = dist; closestId = rfNode.id; }
-        }
-
-        if (closestId && closestId !== lastLinkHoverRef.current) {
-          lastLinkHoverRef.current = closestId;
-          const targetNode = nodes.find((n) => n.id === closestId);
-          if (targetNode) {
-            // Shift: stack as parent
-            if (linkModeRef.current && !stackedParentsRef.current.some((p) => p.id === closestId)) {
-              const intentType = intent?.type === "child" ? "child" as const : "sibling" as const;
-              const newStack = [...stackedParentsRef.current, { id: closestId!, label: targetNode.label, type: intentType }];
-              stackedParentsRef.current = newStack;
-              setStackedParents(newStack);
-            }
-            // Ctrl: stack as cross-link
-            if (crossLinkModeRef.current && !stackedCrossLinksRef.current.some((p) => p.id === closestId)) {
-              const newStack = [...stackedCrossLinksRef.current, { id: closestId!, label: targetNode.label }];
-              stackedCrossLinksRef.current = newStack;
-              setStackedCrossLinks(newStack);
+        // Use the drop intent system (same as normal drag) to detect parent/sibling
+        if (intent) {
+          const parentId = intent.type === "child" ? intent.targetId : intent.parentId;
+          if (parentId && parentId !== lastLinkHoverRef.current) {
+            lastLinkHoverRef.current = parentId;
+            const targetNode = nodes.find((n) => n.id === parentId);
+            if (targetNode && parentId !== draggedNode.id) {
+              // Shift: stack as secondary parent (solid link)
+              if (linkModeRef.current && !stackedParentsRef.current.some((p) => p.id === parentId)) {
+                const newStack = [...stackedParentsRef.current, { id: parentId, label: targetNode.label, type: intent.type as "child" | "sibling" }];
+                stackedParentsRef.current = newStack;
+                setStackedParents(newStack);
+              }
+              // Ctrl: stack as cross-link (dashed)
+              if (crossLinkModeRef.current && !stackedCrossLinksRef.current.some((p) => p.id === parentId)) {
+                const newStack = [...stackedCrossLinksRef.current, { id: parentId, label: targetNode.label }];
+                stackedCrossLinksRef.current = newStack;
+                setStackedCrossLinks(newStack);
+              }
             }
           }
-        } else if (!closestId) {
+        } else {
           lastLinkHoverRef.current = null;
         }
 
-        // Preview edges
+        // Preview edges: solid for parents, dashed for cross-links
         const previewEdges: Edge[] = [
           ...stackedParentsRef.current.map((p, i) => ({
             id: `${PREVIEW_EDGE_ID}_link_${i}`,
@@ -603,7 +593,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
             target: draggedNode.id,
             type: "default",
             animated: true,
-            style: { strokeWidth: 2, stroke: "var(--accent)", opacity: 0.7 },
+            style: { strokeWidth: 2, stroke: "var(--accent)", opacity: 0.8 },
           })),
           ...stackedCrossLinksRef.current.map((p, i) => ({
             id: `${PREVIEW_EDGE_ID}_cross_${i}`,
@@ -889,28 +879,25 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         />
       </ReactFlow>
 
-      {/* Modifier badges — same style as zoom controls, aligned bottom-left */}
+      {/* Modifier badges — horizontal, right of zoom controls, same style */}
       {isDragging && (
         <div
-          className="absolute z-50 pointer-events-none overflow-hidden"
+          className="absolute z-50 pointer-events-none flex overflow-hidden"
           style={{
             bottom: 16,
             left: 60,
             borderRadius: 8,
             border: "1px solid var(--line)",
             background: "var(--controls-bg)",
-            display: "flex",
-            flexDirection: "column",
           }}
         >
           <div
             className="flex items-center gap-1.5 justify-center"
             style={{
-              width: 80,
               height: 28,
-              padding: "0 8px",
+              padding: "0 10px",
               background: linkMode ? "var(--accent)" : "var(--controls-bg)",
-              borderBottom: "1px solid var(--line-subtle)",
+              borderRight: "1px solid var(--line-subtle)",
               transition: "background 150ms ease",
             }}
           >
@@ -923,9 +910,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           <div
             className="flex items-center gap-1.5 justify-center"
             style={{
-              width: 80,
               height: 28,
-              padding: "0 8px",
+              padding: "0 10px",
               background: crossLinkMode ? "var(--text-secondary)" : "var(--controls-bg)",
               transition: "background 150ms ease",
             }}
