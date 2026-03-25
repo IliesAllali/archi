@@ -14,8 +14,7 @@ import ReactFlow, {
   type NodeDragHandler,
   BackgroundVariant,
 } from "reactflow";
-import { AnimatePresence, motion } from "framer-motion";
-import { Link2, ArrowDown, ArrowRight } from "lucide-react";
+import { Link2 } from "lucide-react";
 import "reactflow/dist/style.css";
 import { computeLayout } from "@/lib/elk-layout";
 import type { Project, SiteNode } from "@/lib/types";
@@ -283,6 +282,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   const altKeyRef = useRef(false);
   // Shift key for multi-parent linking
   const shiftKeyRef = useRef(false);
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [linkMode, setLinkMode] = useState(false);
   const [stackedParents, setStackedParents] = useState<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
   const stackedParentsRef = useRef<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
@@ -291,11 +292,11 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.altKey) altKeyRef.current = true;
-      if (e.shiftKey) shiftKeyRef.current = true;
+      if (e.shiftKey) { shiftKeyRef.current = true; setShiftHeld(true); }
     };
     const up = (e: KeyboardEvent) => {
       if (!e.altKey) altKeyRef.current = false;
-      if (!e.shiftKey) shiftKeyRef.current = false;
+      if (!e.shiftKey) { shiftKeyRef.current = false; setShiftHeld(false); }
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -491,6 +492,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   const onNodeDragStart: NodeDragHandler = useCallback(
     (_event, _draggedNode) => {
       isDraggingRef.current = true;
+      setIsDragging(true);
       // Snapshot positions before any drag modifications
       baseNodesRef.current = rfNodesRef.current.map((n) => ({
         ...n,
@@ -649,6 +651,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   const onNodeDragStop: NodeDragHandler = useCallback(
     (_event, draggedNode) => {
       isDraggingRef.current = false;
+      setIsDragging(false);
       lastLinkHoverRef.current = null;
 
       const intent = useCanvasStore.getState().dropIntent;
@@ -816,61 +819,39 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         />
       </ReactFlow>
 
-      {/* Multi-parent link mode indicator */}
-      <AnimatePresence>
-        {linkMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 flex items-center gap-2 px-3 py-2 rounded-lg"
-            style={{
-              bottom: 60,
-              left: 16,
-              background: "var(--elevated)",
-              border: "1px solid var(--accent)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
-              maxWidth: 320,
-            }}
+      {/* Shift multi-link badge — appears during drag, next to zoom controls */}
+      {isDragging && (
+        <div
+          className="absolute z-50 flex items-center gap-1.5 px-2 py-1 rounded-md pointer-events-none"
+          style={{
+            bottom: 16,
+            left: 68,
+            background: linkMode ? "var(--accent)" : "var(--surface)",
+            border: linkMode ? "1px solid var(--accent)" : "1px solid var(--line)",
+            opacity: linkMode ? 1 : 0.6,
+            transition: "all 150ms ease",
+          }}
+        >
+          <Link2
+            className="w-3 h-3"
+            style={{ color: linkMode ? "#fff" : "var(--text-faint)" }}
+          />
+          <kbd
+            className="text-2xs font-mono font-medium leading-none"
+            style={{ color: linkMode ? "#fff" : "var(--text-faint)" }}
           >
-            <Link2 className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent)" }} />
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-2xs font-medium" style={{ color: "var(--accent)" }}>
-                Mode lien multi-parent
-              </span>
-              {stackedParents.length === 0 ? (
-                <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Survole un parent pour l'ajouter
-                </span>
-              ) : (
-                <div className="flex flex-wrap gap-1">
-                  {stackedParents.map((p, i) => (
-                    <span
-                      key={p.id}
-                      className="inline-flex items-center gap-0.5 text-2xs px-1.5 py-0.5 rounded"
-                      style={{
-                        background: "var(--accent-muted)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {p.type === "child" ? (
-                        <ArrowDown className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
-                      ) : (
-                        <ArrowRight className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
-                      )}
-                      {p.label}
-                      {i < stackedParents.length - 1 && (
-                        <span style={{ color: "var(--text-faint)" }}>+</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Shift
+          </kbd>
+          {linkMode && stackedParents.length > 0 && (
+            <span
+              className="text-2xs font-medium leading-none"
+              style={{ color: "#fff" }}
+            >
+              +{stackedParents.length}
+            </span>
+          )}
+        </div>
+      )}
 
       <CommentOverlay
         projectId={project.id}
