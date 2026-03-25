@@ -12,9 +12,15 @@ import { SignJWT, jwtVerify } from 'jose'
 
 // ─── Secrets ──────────────────────────────────────────────────────────────────
 
-const ACCESS_SECRET = new TextEncoder().encode(
-  process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-in-prod'
-)
+function getAccessSecret(): Uint8Array {
+  const secret = process.env.JWT_ACCESS_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: JWT_ACCESS_SECRET must be set in production')
+  }
+  return new TextEncoder().encode(secret || 'dev-access-secret-not-for-prod')
+}
+
+const ACCESS_SECRET = getAccessSecret()
 
 // ─── Cookie names ─────────────────────────────────────────────────────────────
 

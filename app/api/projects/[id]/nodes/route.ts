@@ -5,17 +5,18 @@ import { sanitizeText, sanitizeTextArray } from "@/lib/sanitize";
 import { emitToProject } from "@/lib/socket";
 import { nanoid } from "nanoid";
 import type { SiteNode } from "@/lib/types";
+import { requireProjectRead, requireProjectWrite } from "@/lib/project-access";
 
 export const dynamic = "force-dynamic"
 
-function checkApiKey(req: NextRequest) {
-  return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`;
-}
-
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const access = await requireProjectRead(req, params.id);
+  if (!access)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const project = getProject(params.id);
   if (!project)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -26,8 +27,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!checkApiKey(req))
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await requireProjectWrite(req, params.id);
+  if (!access)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const project = getProject(params.id);
   if (!project)

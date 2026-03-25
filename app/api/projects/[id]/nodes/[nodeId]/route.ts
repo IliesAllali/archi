@@ -3,17 +3,17 @@ import { db, getActiveNode } from "@/lib/db";
 import { getProject, getNode } from "@/lib/project-loader";
 import { sanitizeText, sanitizeTextArray } from "@/lib/sanitize";
 import { emitToProject } from "@/lib/socket";
+import { requireProjectRead, requireProjectWrite } from "@/lib/project-access";
 
 export const dynamic = "force-dynamic"
 
-function checkApiKey(req: NextRequest) {
-  return req.headers.get("authorization") === `Bearer ${process.env.API_KEY}`;
-}
-
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string; nodeId: string } }
 ) {
+  const access = await requireProjectRead(req, params.id);
+  if (!access) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const node = getNode(params.id, params.nodeId);
   if (!node) return NextResponse.json({ error: "Node not found" }, { status: 404 });
   return NextResponse.json(node);
@@ -23,8 +23,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string; nodeId: string } }
 ) {
-  if (!checkApiKey(req))
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await requireProjectWrite(req, params.id);
+  if (!access)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const project = getProject(params.id);
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -81,8 +82,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string; nodeId: string } }
 ) {
-  if (!checkApiKey(req))
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const deleteAccess = await requireProjectWrite(req, params.id);
+  if (!deleteAccess)
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const project = getProject(params.id);
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });

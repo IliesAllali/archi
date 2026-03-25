@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { restoreSnapshot, getSnapshotById } from "@/lib/db";
 import { getProject } from "@/lib/project-loader";
 import { emitToProject } from "@/lib/socket";
+import { requireProjectWrite } from "@/lib/project-access";
 
 export const dynamic = "force-dynamic"
 
@@ -9,6 +10,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const access = await requireProjectWrite(req, params.id);
+  if (!access) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const project = getProject(params.id);
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });

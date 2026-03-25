@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
 import type { Project } from "@/lib/types"
+import type { DbProject } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
@@ -13,9 +14,29 @@ function checkApiKey(req: NextRequest) {
   return auth === `Bearer ${key}`
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // API key → all projects (backwards compat)
+  if (checkApiKey(req)) {
+    const projects = getAllProjects()
+    return NextResponse.json(projects)
+  }
+
+  // Session → only user's projects
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const projects = getAllProjects()
-  return NextResponse.json(projects)
+  const memberProjectIds = new Set(
+    (db.prepare("SELECT project_id FROM project_members WHERE user_id = ?").all(session.sub) as { project_id: string }[])
+      .map(r => r.project_id)
+  )
+
+  const filtered = projects.filter(
+    p => p.ownerId === session.sub || memberProjectIds.has(p.id)
+  )
+  return NextResponse.json(filtered)
 }
 
 export async function POST(req: NextRequest) {
