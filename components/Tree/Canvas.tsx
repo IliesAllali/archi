@@ -278,25 +278,34 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   const moveNode = useCanvasStore((s) => s.moveNode);
   const setDropIntent = useCanvasStore((s) => s.setDropIntent);
 
-  // Alt key for drag-duplicate
+  // Modifier keys
   const altKeyRef = useRef(false);
-  // Shift key for multi-parent linking
   const shiftKeyRef = useRef(false);
-  const [shiftHeld, setShiftHeld] = useState(false);
+  const ctrlKeyRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Shift = multi-parent (solid)
   const [linkMode, setLinkMode] = useState(false);
   const [stackedParents, setStackedParents] = useState<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
   const stackedParentsRef = useRef<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
   const linkToParents = useCanvasStore((s) => s.linkToParents);
 
+  // Ctrl = cross-link (dashed)
+  const [crossLinkMode, setCrossLinkMode] = useState(false);
+  const [stackedCrossLinks, setStackedCrossLinks] = useState<{ id: string; label: string }[]>([]);
+  const stackedCrossLinksRef = useRef<{ id: string; label: string }[]>([]);
+  const addCrossLinks = useCanvasStore((s) => s.addCrossLinks);
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.altKey) altKeyRef.current = true;
-      if (e.shiftKey) { shiftKeyRef.current = true; setShiftHeld(true); }
+      if (e.shiftKey) shiftKeyRef.current = true;
+      if (e.ctrlKey || e.metaKey) ctrlKeyRef.current = true;
     };
     const up = (e: KeyboardEvent) => {
       if (!e.altKey) altKeyRef.current = false;
-      if (!e.shiftKey) { shiftKeyRef.current = false; setShiftHeld(false); }
+      if (!e.shiftKey) shiftKeyRef.current = false;
+      if (!e.ctrlKey && !e.metaKey) ctrlKeyRef.current = false;
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -493,18 +502,22 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
     (_event, _draggedNode) => {
       isDraggingRef.current = true;
       setIsDragging(true);
-      // Snapshot positions before any drag modifications
       baseNodesRef.current = rfNodesRef.current.map((n) => ({
         ...n,
         position: { ...n.position },
       }));
       baseEdgesRef.current = [...rfEdgesRef.current];
 
-      // Shift+drag = link mode
+      // Shift = multi-parent, Ctrl = cross-link, both = both
       if (shiftKeyRef.current) {
         setLinkMode(true);
         setStackedParents([]);
         stackedParentsRef.current = [];
+      }
+      if (ctrlKeyRef.current) {
+        setCrossLinkMode(true);
+        setStackedCrossLinks([]);
+        stackedCrossLinksRef.current = [];
       }
     },
     []
@@ -519,41 +532,65 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
       const intent = calculateDropIntent(draggedNode, baseNodesRef.current, nodes);
 
-      // ─── SHIFT+DRAG: link mode (stack parents) ─────────────────────────
-      if (linkMode) {
-        if (intent) {
-          const targetParentId = intent.type === "child" ? intent.targetId : intent.parentId;
-          if (targetParentId && targetParentId !== draggedNode.id && targetParentId !== lastLinkHoverRef.current) {
-            lastLinkHoverRef.current = targetParentId;
-            const targetNode = nodes.find((n) => n.id === targetParentId);
-            if (targetNode && !stackedParentsRef.current.some((p) => p.id === targetParentId)) {
-              const intentType = intent.type === "child" ? "child" as const : "sibling" as const;
-              const newStack = [...stackedParentsRef.current, { id: targetParentId, label: targetNode.label, type: intentType }];
+      // ─── MODIFIER+DRAG: link/crosslink modes ──────────────────────────
+      if (linkMode || crossLinkMode) {
+        // Find closest node under cursor (not just drop intent parent)
+        const dragCx = draggedNode.position.x + (draggedNode.width ?? 110) / 2;
+        const dragCy = draggedNode.position.y + (draggedNode.height ?? 60) / 2;
+        let closestId: string | null = null;
+        let closestDist = 160;
+        for (const rfNode of baseNodesRef.current) {
+          if (rfNode.id === draggedNode.id || rfNode.id.startsWith("ep_") || rfNode.id === DROP_INDICATOR_ID) continue;
+          const ncx = rfNode.position.x + (rfNode.width ?? 110) / 2;
+          const ncy = rfNode.position.y + (rfNode.height ?? 60) / 2;
+          const dist = Math.sqrt((dragCx - ncx) ** 2 + (dragCy - ncy) ** 2);
+          if (dist < closestDist) { closestDist = dist; closestId = rfNode.id; }
+        }
+
+        if (closestId && closestId !== lastLinkHoverRef.current) {
+          lastLinkHoverRef.current = closestId;
+          const targetNode = nodes.find((n) => n.id === closestId);
+          if (targetNode) {
+            // Shift: stack as parent
+            if (linkMode && !stackedParentsRef.current.some((p) => p.id === closestId)) {
+              const intentType = intent?.type === "child" ? "child" as const : "sibling" as const;
+              const newStack = [...stackedParentsRef.current, { id: closestId!, label: targetNode.label, type: intentType }];
               stackedParentsRef.current = newStack;
               setStackedParents(newStack);
             }
+            // Ctrl: stack as cross-link
+            if (crossLinkMode && !stackedCrossLinksRef.current.some((p) => p.id === closestId)) {
+              const newStack = [...stackedCrossLinksRef.current, { id: closestId!, label: targetNode.label }];
+              stackedCrossLinksRef.current = newStack;
+              setStackedCrossLinks(newStack);
+            }
           }
-        } else {
+        } else if (!closestId) {
           lastLinkHoverRef.current = null;
         }
 
-        // In link mode, show preview edges to all stacked parents but don't shift nodes
-        const previewEdges: Edge[] = stackedParentsRef.current.map((p, i) => ({
-          id: `${PREVIEW_EDGE_ID}_link_${i}`,
-          source: p.id,
-          target: draggedNode.id,
-          type: "default",
-          animated: true,
-          style: {
-            strokeDasharray: "6 3",
-            strokeWidth: 2,
-            stroke: "var(--accent)",
-            opacity: 0.6,
-          },
-        }));
+        // Preview edges
+        const previewEdges: Edge[] = [
+          ...stackedParentsRef.current.map((p, i) => ({
+            id: `${PREVIEW_EDGE_ID}_link_${i}`,
+            source: p.id,
+            target: draggedNode.id,
+            type: "default",
+            animated: true,
+            style: { strokeWidth: 2, stroke: "var(--accent)", opacity: 0.7 },
+          })),
+          ...stackedCrossLinksRef.current.map((p, i) => ({
+            id: `${PREVIEW_EDGE_ID}_cross_${i}`,
+            source: draggedNode.id,
+            target: p.id,
+            type: "default",
+            animated: true,
+            style: { strokeDasharray: "4 4", strokeWidth: 1.5, stroke: "var(--text-faint)", opacity: 0.7 },
+          })),
+        ];
         setRfEdges([...baseEdgesRef.current, ...previewEdges]);
 
-        // Restore base positions (no shifts in link mode)
+        // Restore base positions (no shifts in link modes)
         setRfNodes((currentNodes) =>
           currentNodes
             .filter((n) => n.id !== DROP_INDICATOR_ID)
@@ -645,7 +682,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         setRfEdges([...baseEdgesRef.current, previewEdge]);
       }
     },
-    [nodes, setDropIntent, setRfNodes, setRfEdges, linkMode]
+    [nodes, setDropIntent, setRfNodes, setRfEdges, linkMode, crossLinkMode]
   );
 
   const onNodeDragStop: NodeDragHandler = useCallback(
@@ -669,24 +706,27 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
       setRfEdges(baseEdgesRef.current);
 
       if (draggedNode.id.startsWith("ep_")) {
-        setLinkMode(false);
-        setStackedParents([]);
-        stackedParentsRef.current = [];
+        setLinkMode(false); setCrossLinkMode(false);
+        setStackedParents([]); stackedParentsRef.current = [];
+        setStackedCrossLinks([]); stackedCrossLinksRef.current = [];
         return;
       }
 
-      // ─── SHIFT+DRAG: apply stacked links ─────────────────────────────────
+      // ─── Apply modifier-drag results ─────────────────────────────────────
+      const hadModifierMode = linkMode || crossLinkMode;
+
       if (linkMode && stackedParentsRef.current.length > 0) {
         linkToParents(draggedNode.id, stackedParentsRef.current.map((p) => p.id));
-        setLinkMode(false);
-        setStackedParents([]);
-        stackedParentsRef.current = [];
-        return;
+      }
+      if (crossLinkMode && stackedCrossLinksRef.current.length > 0) {
+        addCrossLinks(draggedNode.id, stackedCrossLinksRef.current.map((p) => p.id));
       }
 
-      setLinkMode(false);
-      setStackedParents([]);
-      stackedParentsRef.current = [];
+      setLinkMode(false); setCrossLinkMode(false);
+      setStackedParents([]); stackedParentsRef.current = [];
+      setStackedCrossLinks([]); stackedCrossLinksRef.current = [];
+
+      if (hadModifierMode) return;
 
       // Alt+drag = duplicate
       if (altKeyRef.current) {
@@ -699,7 +739,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         moveNode(draggedNode.id, intent);
       }
     },
-    [setDropIntent, setRfNodes, setRfEdges, duplicateNode, moveNode, linkMode, linkToParents]
+    [setDropIntent, setRfNodes, setRfEdges, duplicateNode, moveNode, linkMode, crossLinkMode, linkToParents, addCrossLinks]
   );
 
   const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 0.9 }), []);
@@ -819,37 +859,39 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         />
       </ReactFlow>
 
-      {/* Shift multi-link badge — appears during drag, next to zoom controls */}
+      {/* Modifier badges — appear during drag, next to zoom controls */}
       {isDragging && (
-        <div
-          className="absolute z-50 flex items-center gap-1.5 px-2 py-1 rounded-md pointer-events-none"
-          style={{
-            bottom: 16,
-            left: 68,
-            background: linkMode ? "var(--accent)" : "var(--surface)",
-            border: linkMode ? "1px solid var(--accent)" : "1px solid var(--line)",
-            opacity: linkMode ? 1 : 0.6,
-            transition: "all 150ms ease",
-          }}
-        >
-          <Link2
-            className="w-3 h-3"
-            style={{ color: linkMode ? "#fff" : "var(--text-faint)" }}
-          />
-          <kbd
-            className="text-2xs font-mono font-medium leading-none"
-            style={{ color: linkMode ? "#fff" : "var(--text-faint)" }}
+        <div className="absolute z-50 flex items-center gap-1 pointer-events-none" style={{ bottom: 16, left: 68 }}>
+          <div
+            className="flex items-center gap-1 px-1.5 py-1 rounded-md"
+            style={{
+              background: linkMode ? "var(--accent)" : "var(--surface)",
+              border: linkMode ? "1px solid var(--accent)" : "1px solid var(--line)",
+              opacity: linkMode ? 1 : 0.5,
+              transition: "all 150ms ease",
+            }}
           >
-            Shift
-          </kbd>
-          {linkMode && stackedParents.length > 0 && (
-            <span
-              className="text-2xs font-medium leading-none"
-              style={{ color: "#fff" }}
-            >
-              +{stackedParents.length}
-            </span>
-          )}
+            <Link2 className="w-2.5 h-2.5" style={{ color: linkMode ? "#fff" : "var(--text-faint)" }} />
+            <kbd className="text-2xs font-mono leading-none" style={{ color: linkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>⇧</kbd>
+            {linkMode && stackedParents.length > 0 && (
+              <span className="text-2xs font-medium leading-none" style={{ color: "#fff", fontSize: 9 }}>+{stackedParents.length}</span>
+            )}
+          </div>
+          <div
+            className="flex items-center gap-1 px-1.5 py-1 rounded-md"
+            style={{
+              background: crossLinkMode ? "var(--text-faint)" : "var(--surface)",
+              border: crossLinkMode ? "1px solid var(--text-faint)" : "1px solid var(--line)",
+              opacity: crossLinkMode ? 1 : 0.5,
+              transition: "all 150ms ease",
+            }}
+          >
+            <span className="leading-none" style={{ color: crossLinkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>⋯</span>
+            <kbd className="text-2xs font-mono leading-none" style={{ color: crossLinkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>Ctrl</kbd>
+            {crossLinkMode && stackedCrossLinks.length > 0 && (
+              <span className="text-2xs font-medium leading-none" style={{ color: "#fff", fontSize: 9 }}>+{stackedCrossLinks.length}</span>
+            )}
+          </div>
         </div>
       )}
 

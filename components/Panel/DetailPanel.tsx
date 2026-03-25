@@ -401,6 +401,45 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                 </SectionAnimated>
               )}
 
+              {/* Cross-links (dashed, non-hierarchical) */}
+              {node.links && node.links.length > 0 && (
+                <SectionAnimated index={8} title="Liens" icon={Link2}>
+                  <div className="flex flex-col gap-1.5">
+                    {node.links.map((tid) => {
+                      const targetNode = nodes.find((n) => n.id === tid);
+                      if (!targetNode) return null;
+                      return (
+                        <div
+                          key={tid}
+                          className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md"
+                          style={{ background: "var(--bg-hover)" }}
+                        >
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span style={{ color: "var(--text-faint)", fontSize: 10 }}>⋯</span>
+                            <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                              {targetNode.label}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const removeCrossLink = useCanvasStore.getState().removeCrossLink;
+                              removeCrossLink(node.id, tid);
+                            }}
+                            className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
+                            title="Supprimer ce lien"
+                          >
+                            <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                      Ctrl + Drag pour ajouter des liens
+                    </p>
+                  </div>
+                </SectionAnimated>
+              )}
+
               {/* Delete zone */}
               {node.type !== "home" && (
                 <div className="px-5 py-4">

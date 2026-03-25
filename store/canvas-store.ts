@@ -75,6 +75,10 @@ interface CanvasState {
   linkToParents: (nodeId: string, parentIds: string[]) => void;
   unlinkFromParent: (nodeId: string, parentId: string) => void;
 
+  // Actions — cross-links (dashed, non-hierarchical)
+  addCrossLinks: (nodeId: string, targetIds: string[]) => void;
+  removeCrossLink: (nodeId: string, targetId: string) => void;
+
   // Actions — undo/redo
   undo: () => void;
   redo: () => void;
@@ -475,6 +479,38 @@ export const useCanvasStore = create<CanvasState>()(
         state.nodeMap = buildNodeMap(state.nodes);
       });
       get().markDirty("reparent");
+    },
+
+    // ─── Cross-links (dashed, non-hierarchical) ──────────────────────────
+
+    addCrossLinks: (nodeId: string, targetIds: string[]) => {
+      if (targetIds.length === 0) return;
+      get()._pushHistory();
+      set((state) => {
+        const node = state.nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+        const existing = new Set(node.links || []);
+        for (const tid of targetIds) {
+          if (tid !== nodeId && !existing.has(tid)) {
+            existing.add(tid);
+          }
+        }
+        node.links = [...existing];
+        state.nodeMap = buildNodeMap(state.nodes);
+      });
+      get().markDirty();
+    },
+
+    removeCrossLink: (nodeId: string, targetId: string) => {
+      get()._pushHistory();
+      set((state) => {
+        const node = state.nodes.find((n) => n.id === nodeId);
+        if (!node || !node.links) return;
+        node.links = node.links.filter((id) => id !== targetId);
+        if (node.links.length === 0) delete node.links;
+        state.nodeMap = buildNodeMap(state.nodes);
+      });
+      get().markDirty();
     },
 
     // ─── Undo/Redo ────────────────────────────────────────────────────────
