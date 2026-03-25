@@ -463,16 +463,18 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
                   <History className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
                   Historique
                 </button>
-                <button
-                  onClick={() => { openComments(selectedNodeId || null); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <MessageCircle className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
-                  Commentaires
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => { openComments(selectedNodeId || null); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
+                    style={{ color: "var(--text-secondary)" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
+                    Commentaires
+                  </button>
+                )}
                 {!readOnly && (
                   <>
                     <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
@@ -560,6 +562,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         projectId={project.id}
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
+        readOnly={readOnly}
       />
 
       {/* Activity panel */}

@@ -48,9 +48,10 @@ interface Props {
   projectId: string;
   open: boolean;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
-export default function VersionHistoryPanel({ projectId, open, onClose }: Props) {
+export default function VersionHistoryPanel({ projectId, open, onClose, readOnly = false }: Props) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
@@ -221,60 +222,62 @@ export default function VersionHistoryPanel({ projectId, open, onClose }: Props)
                                 </p>
                               </div>
 
-                              <AnimatePresence mode="wait">
-                                {isConfirming ? (
-                                  <motion.div
-                                    key="confirm"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="flex items-center gap-1"
-                                  >
-                                    <button
-                                      onClick={() => handleRestore(snap.id)}
-                                      disabled={!!restoring}
-                                      className="px-2 py-1 rounded text-2xs font-medium text-white disabled:opacity-50 active:scale-95"
-                                      style={{ background: "var(--error-text)", transition: "transform 100ms ease, opacity 150ms ease" }}
+                              {!readOnly && (
+                                <AnimatePresence mode="wait">
+                                  {isConfirming ? (
+                                    <motion.div
+                                      key="confirm"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 0.15 }}
+                                      className="flex items-center gap-1"
                                     >
-                                      {isRestoring ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : (
-                                        "Confirmer"
-                                      )}
-                                    </button>
-                                    <button
-                                      onClick={() => setConfirmId(null)}
-                                      className="p-1 rounded transition-colors active:scale-95"
-                                      style={{ transition: "background-color 150ms ease, transform 100ms ease" }}
+                                      <button
+                                        onClick={() => handleRestore(snap.id)}
+                                        disabled={!!restoring}
+                                        className="px-2 py-1 rounded text-2xs font-medium text-white disabled:opacity-50 active:scale-95"
+                                        style={{ background: "var(--error-text)", transition: "transform 100ms ease, opacity 150ms ease" }}
+                                      >
+                                        {isRestoring ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          "Confirmer"
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => setConfirmId(null)}
+                                        className="p-1 rounded transition-colors active:scale-95"
+                                        style={{ transition: "background-color 150ms ease, transform 100ms ease" }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                                      >
+                                        <X className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                                      </button>
+                                    </motion.div>
+                                  ) : (
+                                    <motion.button
+                                      key="restore"
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      exit={{ opacity: 0 }}
+                                      transition={{ duration: 0.15 }}
+                                      onClick={() => setConfirmId(snap.id)}
+                                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 rounded text-2xs border active:scale-95"
+                                      style={{
+                                        color: "var(--text-muted)",
+                                        borderColor: "var(--line)",
+                                        transition: "opacity 150ms ease, background-color 150ms ease, transform 100ms ease",
+                                      }}
                                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
                                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                                     >
-                                      <X className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-                                    </button>
-                                  </motion.div>
-                                ) : (
-                                  <motion.button
-                                    key="restore"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.15 }}
-                                    onClick={() => setConfirmId(snap.id)}
-                                    className="opacity-0 group-hover:opacity-100 flex items-center gap-1 px-2 py-1 rounded text-2xs border active:scale-95"
-                                    style={{
-                                      color: "var(--text-muted)",
-                                      borderColor: "var(--line)",
-                                      transition: "opacity 150ms ease, background-color 150ms ease, transform 100ms ease",
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
-                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                                  >
-                                    <RotateCcw className="w-2.5 h-2.5" />
-                                    Restaurer
-                                  </motion.button>
-                                )}
-                              </AnimatePresence>
+                                      <RotateCcw className="w-2.5 h-2.5" />
+                                      Restaurer
+                                    </motion.button>
+                                  )}
+                                </AnimatePresence>
+                              )}
                             </div>
 
                             <p className="text-2xs" style={{ color: "var(--text-faint)" }} title={formatAbsoluteTime(snap.createdAt)}>

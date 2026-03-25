@@ -295,7 +295,7 @@ export default function DetailPanel({ node, project, onClose, onOpenComments, re
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  {onOpenComments && (
+                  {!readOnly && onOpenComments && (
                     <button
                       onClick={() => onOpenComments(node.id)}
                       className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100"
