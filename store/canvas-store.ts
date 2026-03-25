@@ -151,16 +151,32 @@ export const useCanvasStore = create<CanvasState>()(
 
     initProject: (project: Project) => {
       const migratedNodes = project.nodes.map(migrateNodeZoning);
+      const current = get();
+      const isSameProject = current.projectId === project.id && current.nodes.length > 0;
+
       set((state) => {
+        if (isSameProject) {
+          // Same project reload (e.g. after AI edit) — preserve undo history
+          const snapshot: NodeState = {
+            nodes: JSON.parse(JSON.stringify(state.nodes)),
+            nodeMap: buildNodeMap(JSON.parse(JSON.stringify(state.nodes))),
+          };
+          state.past.push(snapshot);
+          if (state.past.length > MAX_HISTORY) state.past.shift();
+          state.future = [];
+        } else {
+          // Different project — clean slate
+          state.past = [];
+          state.future = [];
+          state.selectedNodeId = null;
+          state.editingNodeId = null;
+        }
+
         state.projectId = project.id;
         state.projectSlug = project.slug;
         state.accent = project.accent;
         state.nodes = migratedNodes;
         state.nodeMap = buildNodeMap(migratedNodes);
-        state.past = [];
-        state.future = [];
-        state.selectedNodeId = null;
-        state.editingNodeId = null;
         state.saveStatus = "saved";
         state.saveError = null;
       });
