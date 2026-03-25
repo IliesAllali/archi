@@ -10,11 +10,10 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, Activity, MessageCircle } from "lucide-react";
+import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, MessageCircle } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
-import ActivityPanel from "@/components/ActivityPanel";
 import AiBar from "@/components/AiBar";
 import AiChatPanel from "@/components/AiChatPanel";
 import type { ChatMessage, AiAction } from "@/components/AiChatPanel";
@@ -60,7 +59,7 @@ function CommentModeButton({ accent }: { accent: string }) {
 export default function CanvasPage({ project, currentUser, readOnly = false }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
+
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentsNodeId, setCommentsNodeId] = useState<string | null>(null);
   const [commentsNodeLabel, setCommentsNodeLabel] = useState<string | null>(null);
@@ -444,16 +443,6 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
                 </button>
                 <div className="my-1" style={{ borderTop: "1px solid var(--line)" }} />
                 <button
-                  onClick={() => { setActivityOpen(true); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <Activity className="w-3.5 h-3.5" style={{ color: "var(--text-faint)" }} />
-                  Activité
-                </button>
-                <button
                   onClick={() => { setHistoryOpen(true); setMenuOpen(false); }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors"
                   style={{ color: "var(--text-secondary)" }}
@@ -545,7 +534,6 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
           project={liveProject}
           externalSelectedNode={selectedNode}
           onExternalSelectClear={() => selectNode(null)}
-          onOpenComments={openComments}
           readOnly={readOnly}
           currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
         />
@@ -563,13 +551,6 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
         readOnly={readOnly}
-      />
-
-      {/* Activity panel */}
-      <ActivityPanel
-        projectId={project.id}
-        open={activityOpen}
-        onClose={() => setActivityOpen(false)}
       />
 
       {/* Comments panel */}

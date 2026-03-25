@@ -189,7 +189,6 @@ interface DetailPanelProps {
   node: SiteNode | null;
   project: Project;
   onClose: () => void;
-  onOpenComments?: (nodeId: string) => void;
   readOnly?: boolean;
 }
 
@@ -213,7 +212,7 @@ function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
   return path;
 }
 
-export default function DetailPanel({ node, project, onClose, onOpenComments, readOnly = false }: DetailPanelProps) {
+export default function DetailPanel({ node, project, onClose, readOnly = false }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -362,15 +361,6 @@ export default function DetailPanel({ node, project, onClose, onOpenComments, re
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  {!readOnly && onOpenComments && (
-                    <button
-                      onClick={() => onOpenComments(node.id)}
-                      className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100"
-                      title="Commentaires"
-                    >
-                      <MessageSquare className="w-4 h-4 text-label-muted" />
-                    </button>
-                  )}
                   <button
                     onClick={onClose}
                     className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"

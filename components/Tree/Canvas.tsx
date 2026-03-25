@@ -41,7 +41,6 @@ interface CanvasProps {
   project: Project;
   externalSelectedNode?: SiteNode | null;
   onExternalSelectClear?: () => void;
-  onOpenComments?: (nodeId: string) => void;
   readOnly?: boolean;
   currentUser?: { id: string; name: string } | null;
 }
@@ -245,7 +244,7 @@ function computeShiftsAndIndicator(
 
 // ─── Main Canvas ────────────────────────────────────────────────────────────
 
-function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onOpenComments, readOnly = false, currentUser = null }: CanvasProps) {
+function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, readOnly = false, currentUser = null }: CanvasProps) {
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
   const [layoutReady, setLayoutReady] = useState(false);
@@ -958,7 +957,6 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           selectNode(null);
           onExternalSelectClear?.();
         }}
-        onOpenComments={onOpenComments}
         readOnly={readOnly}
       />
 
