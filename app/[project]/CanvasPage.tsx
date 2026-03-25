@@ -24,7 +24,7 @@ import { usePresenceStore } from "@/hooks/usePresenceStore";
 
 interface Props {
   project: Project;
-  currentUser?: { id: string; name: string; role: string } | null;
+  currentUser?: { id: string; name: string; role: string; avatar?: string | null } | null;
   readOnly?: boolean;
 }
 
@@ -84,6 +84,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
     userId: currentUser?.id,
     displayName: currentUser?.name,
     role: currentUser?.role,
+    avatarUrl: currentUser?.avatar || null,
   });
 
   const otherUsers = usePresenceStore((s) => s.otherUsers);

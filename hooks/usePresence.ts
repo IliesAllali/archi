@@ -15,6 +15,7 @@ interface UsePresenceOptions {
   displayName?: string;
   role?: string;
   color?: string;
+  avatarUrl?: string | null;
 }
 
 /**
@@ -22,7 +23,7 @@ interface UsePresenceOptions {
  * and syncs presence data directly into the Zustand store
  * (no local useState — avoids re-rendering the host component).
  */
-export function usePresence({ projectId, userId, displayName, role, color }: UsePresenceOptions) {
+export function usePresence({ projectId, userId, displayName, role, color, avatarUrl }: UsePresenceOptions) {
   const socketRef = useRef<Socket | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSaveRef = useRef<number>(0);
@@ -43,6 +44,7 @@ export function usePresence({ projectId, userId, displayName, role, color }: Use
         displayName: displayName || "Visiteur",
         role: role || "guest",
         color: color || undefined,
+        avatarUrl: avatarUrl || null,
         isAI: false,
       });
 
@@ -103,7 +105,7 @@ export function usePresence({ projectId, userId, displayName, role, color }: Use
       socketRef.current = null;
       usePresenceStore.getState().setOtherUsers([]);
     };
-  }, [projectId, userId, displayName, role, color, myId]);
+  }, [projectId, userId, displayName, role, color, avatarUrl, myId]);
 
   const focusNode = useCallback((nodeId: string) => {
     socketRef.current?.emit("node-focus", { projectId, nodeId });

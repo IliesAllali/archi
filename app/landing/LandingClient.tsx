@@ -1,643 +1,755 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import Link from "next/link"
-import { motion, useScroll, useTransform, useInView } from "framer-motion"
-import { ArrowRight, Sparkles, Play, Zap, MessageSquare, Users, Share2, FileText, History } from "lucide-react"
+import {
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  useMotionValue,
+  useSpring,
+  type MotionValue,
+} from "framer-motion"
+import { ArrowRight, Check, ChevronDown, Plus } from "lucide-react"
+import Logo from "@/components/Logo"
 import { detectLocale, getTranslations } from "@/lib/landing-i18n"
 import type { Locale, Translations } from "@/lib/landing-i18n"
 
-/* ──────────────────── Shared animation config ──────────────────── */
+/* ───── Shared ───── */
 
 const ease = [0.16, 1, 0.3, 1] as const
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: i * 0.08, ease },
-  }),
-}
-const fadeIn = {
-  hidden: { opacity: 0 },
-  visible: (i: number) => ({
-    opacity: 1,
-    transition: { duration: 0.5, delay: i * 0.1, ease },
-  }),
-}
+const springConfig = { stiffness: 100, damping: 30, restDelta: 0.001 }
 
-/* ──────────────────── Section wrapper with scroll reveal ──────── */
+/* ───── Scroll-linked fade + lift ───── */
 
-function Section({
+function FadeUp({
   children,
+  delay = 0,
   className = "",
-  id,
 }: {
-  children: React.ReactNode
+  children: ReactNode
+  delay?: number
   className?: string
-  id?: string
 }) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: "-80px" })
+  const inView = useInView(ref, { once: true, margin: "-80px" })
   return (
-    <motion.section
+    <motion.div
       ref={ref}
-      id={id}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
+      initial={{ opacity: 0, y: 32 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease }}
       className={className}
     >
       {children}
-    </motion.section>
+    </motion.div>
   )
 }
 
-/* ──────────────────── Logo ──────────────────────────────────────── */
+/* ───── Word-by-word title reveal ───── */
 
-function ArboLogo({ size = 28 }: { size?: number }) {
+function RevealTitle({
+  text,
+  className,
+  style,
+  delay = 0,
+}: {
+  text: string
+  className?: string
+  style?: React.CSSProperties
+  delay?: number
+}) {
+  const words = text.split(" ")
   return (
-    <div
-      className="rounded-lg flex items-center justify-center"
+    <motion.span className={className} style={style}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          className="inline-block mr-[0.3em]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: delay + i * 0.04, ease }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </motion.span>
+  )
+}
+
+/* ───── Parallax wrapper ───── */
+
+function Parallax({
+  children,
+  offset = 60,
+  className = "",
+}: {
+  children: ReactNode
+  offset?: number
+  className?: string
+}) {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  })
+  const y = useTransform(scrollYProgress, [0, 1], [offset, -offset])
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  )
+}
+
+/* ───── Magnetic button ───── */
+
+function MagneticButton({
+  children,
+  className = "",
+  style,
+  href,
+}: {
+  children: ReactNode
+  className?: string
+  style?: React.CSSProperties
+  href: string
+}) {
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const springX = useSpring(x, springConfig)
+  const springY = useSpring(y, springConfig)
+
+  return (
+    <motion.div
+      style={{ x: springX, y: springY }}
+      onMouseMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        x.set((e.clientX - rect.left - rect.width / 2) * 0.15)
+        y.set((e.clientY - rect.top - rect.height / 2) * 0.15)
+      }}
+      onMouseLeave={() => {
+        x.set(0)
+        y.set(0)
+      }}
+      className="inline-block"
+    >
+      <Link href={href} className={className} style={style}>
+        {children}
+      </Link>
+    </motion.div>
+  )
+}
+
+/* ───── Scroll progress bar ───── */
+
+function ScrollProgress() {
+  const { scrollYProgress } = useScroll()
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 200,
+    damping: 50,
+    restDelta: 0.001,
+  })
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 right-0 z-[60] h-[2px] origin-left"
       style={{
-        width: size + 8,
-        height: size + 8,
+        scaleX,
         background: "var(--accent)",
       }}
-    >
-      <svg width={size * 0.7} height={size * 0.7} viewBox="0 0 24 24" fill="none">
-        <path d="M12 4V12M12 12L6 18M12 12L18 18" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
+    />
   )
 }
 
-/* ──────────────────── Nav ──────────────────────────────────────── */
+/* ───── Nav ───── */
 
-function Nav({ t, locale, onLocaleChange }: { t: Translations; locale: Locale; onLocaleChange: (l: Locale) => void }) {
+function Nav({
+  t,
+  locale,
+  onLocaleChange,
+}: {
+  t: Translations
+  locale: Locale
+  onLocaleChange: (l: Locale) => void
+}) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20)
-    window.addEventListener("scroll", handler, { passive: true })
-    return () => window.removeEventListener("scroll", handler)
+    const h = () => setScrolled(window.scrollY > 10)
+    window.addEventListener("scroll", h, { passive: true })
+    return () => window.removeEventListener("scroll", h)
   }, [])
 
   return (
     <motion.nav
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease }}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.4, ease }}
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
       style={{
-        background: scrolled ? "rgba(var(--nav-rgb, 255,255,255), 0.85)" : "transparent",
-        backdropFilter: scrolled ? "blur(16px) saturate(180%)" : "none",
-        borderBottom: scrolled ? "1px solid var(--line)" : "1px solid transparent",
+        background: scrolled ? "rgba(245,245,247,0.8)" : "transparent",
+        backdropFilter: scrolled ? "blur(16px) saturate(1.8)" : "none",
+        borderBottom: scrolled
+          ? "1px solid var(--line)"
+          : "1px solid transparent",
       }}
     >
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <ArboLogo size={24} />
-            <span className="text-sm font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              arbo
-            </span>
-          </Link>
-          <div className="hidden sm:flex items-center gap-5">
-            <a href="#features" className="text-xs font-medium transition-colors hover:opacity-80" style={{ color: "var(--text-muted)" }}>
-              {t.nav.features}
-            </a>
-            <a href="#pricing" className="text-xs font-medium transition-colors hover:opacity-80" style={{ color: "var(--text-muted)" }}>
-              {t.nav.pricing}
-            </a>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Language toggle */}
+      <div className="max-w-[1120px] mx-auto px-6 h-14 flex items-center justify-between">
+        <Link href="/landing" className="flex items-center gap-2 group">
+          <Logo size={16} />
+          <span
+            className="text-sm font-semibold transition-colors duration-200 group-hover:opacity-70"
+            style={{ color: "var(--text-primary)" }}
+          >
+            arbo
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onLocaleChange(locale === "en" ? "fr" : "en")}
-            className="px-2 py-1 rounded-md text-2xs font-medium transition-all hover:opacity-80"
+            className="px-2.5 py-1.5 rounded text-xs font-medium transition-colors hover:opacity-70"
             style={{ color: "var(--text-faint)" }}
           >
             {locale === "en" ? "FR" : "EN"}
           </button>
           <Link
             href="/login"
-            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+            className="px-3 py-1.5 rounded-md text-sm transition-colors hover:opacity-70"
             style={{ color: "var(--text-muted)" }}
           >
             {t.nav.login}
           </Link>
-          <Link
+          <MagneticButton
             href="/register"
-            className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150 hover:brightness-110 active:scale-95"
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.97]"
             style={{ background: "var(--accent)", color: "#fff" }}
           >
             {t.nav.cta}
-          </Link>
+          </MagneticButton>
         </div>
       </div>
     </motion.nav>
   )
 }
 
-/* ──────────────────── Hero ──────────────────────────────────────── */
+/* ───── Hero ───── */
 
 function Hero({ t }: { t: Translations }) {
   return (
-    <div className="relative pt-32 sm:pt-40 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden">
-      {/* Subtle radial glow behind hero */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse at center, var(--accent-muted) 0%, transparent 70%)",
-          opacity: 0.6,
-        }}
-      />
-
-      <div className="max-w-3xl mx-auto text-center relative">
-        {/* Badge */}
-        <motion.div
-          variants={fadeUp}
-          custom={0}
-          initial="hidden"
-          animate="visible"
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6"
-          style={{
-            background: "var(--accent-muted)",
-            border: "1px solid var(--accent-strong)",
-          }}
-        >
-          <Sparkles className="w-3 h-3" style={{ color: "var(--accent)" }} />
-          <span className="text-2xs font-medium" style={{ color: "var(--accent)" }}>
-            {t.hero.badge}
-          </span>
-        </motion.div>
-
-        {/* Title */}
-        <motion.h1
-          variants={fadeUp}
-          custom={1}
-          initial="hidden"
-          animate="visible"
-          className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-5"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {t.hero.title}
+    <div className="pt-28 sm:pt-40 pb-10 sm:pb-12 px-6">
+      <div className="max-w-[1120px] mx-auto text-center">
+        <h1 className="text-4xl sm:text-[56px] lg:text-[64px] font-semibold leading-[1.06] tracking-tight">
+          <RevealTitle
+            text={t.hero.title}
+            style={{ color: "var(--text-primary)" }}
+          />
           <br />
-          <span style={{ color: "var(--accent)" }}>{t.hero.titleAccent}</span>
-        </motion.h1>
+          <RevealTitle
+            text={t.hero.titleAccent}
+            style={{ color: "var(--accent)" }}
+            delay={0.2}
+          />
+        </h1>
 
-        {/* Subtitle */}
         <motion.p
-          variants={fadeUp}
-          custom={2}
-          initial="hidden"
-          animate="visible"
-          className="text-sm sm:text-base max-w-xl mx-auto mb-8 leading-relaxed"
+          initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.7, delay: 0.5, ease }}
+          className="text-base sm:text-lg mt-5 max-w-xl mx-auto leading-relaxed"
           style={{ color: "var(--text-secondary)" }}
         >
           {t.hero.subtitle}
         </motion.p>
 
-        {/* CTAs */}
         <motion.div
-          variants={fadeUp}
-          custom={3}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col sm:flex-row items-center justify-center gap-3"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.65, ease }}
+          className="mt-6 flex items-center justify-center gap-4"
         >
-          <Link
+          <MagneticButton
             href="/register"
-            className="group flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.97]"
-            style={{
-              background: "var(--accent)",
-              color: "#fff",
-              boxShadow: "0 4px 20px var(--accent-strong)",
-            }}
+            className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
+            style={{ background: "var(--accent)", color: "#fff" }}
           >
             {t.hero.cta}
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
-          <a
-            href="#how-it-works"
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium transition-all duration-150 hover:opacity-80"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <Play className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </MagneticButton>
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
             {t.hero.ctaSecondary}
-          </a>
+          </span>
         </motion.div>
       </div>
     </div>
   )
 }
 
-/* ──────────────────── Demo window (placeholder) ────────────────── */
+/* ───── Hero Screenshot ───── */
 
-function DemoWindow({ t }: { t: Translations }) {
+function HeroScreenshot() {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  })
+  const scale = useTransform(scrollYProgress, [0, 0.3], [0.92, 1])
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [0.6, 1])
+  const borderRadius = useTransform(scrollYProgress, [0, 0.3], [20, 12])
+
+  return (
+    <div className="px-6 pb-0" ref={ref}>
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.35, ease }}
+        className="max-w-[1120px] mx-auto overflow-hidden"
+        style={{
+          border: "1px solid var(--line)",
+          boxShadow:
+            "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 24px 80px rgba(0,0,0,0.08)",
+          aspectRatio: "16/9",
+          background: "var(--surface)",
+          scale,
+          opacity,
+          borderRadius,
+        }}
+      />
+    </div>
+  )
+}
+
+/* ───── Manifesto ───── */
+
+function Manifesto({ t }: { t: Translations }) {
+  return (
+    <section className="px-6 pt-20 sm:pt-28 pb-14 sm:pb-20">
+      <div className="max-w-[1120px] mx-auto">
+        <FadeUp>
+          <h2
+            className="text-2xl sm:text-[40px] lg:text-[48px] font-semibold tracking-tight leading-[1.08] max-w-2xl"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {t.manifesto.title}
+          </h2>
+          <p
+            className="text-base sm:text-lg mt-3 max-w-2xl leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {t.manifesto.subtitle}
+          </p>
+        </FadeUp>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 sm:mt-12">
+          {t.manifesto.points.map((point, i) => (
+            <FadeUp key={i} delay={0.08 * i}>
+              <div className="group">
+                <div
+                  className="w-6 h-[2px] mb-4 transition-all duration-500 group-hover:w-10"
+                  style={{ background: "var(--accent)" }}
+                />
+                <h3
+                  className="text-[13px] font-semibold mb-1.5"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {point.title}
+                </h3>
+                <p
+                  className="text-[13px] leading-[1.6]"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {point.desc}
+                </p>
+              </div>
+            </FadeUp>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ───── Pillar Section ───── */
+
+function PillarIllustration({ placeholder }: { placeholder: string }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start end", "end start"],
   })
   const y = useTransform(scrollYProgress, [0, 1], [40, -40])
-  const scale = useTransform(scrollYProgress, [0, 0.3], [0.95, 1])
+  const scale = useTransform(scrollYProgress, [0, 0.4, 1], [0.96, 1, 1])
 
   return (
-    <div ref={ref} className="px-4 sm:px-6 pb-16 sm:pb-24">
+    <div ref={ref} className="mt-7 sm:mt-8">
       <motion.div
-        style={{ y, scale }}
-        className="max-w-4xl mx-auto rounded-2xl overflow-hidden relative"
+        className="w-full rounded-xl overflow-hidden flex items-center justify-center relative"
+        style={{
+          border: "1px solid var(--line)",
+          background: "var(--surface)",
+          aspectRatio: "16/9",
+          boxShadow:
+            "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04), 0 24px 64px rgba(0,0,0,0.06)",
+          y,
+          scale,
+        }}
       >
-        {/* Window chrome */}
-        <div
-          className="flex items-center gap-2 px-4 py-3"
-          style={{
-            background: "var(--surface)",
-            borderBottom: "1px solid var(--line)",
-          }}
-        >
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#ef4444" }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#eab308" }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#22c55e" }} />
-          </div>
-          <div
-            className="flex-1 mx-12 h-6 rounded-md flex items-center justify-center"
-            style={{ background: "var(--elevated)" }}
-          >
-            <span className="text-2xs font-mono" style={{ color: "var(--text-faint)" }}>
-              arbo.patchou.cloud
-            </span>
-          </div>
-        </div>
-
-        {/* Content placeholder */}
-        <div
-          className="aspect-[16/9] flex flex-col items-center justify-center gap-4 relative"
-          style={{ background: "var(--canvas-bg)" }}
-        >
-          {/* Animated fake nodes */}
-          <div className="relative w-full h-full overflow-hidden">
-            <FakeTree />
-          </div>
-
-          {/* Overlay with play button for future video */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-3 px-6 py-3 rounded-full cursor-pointer"
-              style={{
-                background: "rgba(0,0,0,0.6)",
-                backdropFilter: "blur(12px)",
-              }}
-            >
-              <Play className="w-5 h-5 text-white fill-white" />
-              <span className="text-sm font-medium text-white">{t.demo.placeholder}</span>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Border */}
-        <div
-          className="absolute inset-0 rounded-2xl pointer-events-none"
-          style={{ border: "1px solid var(--line-strong)", boxShadow: "0 24px 80px rgba(0,0,0,0.12)" }}
-        />
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          {placeholder}
+        </p>
       </motion.div>
     </div>
   )
 }
 
-/* ──────────────────── Fake tree for demo ───────────────────────── */
-
-function FakeTree() {
-  const nodes = [
-    { x: 50, y: 12, w: 14, label: "Home", accent: true },
-    { x: 22, y: 36, w: 12, label: "About" },
-    { x: 50, y: 36, w: 12, label: "Services" },
-    { x: 78, y: 36, w: 12, label: "Blog" },
-    { x: 12, y: 60, w: 11, label: "Team" },
-    { x: 32, y: 60, w: 11, label: "Careers" },
-    { x: 42, y: 60, w: 12, label: "Web Design" },
-    { x: 58, y: 60, w: 11, label: "Branding" },
-    { x: 72, y: 60, w: 12, label: "Articles" },
-    { x: 86, y: 60, w: 12, label: "Categories" },
-    { x: 50, y: 84, w: 11, label: "Contact" },
-  ]
-
-  const edges = [
-    [0, 1], [0, 2], [0, 3],
-    [1, 4], [1, 5],
-    [2, 6], [2, 7],
-    [3, 8], [3, 9],
-    [0, 10],
-  ]
+function Pillar({
+  pillar,
+  index,
+}: {
+  pillar: Translations["pillars"][0]
+  index: number
+}) {
+  const [expandedSub, setExpandedSub] = useState<number | null>(null)
 
   return (
-    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-      {/* Edges */}
-      {edges.map(([from, to], i) => (
-        <motion.line
-          key={`e-${i}`}
-          x1={`${nodes[from].x}%`}
-          y1={`${nodes[from].y + 4}%`}
-          x2={`${nodes[to].x}%`}
-          y2={`${nodes[to].y}%`}
-          stroke="var(--edge-color)"
-          strokeWidth="0.3"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
-        />
-      ))}
-      {/* Nodes */}
-      {nodes.map((n, i) => (
-        <motion.g
-          key={i}
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.5 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <rect
-            x={`${n.x - n.w / 2}%`}
-            y={`${n.y}%`}
-            width={`${n.w}%`}
-            height="6%"
-            rx="1"
-            fill={n.accent ? "var(--accent)" : "var(--surface)"}
-            stroke={n.accent ? "var(--accent)" : "var(--line-strong)"}
-            strokeWidth="0.3"
-          />
-          <text
-            x={`${n.x}%`}
-            y={`${n.y + 3.6}%`}
-            textAnchor="middle"
-            className="font-sans"
-            style={{
-              fontSize: "2px",
-              fill: n.accent ? "#fff" : "var(--text-secondary)",
-              fontWeight: n.accent ? 600 : 400,
-            }}
-          >
-            {n.label}
-          </text>
-        </motion.g>
-      ))}
-    </svg>
-  )
-}
-
-/* ──────────────────── How it works ─────────────────────────────── */
-
-function HowItWorks({ t }: { t: Translations }) {
-  return (
-    <Section id="how-it-works" className="py-20 sm:py-28 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        <motion.div variants={fadeUp} custom={0} className="text-center mb-14">
-          <span
-            className="text-2xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--accent)" }}
-          >
-            {t.howItWorks.label}
-          </span>
-          <h2
-            className="text-2xl sm:text-3xl font-bold tracking-tight mt-3"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {t.howItWorks.title}
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
-          {t.howItWorks.steps.map((step, i) => (
-            <motion.div
-              key={i}
-              variants={fadeUp}
-              custom={i + 1}
-              className="relative p-6 rounded-2xl group"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line)",
-              }}
+    <section className="px-6 pt-12 sm:pt-16 pb-12 sm:pb-16">
+      <div className="max-w-[1120px] mx-auto">
+        {/* Number + label + title + subtitle */}
+        <FadeUp>
+          <div className="flex items-start gap-4 sm:gap-6">
+            <span
+              className="text-[11px] font-mono font-medium mt-1.5 shrink-0 tabular-nums"
+              style={{ color: "var(--accent)", opacity: 0.5 }}
             >
-              {/* Step number */}
-              <span
-                className="text-4xl sm:text-5xl font-black leading-none"
-                style={{ color: "var(--accent-muted)" }}
+              {pillar.number}
+            </span>
+            <div>
+              <p
+                className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-2"
+                style={{ color: "var(--accent)" }}
               >
-                {step.number}
-              </span>
-              <h3
-                className="text-base font-semibold mt-3 mb-2"
+                {pillar.label}
+              </p>
+              <h2
+                className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-tight leading-[1.1]"
                 style={{ color: "var(--text-primary)" }}
               >
-                {step.title}
-              </h3>
-              <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                {step.desc}
+                {pillar.title}
+              </h2>
+              <p
+                className="text-[15px] sm:text-base mt-3 max-w-xl leading-[1.6]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {pillar.subtitle}
               </p>
+            </div>
+          </div>
+        </FadeUp>
 
-              {/* Screenshot placeholder */}
+        {/* Illustration with parallax */}
+        <FadeUp delay={0.1}>
+          <PillarIllustration placeholder={pillar.placeholder} />
+        </FadeUp>
+
+        {/* Sub-features accordion */}
+        <FadeUp delay={0.15}>
+          <div
+            className="mt-6"
+            style={{ borderTop: "1px solid var(--line)" }}
+          >
+            {pillar.subs.map((sub, i) => (
               <div
-                className="mt-5 aspect-[4/3] rounded-lg flex items-center justify-center"
-                style={{
-                  background: "var(--canvas-bg)",
-                  border: "1px solid var(--line-subtle)",
-                }}
+                key={sub.id}
+                style={{ borderBottom: "1px solid var(--line)" }}
               >
-                <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Screenshot
-                </span>
-              </div>
-
-              {/* Connector line between cards (desktop only) */}
-              {i < 2 && (
-                <div
-                  className="hidden sm:block absolute top-1/2 -right-2 w-4 h-px"
-                  style={{ background: "var(--line-strong)" }}
-                />
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  )
-}
-
-/* ──────────────────── Features grid ────────────────────────────── */
-
-const featureIcons = [Sparkles, MessageSquare, Users, Share2, FileText, History]
-
-function Features({ t }: { t: Translations }) {
-  return (
-    <Section id="features" className="py-20 sm:py-28 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        <motion.div variants={fadeUp} custom={0} className="text-center mb-14">
-          <span
-            className="text-2xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--accent)" }}
-          >
-            {t.features.label}
-          </span>
-          <h2
-            className="text-2xl sm:text-3xl font-bold tracking-tight mt-3"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {t.features.title}
-          </h2>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {t.features.items.map((item, i) => {
-            const Icon = featureIcons[i]
-            const isHero = i < 2
-            return (
-              <motion.div
-                key={i}
-                variants={fadeUp}
-                custom={i + 1}
-                className={`group relative p-5 rounded-xl transition-all duration-300 hover:translate-y-[-2px] ${
-                  isHero ? "sm:col-span-1 lg:col-span-1" : ""
-                }`}
-                style={{
-                  background: "var(--surface)",
-                  border: isHero
-                    ? "1px solid var(--accent-strong)"
-                    : "1px solid var(--line)",
-                  boxShadow: isHero
-                    ? "0 0 0 1px var(--accent-muted)"
-                    : "none",
-                }}
-              >
-                {/* Icon */}
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
-                  style={{
-                    background: isHero ? "var(--accent-muted)" : "var(--elevated)",
-                    border: `1px solid ${isHero ? "var(--accent-strong)" : "var(--line)"}`,
-                  }}
+                <button
+                  onClick={() =>
+                    setExpandedSub(expandedSub === i ? null : i)
+                  }
+                  className="w-full flex items-center gap-3.5 py-3 text-left group"
                 >
-                  <Icon
-                    className="w-4 h-4"
-                    style={{ color: isHero ? "var(--accent)" : "var(--text-secondary)" }}
+                  <span
+                    className="text-[11px] font-mono shrink-0 w-7 tabular-nums transition-colors duration-200 group-hover:text-[var(--accent)]"
+                    style={{ color: "var(--text-faint)" }}
+                  >
+                    {sub.id}
+                  </span>
+                  <span
+                    className="text-[13px] font-medium flex-1 transition-colors duration-200 group-hover:text-[var(--accent)]"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {sub.title}
+                  </span>
+                  <Plus
+                    className="w-3 h-3 shrink-0 transition-all duration-300"
+                    style={{
+                      color: "var(--text-faint)",
+                      transform:
+                        expandedSub === i ? "rotate(45deg)" : "rotate(0deg)",
+                    }}
                   />
-                </div>
-
-                {/* Tag */}
-                <span
-                  className="text-2xs font-medium px-2 py-0.5 rounded-full"
-                  style={{
-                    background: isHero ? "var(--accent-muted)" : "var(--elevated)",
-                    color: isHero ? "var(--accent)" : "var(--text-faint)",
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{
+                    height: expandedSub === i ? "auto" : 0,
+                    opacity: expandedSub === i ? 1 : 0,
                   }}
+                  transition={{ duration: 0.3, ease }}
+                  className="overflow-hidden"
                 >
-                  {item.tag}
-                </span>
-
-                <h3
-                  className="text-sm font-semibold mt-3 mb-1.5"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {item.title}
-                </h3>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                  {item.desc}
-                </p>
-              </motion.div>
-            )
-          })}
-        </div>
+                  <p
+                    className="text-[13px] leading-[1.6] pb-3.5 pl-[42px]"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {sub.desc}
+                  </p>
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </FadeUp>
       </div>
-    </Section>
+    </section>
   )
 }
 
-/* ──────────────────── Pricing teaser ───────────────────────────── */
+/* ───── Social proof ───── */
+
+function SocialProof({ t }: { t: Translations }) {
+  return (
+    <section className="px-6 pt-6 pb-10 sm:pt-8 sm:pb-14">
+      <div className="max-w-[1120px] mx-auto text-center">
+        <FadeUp>
+          <div className="w-8 h-[1px] mx-auto mb-6" style={{ background: "var(--line)" }} />
+          <p className="text-[13px]" style={{ color: "var(--text-faint)" }}>
+            {t.social.line}
+          </p>
+        </FadeUp>
+      </div>
+    </section>
+  )
+}
+
+/* ───── Pricing ───── */
 
 function Pricing({ t }: { t: Translations }) {
   return (
-    <Section id="pricing" className="py-20 sm:py-28 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto text-center">
-        <motion.div variants={fadeUp} custom={0}>
-          <span
-            className="text-2xs font-semibold uppercase tracking-widest"
-            style={{ color: "var(--accent)" }}
-          >
-            {t.pricing.label}
-          </span>
-        </motion.div>
-
-        <motion.h2
-          variants={fadeUp}
-          custom={1}
-          className="text-3xl sm:text-4xl font-bold tracking-tight mt-3 mb-4"
-          style={{ color: "var(--text-primary)" }}
-        >
-          {t.pricing.title}
-        </motion.h2>
-
-        <motion.p
-          variants={fadeUp}
-          custom={2}
-          className="text-sm sm:text-base mb-8"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          {t.pricing.subtitle}
-        </motion.p>
-
-        <motion.div variants={fadeUp} custom={3} className="flex flex-col items-center gap-3">
-          <Link
-            href="/register"
-            className="group flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:shadow-lg active:scale-[0.97]"
+    <section id="pricing" className="px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
+      <div className="max-w-xl mx-auto">
+        <FadeUp>
+          <div
+            className="px-8 py-10 sm:px-10 sm:py-10 rounded-2xl text-center transition-shadow duration-500 hover:shadow-lg"
             style={{
-              background: "var(--accent)",
-              color: "#fff",
-              boxShadow: "0 4px 20px var(--accent-strong)",
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
             }}
           >
-            {t.pricing.cta}
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-          </Link>
-          <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-            {t.pricing.soon}
-          </span>
-        </motion.div>
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-2"
+              style={{ color: "var(--text-faint)" }}
+            >
+              {t.pricing.label}
+            </p>
+            <h2
+              className="text-lg sm:text-xl font-semibold tracking-tight"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {t.pricing.title}
+            </h2>
+            <p
+              className="text-[13px] mt-1.5 mb-6"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {t.pricing.subtitle}
+            </p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-6 max-w-sm mx-auto">
+              {t.pricing.perks.map((perk, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <Check
+                    className="w-3 h-3 shrink-0"
+                    style={{ color: "var(--accent)" }}
+                  />
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {perk}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <MagneticButton
+              href="/register"
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              {t.pricing.cta}
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+            </MagneticButton>
+
+            <p
+              className="text-[11px] mt-3"
+              style={{ color: "var(--text-faint)" }}
+            >
+              {t.pricing.soon}
+            </p>
+          </div>
+        </FadeUp>
       </div>
-    </Section>
+    </section>
   )
 }
 
-/* ──────────────────── Footer ───────────────────────────────────── */
+/* ───── FAQ ───── */
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ borderBottom: "1px solid var(--line)" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-3.5 text-left group"
+      >
+        <span
+          className="text-[13px] font-medium pr-4 transition-colors duration-200 group-hover:text-[var(--accent)]"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {q}
+        </span>
+        <ChevronDown
+          className="w-4 h-4 shrink-0 transition-all duration-300"
+          style={{
+            color: "var(--text-faint)",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+      <motion.div
+        initial={false}
+        animate={{ height: open ? "auto" : 0, opacity: open ? 1 : 0 }}
+        transition={{ duration: 0.3, ease }}
+        className="overflow-hidden"
+      >
+        <p
+          className="text-[13px] leading-[1.6] pb-3.5"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          {a}
+        </p>
+      </motion.div>
+    </div>
+  )
+}
+
+function Faq({ t }: { t: Translations }) {
+  return (
+    <section className="px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
+      <div className="max-w-2xl mx-auto">
+        <FadeUp>
+          <h2
+            className="text-lg sm:text-xl font-semibold tracking-tight mb-6"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {t.faq.title}
+          </h2>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <div>
+            {t.faq.items.map((item, i) => (
+              <FaqItem key={i} q={item.q} a={item.a} />
+            ))}
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  )
+}
+
+/* ───── Final CTA ───── */
+
+function FinalCta({ t }: { t: Translations }) {
+  return (
+    <section className="px-6 pt-10 sm:pt-14 pb-16 sm:pb-20">
+      <div className="max-w-[1120px] mx-auto text-center">
+        <FadeUp>
+          <h2
+            className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-tight leading-[1.1] mb-6"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {t.finalCta.title}
+          </h2>
+          <div className="flex items-center justify-center gap-4">
+            <MagneticButton
+              href="/register"
+              className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              {t.finalCta.cta}
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+            </MagneticButton>
+            <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+              {t.finalCta.ctaSecondary}
+            </span>
+          </div>
+        </FadeUp>
+      </div>
+    </section>
+  )
+}
+
+/* ───── Footer ───── */
 
 function Footer({ t }: { t: Translations }) {
   return (
     <footer
-      className="py-10 px-4 sm:px-6"
+      className="px-6 py-6"
       style={{ borderTop: "1px solid var(--line)" }}
     >
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <ArboLogo size={20} />
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+      <div className="max-w-[1120px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Logo size={14} />
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
             {t.footer.built}{" "}
-            <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+            <a
+              href="https://www.linkedin.com/in/ilies-allali"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors duration-200 hover:text-[var(--accent)]"
+              style={{ color: "var(--text-muted)" }}
+            >
               {t.footer.maker}
-            </span>
+            </a>
             {" "}&middot; {t.footer.makerDesc}
           </span>
         </div>
-        <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-          &copy; {new Date().getFullYear()} arbo. {t.footer.rights}
+        <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+          &copy; {new Date().getFullYear()} arbo
         </span>
       </div>
     </footer>
   )
 }
 
-/* ──────────────────── Main ─────────────────────────────────────── */
+/* ───── Noise overlay ───── */
+
+function GrainOverlay() {
+  return (
+    <div
+      className="pointer-events-none fixed inset-0 z-[100]"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        opacity: 0.025,
+        mixBlendMode: "multiply",
+      }}
+    />
+  )
+}
+
+/* ───── Page ───── */
 
 export default function LandingClient() {
   const [locale, setLocale] = useState<Locale>("en")
@@ -650,15 +762,25 @@ export default function LandingClient() {
 
   return (
     <div
-      className="min-h-screen selection:bg-orange-500/20"
+      className="min-h-screen relative"
       style={{ background: "var(--canvas-bg)" }}
     >
+      <GrainOverlay />
+      <ScrollProgress />
       <Nav t={t} locale={locale} onLocaleChange={setLocale} />
       <Hero t={t} />
-      <DemoWindow t={t} />
-      <HowItWorks t={t} />
-      <Features t={t} />
+      <HeroScreenshot />
+
+      <Manifesto t={t} />
+
+      {t.pillars.map((pillar, i) => (
+        <Pillar key={i} pillar={pillar} index={i} />
+      ))}
+
+      <SocialProof t={t} />
       <Pricing t={t} />
+      <Faq t={t} />
+      <FinalCta t={t} />
       <Footer t={t} />
     </div>
   )

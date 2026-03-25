@@ -32,7 +32,7 @@ function Avatar({ user, size = 28 }: { user: PresenceUser; size?: number }) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 300 }}
-        className="rounded-full flex items-center justify-center font-medium text-white relative"
+        className="rounded-full flex items-center justify-center font-medium text-white relative overflow-hidden"
         style={{
           width: size,
           height: size,
@@ -42,7 +42,9 @@ function Avatar({ user, size = 28 }: { user: PresenceUser; size?: number }) {
           boxShadow: `0 0 0 1px ${user.color}40`,
         }}
       >
-        {isAI ? "IA" : initials}
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full object-cover" />
+        ) : isAI ? "IA" : initials}
         {user.activeNodeId && (
           <div
             className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"

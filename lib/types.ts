@@ -113,6 +113,7 @@ export interface PresenceUser {
   displayName: string
   role: ProjectRole | 'guest'
   color: string
+  avatarUrl: string | null
   activeNodeId: string | null
   isAI: boolean
   lastSeen: number

@@ -46,7 +46,7 @@ app.prepare().then(() => {
     let currentProjectId = null
     let currentUser = null
 
-    socket.on('join-project', ({ projectId, userId, guestId, displayName, color, role, isAI }) => {
+    socket.on('join-project', ({ projectId, userId, guestId, displayName, color, role, avatarUrl, isAI }) => {
       // Leave previous room if any
       if (currentProjectId) {
         leaveProject(socket, currentProjectId, currentUser)
@@ -58,6 +58,7 @@ app.prepare().then(() => {
         displayName: displayName || 'Visiteur',
         role: role || 'guest',
         color: color || randomColor(),
+        avatarUrl: avatarUrl || null,
         activeNodeId: null,
         isAI: isAI || false,
         lastSeen: Date.now(),

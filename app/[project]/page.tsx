@@ -16,9 +16,11 @@ export default async function ProjectPage({ params }: Props) {
   if (!project) notFound();
 
   const session = await getSession();
-  const currentUser = session
-    ? { id: session.sub, name: session.name, role: session.role }
-    : null;
+  let currentUser: { id: string; name: string; role: string; avatar?: string | null } | null = null;
+  if (session) {
+    const dbUser = db.prepare("SELECT avatar FROM users WHERE id = ?").get(session.sub) as { avatar: string | null } | undefined;
+    currentUser = { id: session.sub, name: session.name, role: session.role, avatar: dbUser?.avatar || null };
+  }
 
   // Check if user is a project member (owner/editor) — if not, read-only
   let readOnly = !currentUser;
@@ -26,7 +28,7 @@ export default async function ProjectPage({ params }: Props) {
     const member = db
       .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
       .get(project.id, currentUser.id) as { role: string } | undefined;
-    readOnly = !member;
+    readOnly = !member || member.role === "viewer";
   }
 
   // Strip password before sending to client

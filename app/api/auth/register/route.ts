@@ -3,7 +3,6 @@ import { hashSync } from 'bcryptjs'
 import { nanoid } from 'nanoid'
 import { db } from '@/lib/db'
 import { setAuthCookies, createAuthToken } from '@/lib/auth'
-import { sendVerificationEmail } from '@/lib/email'
 import { checkAuthLimit } from '@/lib/rate-limiter'
 import { sanitizeText } from '@/lib/sanitize'
 
@@ -47,9 +46,9 @@ export async function POST(req: NextRequest) {
   const passwordHash = hashSync(password, 12)
   const now          = Date.now()
 
-  // Auto-verify if first user (no email service needed for bootstrap)
+  // Auto-verify all users (no email service configured)
   const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c
-  const autoVerify = userCount === 0 ? 1 : 0
+  const autoVerify = 1
   const role = userCount === 0 ? 'admin' : 'user'
 
   db.prepare(
@@ -62,21 +61,11 @@ export async function POST(req: NextRequest) {
     `INSERT INTO ai_credits (user_id, credits_total, credits_used, created_at) VALUES (?, 20, 0, ?)`
   ).run(userId, now)
 
-  // If auto-verified (first user), log them in directly
-  if (autoVerify) {
-    const res = NextResponse.json({
-      user: { id: userId, email, name, role },
-      redirect: '/',
-    })
-    await setAuthCookies(res, userId, { sub: userId, email, name, role })
-    return res
-  }
-
-  // Otherwise send verification email
-  const token = createAuthToken(userId, 'verify_email')
-  await sendVerificationEmail(email, name, token).catch(console.error)
-
-  return NextResponse.json({
-    message: 'Vérifiez votre boîte mail pour confirmer votre compte.'
+  // Auto-verified: log them in directly
+  const res = NextResponse.json({
+    user: { id: userId, email, name, role },
+    redirect: '/',
   })
+  await setAuthCookies(res, userId, { sub: userId, email, name, role })
+  return res
 }
