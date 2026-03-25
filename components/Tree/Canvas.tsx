@@ -499,7 +499,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
   // ─── Drag handlers ──────────────────────────────────────────────────────────
 
   const onNodeDragStart: NodeDragHandler = useCallback(
-    (_event, _draggedNode) => {
+    (event, _draggedNode) => {
       isDraggingRef.current = true;
       setIsDragging(true);
       baseNodesRef.current = rfNodesRef.current.map((n) => ({
@@ -508,13 +508,18 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
       }));
       baseEdgesRef.current = [...rfEdgesRef.current];
 
+      // Read modifiers from the mouse event directly (keydown/keyup can miss)
+      const me = event as unknown as MouseEvent;
+      const hasShift = me.shiftKey || shiftKeyRef.current;
+      const hasCtrl = me.ctrlKey || me.metaKey || ctrlKeyRef.current;
+
       // Shift = multi-parent, Ctrl = cross-link, both = both
-      if (shiftKeyRef.current) {
+      if (hasShift) {
         setLinkMode(true);
         setStackedParents([]);
         stackedParentsRef.current = [];
       }
-      if (ctrlKeyRef.current) {
+      if (hasCtrl) {
         setCrossLinkMode(true);
         setStackedCrossLinks([]);
         stackedCrossLinksRef.current = [];
@@ -824,6 +829,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         nodesDraggable={!readOnly}
         nodesConnectable={false}
         elementsSelectable={true}
+        selectionKeyCode={null}
+        multiSelectionKeyCode={null}
         panOnDrag={true}
         panOnScroll={false}
         zoomOnScroll={true}
