@@ -909,6 +909,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           onExternalSelectClear?.();
         }}
         onOpenComments={onOpenComments}
+        readOnly={readOnly}
       />
 
       <DeleteNodeModal

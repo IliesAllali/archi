@@ -131,6 +131,7 @@ interface DetailPanelProps {
   project: Project;
   onClose: () => void;
   onOpenComments?: (nodeId: string) => void;
+  readOnly?: boolean;
 }
 
 function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
@@ -153,7 +154,7 @@ function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
   return path;
 }
 
-export default function DetailPanel({ node, project, onClose, onOpenComments }: DetailPanelProps) {
+export default function DetailPanel({ node, project, onClose, onOpenComments, readOnly = false }: DetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -264,17 +265,33 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                     <Icon className="w-3.5 h-3.5" style={{ color: nodeColor }} />
                   </motion.div>
                   <div className="min-w-0">
-                    <EditableText
-                      value={node.label}
-                      onChange={(v) => handleFieldChange("label", v)}
-                      className="text-base font-semibold text-label-primary"
-                      placeholder="Nom de la page"
-                    />
-                    <ColorDot
-                      group={node.group}
-                      type={node.type}
-                      onChange={(g) => handleFieldChange("group", g || undefined)}
-                    />
+                    {readOnly ? (
+                      <p className="text-base font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+                        {node.label}
+                      </p>
+                    ) : (
+                      <EditableText
+                        value={node.label}
+                        onChange={(v) => handleFieldChange("label", v)}
+                        className="text-base font-semibold text-label-primary"
+                        placeholder="Nom de la page"
+                      />
+                    )}
+                    {readOnly ? (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ background: nodeColor }}
+                        />
+                        <span className="text-2xs" style={{ color: "var(--text-muted)" }}>{node.type}</span>
+                      </div>
+                    ) : (
+                      <ColorDot
+                        group={node.group}
+                        type={node.type}
+                        onChange={(g) => handleFieldChange("group", g || undefined)}
+                      />
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
@@ -300,69 +317,91 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
             {/* Content */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scroll">
               <SectionAnimated index={0} title="Description">
-                <EditableTextarea
-                  value={node.description || ""}
-                  onChange={(v) => handleFieldChange("description", v)}
-                  placeholder="Description de la page..."
-                  minRows={2}
-                  maxRows={10}
-                />
+                {readOnly ? (
+                  <ReadOnlyText value={node.description} placeholder="Aucune description" />
+                ) : (
+                  <EditableTextarea
+                    value={node.description || ""}
+                    onChange={(v) => handleFieldChange("description", v)}
+                    placeholder="Description de la page..."
+                    minRows={2}
+                    maxRows={10}
+                  />
+                )}
               </SectionAnimated>
 
-              <SectionAnimated index={1} title="Points d'entrée" icon={Globe}>
-                <EntryPointsBlock
-                  entryPoints={node.entryPoints || []}
-                  onChange={(eps) => handleFieldChange("entryPoints", eps)}
-                />
-              </SectionAnimated>
+              {!readOnly && (
+                <SectionAnimated index={1} title="Points d'entrée" icon={Globe}>
+                  <EntryPointsBlock
+                    entryPoints={node.entryPoints || []}
+                    onChange={(eps) => handleFieldChange("entryPoints", eps)}
+                  />
+                </SectionAnimated>
+              )}
 
-              <SectionAnimated index={2} title="Zoning" icon={Layers}>
-                <ZoningEditor
-                  pageType={node.type}
-                  pageLabel={node.label}
-                  blocks={node.zoningBlocks || []}
-                  expanded={node.zoningExpanded ?? false}
-                  html={node.zoningHtml}
-                  accent={project.accent}
-                  onChange={handleFieldChange}
-                />
-              </SectionAnimated>
+              {!readOnly && (
+                <SectionAnimated index={2} title="Zoning" icon={Layers}>
+                  <ZoningEditor
+                    pageType={node.type}
+                    pageLabel={node.label}
+                    blocks={node.zoningBlocks || []}
+                    expanded={node.zoningExpanded ?? false}
+                    html={node.zoningHtml}
+                    accent={project.accent}
+                    onChange={handleFieldChange}
+                  />
+                </SectionAnimated>
+              )}
 
               <SectionAnimated index={3} title="Rationale" icon={Lightbulb}>
-                <EditableTextarea
-                  value={node.rationale || ""}
-                  onChange={(v) => handleFieldChange("rationale", v)}
-                  placeholder="Pourquoi cette page existe..."
-                  minRows={2}
-                  maxRows={6}
-                />
+                {readOnly ? (
+                  <ReadOnlyText value={node.rationale} placeholder="Non renseigné" />
+                ) : (
+                  <EditableTextarea
+                    value={node.rationale || ""}
+                    onChange={(v) => handleFieldChange("rationale", v)}
+                    placeholder="Pourquoi cette page existe..."
+                    minRows={2}
+                    maxRows={6}
+                  />
+                )}
               </SectionAnimated>
 
-              <SectionAnimated index={4} title="Notes" icon={MessageSquare}>
-                <EditableTextarea
-                  value={node.notes || ""}
-                  onChange={(v) => handleFieldChange("notes", v)}
-                  placeholder="Notes internes, insights UX..."
-                  minRows={2}
-                  maxRows={6}
-                />
-              </SectionAnimated>
+              {!readOnly && (
+                <SectionAnimated index={4} title="Notes" icon={MessageSquare}>
+                  <EditableTextarea
+                    value={node.notes || ""}
+                    onChange={(v) => handleFieldChange("notes", v)}
+                    placeholder="Notes internes, insights UX..."
+                    minRows={2}
+                    maxRows={6}
+                  />
+                </SectionAnimated>
+              )}
 
               <SectionAnimated index={5} title="CTAs" icon={MousePointerClick}>
-                <EditableTagList
-                  values={node.cta || []}
-                  onChange={(v) => handleFieldChange("cta", v)}
-                  placeholder="Ajouter un CTA..."
-                  accentStyle
-                />
+                {readOnly ? (
+                  <ReadOnlyTags values={node.cta || []} accentStyle />
+                ) : (
+                  <EditableTagList
+                    values={node.cta || []}
+                    onChange={(v) => handleFieldChange("cta", v)}
+                    placeholder="Ajouter un CTA..."
+                    accentStyle
+                  />
+                )}
               </SectionAnimated>
 
               <SectionAnimated index={6} title="Tags" icon={Tag}>
-                <EditableTagList
-                  values={node.tags || []}
-                  onChange={(v) => handleFieldChange("tags", v)}
-                  placeholder="Ajouter un tag..."
-                />
+                {readOnly ? (
+                  <ReadOnlyTags values={node.tags || []} />
+                ) : (
+                  <EditableTagList
+                    values={node.tags || []}
+                    onChange={(v) => handleFieldChange("tags", v)}
+                    placeholder="Ajouter un tag..."
+                  />
+                )}
               </SectionAnimated>
 
               {/* Secondary parents (multi-parent links) */}
@@ -381,22 +420,21 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                           <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
                             {parentNode.label}
                           </span>
-                          <button
-                            onClick={() => {
-                              const unlinkFromParent = useCanvasStore.getState().unlinkFromParent;
-                              unlinkFromParent(node.id, pid);
-                            }}
-                            className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
-                            title="Supprimer ce lien"
-                          >
-                            <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={() => {
+                                const unlinkFromParent = useCanvasStore.getState().unlinkFromParent;
+                                unlinkFromParent(node.id, pid);
+                              }}
+                              className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
+                              title="Supprimer ce lien"
+                            >
+                              <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                            </button>
+                          )}
                         </div>
                       );
                     })}
-                    <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                      Shift + Drag pour ajouter des parents
-                    </p>
                   </div>
                 </SectionAnimated>
               )}
@@ -415,33 +453,32 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                           style={{ background: "var(--bg-hover)" }}
                         >
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <span style={{ color: "var(--text-faint)", fontSize: 10 }}>⋯</span>
+                            <span style={{ color: "var(--text-faint)", fontSize: 10 }}>...</span>
                             <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
                               {targetNode.label}
                             </span>
                           </div>
-                          <button
-                            onClick={() => {
-                              const removeCrossLink = useCanvasStore.getState().removeCrossLink;
-                              removeCrossLink(node.id, tid);
-                            }}
-                            className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
-                            title="Supprimer ce lien"
-                          >
-                            <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={() => {
+                                const removeCrossLink = useCanvasStore.getState().removeCrossLink;
+                                removeCrossLink(node.id, tid);
+                              }}
+                              className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
+                              title="Supprimer ce lien"
+                            >
+                              <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                            </button>
+                          )}
                         </div>
                       );
                     })}
-                    <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                      Ctrl + Drag pour ajouter des liens
-                    </p>
                   </div>
                 </SectionAnimated>
               )}
 
               {/* Delete zone */}
-              {node.type !== "home" && (
+              {!readOnly && node.type !== "home" && (
                 <div className="px-5 py-4">
                   {showDeleteConfirm ? (
                     <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "var(--error-border)", background: "var(--error-glow)" }}>
@@ -644,6 +681,40 @@ function EditableTextarea({
         caretColor: "var(--accent)",
       }}
     />
+  );
+}
+
+/* ─── Read-only display helpers ─── */
+
+function ReadOnlyText({ value, placeholder }: { value?: string; placeholder?: string }) {
+  return (
+    <p
+      className="text-sm leading-relaxed whitespace-pre-wrap"
+      style={{ color: value ? "var(--text-secondary)" : "var(--text-faint)" }}
+    >
+      {value || placeholder}
+    </p>
+  );
+}
+
+function ReadOnlyTags({ values, accentStyle }: { values: string[]; accentStyle?: boolean }) {
+  if (!values.length) return <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucun</p>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((tag, i) => (
+        <div
+          key={`${tag}-${i}`}
+          className={`flex items-center gap-1 px-2 py-1 rounded-md text-sm ${
+            accentStyle ? "bg-accent-muted border border-accent/10" : "bg-bg-hover border border-line"
+          }`}
+        >
+          {accentStyle && <MousePointerClick className="w-3 h-3 text-accent shrink-0" />}
+          <span className={accentStyle ? "text-accent" : "text-2xs font-mono text-label-muted"}>
+            {tag}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
