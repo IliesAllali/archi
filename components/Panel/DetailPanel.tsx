@@ -7,7 +7,8 @@ import {
   Search, AlertTriangle, Scale, Layers, Tag, MousePointerClick,
   Lightbulb, MessageSquare, Globe, Trash2, Link2, Unlink,
 } from "lucide-react";
-import type { SiteNode, Project, NodeData } from "@/lib/types";
+import type { SiteNode, Project, NodeData, BuiltInPageType } from "@/lib/types";
+import { BUILT_IN_PAGE_TYPES, PAGE_TYPE_CONFIG } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
 import ZoningEditor from "./ZoningEditor";
 import EntryPointsBlock from "./EntryPointsBlock";
@@ -57,11 +58,10 @@ function getNodeColorTint(group?: string): string {
   return "var(--accent-muted)";
 }
 
-function ColorDot({ group, type, onChange }: { group?: string; type: string; onChange: (g: string) => void }) {
+function ColorDot({ group, onChange }: { group?: string; onChange: (g: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const color = getNodeColor(group);
-  const label = type;
 
   useEffect(() => {
     if (!open) return;
@@ -76,15 +76,13 @@ function ColorDot({ group, type, onChange }: { group?: string; type: string; onC
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 mt-0.5 group cursor-pointer"
+        className="flex items-center justify-center group cursor-pointer"
+        title="Couleur"
       >
         <div
           className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform group-hover:scale-125"
           style={{ background: color, boxShadow: `0 0 0 2px ${color}30` }}
         />
-        <span className="text-2xs" style={{ color: "var(--text-muted)" }}>
-          {label}
-        </span>
       </button>
 
       {open && (
@@ -120,6 +118,67 @@ function ColorDot({ group, type, onChange }: { group?: string; type: string; onC
               {COLOR_PALETTE.find((c) => c.value === (group || ""))?.label || "Défaut"}
             </span>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TYPE_OPTIONS = BUILT_IN_PAGE_TYPES.filter((t) => t !== "home");
+
+function TypePicker({ type, onChange }: { type: string; onChange: (t: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const config = PAGE_TYPE_CONFIG[type as BuiltInPageType];
+  const label = config?.label || type;
+  const TypeIcon = ICON_MAP[type] || FileText;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 group cursor-pointer"
+      >
+        <span className="text-2xs transition-colors group-hover:opacity-70" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-1.5 z-50 py-1 rounded-lg border border-line bg-bg-surface shadow-lg"
+          style={{ minWidth: 150 }}
+        >
+          {TYPE_OPTIONS.map((t) => {
+            const c = PAGE_TYPE_CONFIG[t];
+            const TIcon = ICON_MAP[t] || FileText;
+            const isActive = type === t;
+            return (
+              <button
+                key={t}
+                onClick={() => { onChange(t); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors"
+                style={{
+                  background: isActive ? "var(--accent-muted)" : "transparent",
+                  color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "var(--surface-hover)"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+              >
+                <TIcon className="w-3 h-3 shrink-0" style={{ opacity: 0.7 }} />
+                <span className="text-2xs">{c.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -277,21 +336,29 @@ export default function DetailPanel({ node, project, onClose, onOpenComments, re
                         placeholder="Nom de la page"
                       />
                     )}
-                    {readOnly ? (
-                      <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {readOnly ? (
                         <div
                           className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ background: nodeColor }}
                         />
-                        <span className="text-2xs" style={{ color: "var(--text-muted)" }}>{node.type}</span>
-                      </div>
-                    ) : (
-                      <ColorDot
-                        group={node.group}
-                        type={node.type}
-                        onChange={(g) => handleFieldChange("group", g || undefined)}
-                      />
-                    )}
+                      ) : (
+                        <ColorDot
+                          group={node.group}
+                          onChange={(g) => handleFieldChange("group", g || undefined)}
+                        />
+                      )}
+                      {readOnly || node.type === "home" ? (
+                        <span className="text-2xs" style={{ color: "var(--text-muted)" }}>
+                          {PAGE_TYPE_CONFIG[node.type as BuiltInPageType]?.label || node.type}
+                        </span>
+                      ) : (
+                        <TypePicker
+                          type={node.type}
+                          onChange={(t) => handleFieldChange("type", t)}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
