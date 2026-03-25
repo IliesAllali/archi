@@ -19,28 +19,41 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 const COLOR_PALETTE: { value: string; color: string; label: string }[] = [
-  { value: "",            color: "var(--accent)",  label: "Défaut" },
-  { value: "metiers",     color: "#5B8AF0",        label: "Bleu" },
-  { value: "formations",  color: "#2DB8A0",        label: "Vert" },
-  { value: "orientation",  color: "#E8922A",        label: "Orange" },
-  { value: "ressources",  color: "#A87FD4",        label: "Violet" },
-  { value: "rouge",       color: "#E5534B",        label: "Rouge" },
-  { value: "rose",        color: "#D946A8",        label: "Rose" },
-  { value: "jaune",       color: "#CA8A04",        label: "Jaune" },
-  { value: "gris",        color: "#6B7280",        label: "Gris" },
+  { value: "",       color: "var(--accent)",  label: "Défaut" },
+  { value: "blue",   color: "#5B8AF0",        label: "Bleu" },
+  { value: "green",  color: "#2DB8A0",        label: "Vert" },
+  { value: "orange", color: "#E8922A",        label: "Orange" },
+  { value: "purple", color: "#A87FD4",        label: "Violet" },
+  { value: "red",    color: "#E5534B",        label: "Rouge" },
+  { value: "pink",   color: "#D946A8",        label: "Rose" },
+  { value: "yellow", color: "#CA8A04",        label: "Jaune" },
+  { value: "gray",   color: "#6B7280",        label: "Gris" },
 ];
+
+// Backwards compat: map old SERCE-specific keys to new generic ones
+const LEGACY_GROUP_MAP: Record<string, string> = {
+  metiers: "blue", formations: "green", orientation: "orange", ressources: "purple",
+  rouge: "red", rose: "pink", jaune: "yellow", gris: "gray",
+};
 
 const GROUP_COLORS: Record<string, string> = Object.fromEntries(
   COLOR_PALETTE.filter((c) => c.value).map((c) => [c.value, c.color])
 );
 
+function resolveGroup(group?: string): string {
+  if (!group) return "";
+  return LEGACY_GROUP_MAP[group] || group;
+}
+
 function getNodeColor(group?: string): string {
-  if (group && GROUP_COLORS[group]) return GROUP_COLORS[group];
+  const g = resolveGroup(group);
+  if (g && GROUP_COLORS[g]) return GROUP_COLORS[g];
   return "var(--accent)";
 }
 
 function getNodeColorTint(group?: string): string {
-  if (group && GROUP_COLORS[group]) return `${GROUP_COLORS[group]}18`;
+  const g = resolveGroup(group);
+  if (g && GROUP_COLORS[g]) return `${GROUP_COLORS[g]}18`;
   return "var(--accent-muted)";
 }
 
@@ -81,7 +94,7 @@ function ColorDot({ group, type, onChange }: { group?: string; type: string; onC
         >
           <div className="grid grid-cols-5 gap-1 mb-1.5">
             {COLOR_PALETTE.map((c) => {
-              const isActive = (group || "") === c.value;
+              const isActive = resolveGroup(group) === c.value;
               const resolvedColor = c.value ? c.color : "var(--accent)";
               return (
                 <button

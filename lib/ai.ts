@@ -64,7 +64,7 @@ Règles :
 - description : 1 phrase courte. PAS de zoningBlocks, PAS de entryPoints, PAS de rationale.
 - Sois ULTRA CONCIS.
 
-Champs : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "metiers"=bleu, "formations"=vert, "orientation"=orange, "ressources"=violet, "rouge", "rose", "jaune", "gris", ou "" par défaut), description, cta[] (1 bouton), tags[] (1-2 mots)
+Champs : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" par défaut — assigne la même couleur aux pages d'un même cluster thématique), description, cta[] (1 bouton), tags[] (1-2 mots)
 
 JSON valide uniquement, sans markdown :
 {"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","description":"Page d'accueil.","cta":["Découvrir"],"tags":["SEO"]},{"temp_id":"about","parent_temp_id":"home","label":"À propos","type":"detail","priority":"secondary","description":"Présentation.","cta":["Contact"],"tags":["branding"]}]}`;
@@ -82,7 +82,7 @@ Règles :
 - Inclus toujours : Accueil, Contact, Mentions légales, 404
 - description : 2-3 phrases. rationale : pourquoi la page existe. cta : 1-2 boutons. tags : 2-3 mots.
 
-Champs de base (toutes les pages) : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "metiers"=bleu, "formations"=vert, "orientation"=orange, "ressources"=violet, "rouge", "rose", "jaune", "gris", ou "" par défaut — assigne la même couleur aux pages d'un même cluster), description, rationale, cta[], tags[]
+Champs de base (toutes les pages) : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" par défaut — assigne la même couleur aux pages d'un même cluster thématique), description, rationale, cta[], tags[]
 
 Champs avancés (UNIQUEMENT home et landing) :
 - entryPoints[{type,label}] — types : google, direct, social, email, ads, qrcode
@@ -126,7 +126,7 @@ Champs disponibles pour "add" et "update" :
 - label (string) : nom de la page
 - type (string) : type de page
 - priority (string) : primary/secondary/utility
-- group (string) : couleur de cluster pour regrouper visuellement les pages. Valeurs possibles : "metiers" (bleu), "formations" (vert), "orientation" (orange), "ressources" (violet), "rouge" (rouge), "rose" (rose), "jaune" (jaune), "gris" (gris), ou "" (couleur accent par défaut). Utilise ce champ pour coloriser des groupes de pages par thématique.
+- group (string) : couleur de cluster pour regrouper visuellement les pages. Valeurs : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" (couleur accent par défaut). Assigne la même couleur aux pages d'un même cluster thématique.
 - description (string) : description du contenu (2-3 phrases)
 - rationale (string) : pourquoi cette page existe
 - cta (string[]) : textes des boutons d'action

@@ -467,12 +467,20 @@ export const SECTION_BORDER_COLORS: Record<string, string> = {
 };
 
 const GROUP_COLORS: Record<string, string> = {
-  metiers: "#5B8AF0", formations: "#2DB8A0", orientation: "#E8922A", ressources: "#A87FD4",
-  rouge: "#E5534B", rose: "#D946A8", jaune: "#CA8A04", gris: "#6B7280",
+  blue: "#5B8AF0", green: "#2DB8A0", orange: "#E8922A", purple: "#A87FD4",
+  red: "#E5534B", pink: "#D946A8", yellow: "#CA8A04", gray: "#6B7280",
+};
+
+// Backwards compat for old SERCE-specific keys
+const LEGACY_GROUP_MAP: Record<string, string> = {
+  metiers: "blue", formations: "green", orientation: "orange", ressources: "purple",
+  rouge: "red", rose: "pink", jaune: "yellow", gris: "gray",
 };
 
 function getGroupColor(group?: string): string {
-  if (group && GROUP_COLORS[group]) return GROUP_COLORS[group];
+  if (!group) return "var(--accent)";
+  const resolved = LEGACY_GROUP_MAP[group] || group;
+  if (GROUP_COLORS[resolved]) return GROUP_COLORS[resolved];
   return "var(--accent)";
 }
 
