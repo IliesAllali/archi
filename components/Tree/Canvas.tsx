@@ -866,37 +866,35 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         />
       </ReactFlow>
 
-      {/* Modifier badges — appear during drag, next to zoom controls */}
+      {/* Modifier badges — next to zoom controls */}
       {isDragging && (
-        <div className="absolute z-50 flex items-center gap-1 pointer-events-none" style={{ bottom: 16, left: 68 }}>
+        <div className="absolute z-50 flex items-center gap-1.5 pointer-events-none" style={{ bottom: 16, left: 68 }}>
           <div
-            className="flex items-center gap-1 px-1.5 py-1 rounded-md"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-md"
             style={{
-              background: linkMode ? "var(--accent)" : "var(--surface)",
-              border: linkMode ? "1px solid var(--accent)" : "1px solid var(--line)",
-              opacity: linkMode ? 1 : 0.5,
+              background: linkMode ? "var(--accent)" : "var(--elevated)",
+              border: linkMode ? "1.5px solid var(--accent)" : "1.5px solid var(--line)",
               transition: "all 150ms ease",
             }}
           >
-            <Link2 className="w-2.5 h-2.5" style={{ color: linkMode ? "#fff" : "var(--text-faint)" }} />
-            <kbd className="text-2xs font-mono leading-none" style={{ color: linkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>⇧</kbd>
+            <Link2 className="w-3.5 h-3.5" style={{ color: linkMode ? "#fff" : "var(--text-muted)" }} />
+            <kbd className="font-mono font-semibold leading-none" style={{ color: linkMode ? "#fff" : "var(--text-muted)", fontSize: 11 }}>Shift</kbd>
             {linkMode && stackedParents.length > 0 && (
-              <span className="text-2xs font-medium leading-none" style={{ color: "#fff", fontSize: 9 }}>+{stackedParents.length}</span>
+              <span className="font-semibold leading-none px-1 py-0.5 rounded" style={{ color: "#fff", fontSize: 11, background: "rgba(255,255,255,0.2)" }}>+{stackedParents.length}</span>
             )}
           </div>
           <div
-            className="flex items-center gap-1 px-1.5 py-1 rounded-md"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shadow-md"
             style={{
-              background: crossLinkMode ? "var(--text-faint)" : "var(--surface)",
-              border: crossLinkMode ? "1px solid var(--text-faint)" : "1px solid var(--line)",
-              opacity: crossLinkMode ? 1 : 0.5,
+              background: crossLinkMode ? "var(--text-secondary)" : "var(--elevated)",
+              border: crossLinkMode ? "1.5px solid var(--text-secondary)" : "1.5px solid var(--line)",
               transition: "all 150ms ease",
             }}
           >
-            <span className="leading-none" style={{ color: crossLinkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>⋯</span>
-            <kbd className="text-2xs font-mono leading-none" style={{ color: crossLinkMode ? "#fff" : "var(--text-faint)", fontSize: 9 }}>Ctrl</kbd>
+            <span className="leading-none font-bold" style={{ color: crossLinkMode ? "#fff" : "var(--text-muted)", fontSize: 13 }}>⋯</span>
+            <kbd className="font-mono font-semibold leading-none" style={{ color: crossLinkMode ? "#fff" : "var(--text-muted)", fontSize: 11 }}>Ctrl</kbd>
             {crossLinkMode && stackedCrossLinks.length > 0 && (
-              <span className="text-2xs font-medium leading-none" style={{ color: "#fff", fontSize: 9 }}>+{stackedCrossLinks.length}</span>
+              <span className="font-semibold leading-none px-1 py-0.5 rounded" style={{ color: "#fff", fontSize: 11, background: "rgba(255,255,255,0.2)" }}>+{stackedCrossLinks.length}</span>
             )}
           </div>
         </div>
