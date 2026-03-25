@@ -560,22 +560,24 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
       // ─── MODIFIER+DRAG: link/crosslink modes ──────────────────────────
       if (linkModeRef.current || crossLinkModeRef.current) {
-        // Use the drop intent system (same as normal drag) to detect parent/sibling
+        // Use drop intent to detect which node we're hovering
+        // "child" intent → targetId is the node we're below (becomes parent)
+        // "before"/"after" intent → targetId is the sibling we're next to
         if (intent) {
-          const parentId = intent.type === "child" ? intent.targetId : intent.parentId;
-          if (parentId && parentId !== lastLinkHoverRef.current) {
-            lastLinkHoverRef.current = parentId;
-            const targetNode = nodes.find((n) => n.id === parentId);
-            if (targetNode && parentId !== draggedNode.id) {
+          const hoveredId = intent.targetId;
+          if (hoveredId && hoveredId !== lastLinkHoverRef.current && hoveredId !== draggedNode.id) {
+            lastLinkHoverRef.current = hoveredId;
+            const targetNode = nodes.find((n) => n.id === hoveredId);
+            if (targetNode) {
               // Shift: stack as secondary parent (solid link)
-              if (linkModeRef.current && !stackedParentsRef.current.some((p) => p.id === parentId)) {
-                const newStack = [...stackedParentsRef.current, { id: parentId, label: targetNode.label, type: intent.type as "child" | "sibling" }];
+              if (linkModeRef.current && !stackedParentsRef.current.some((p) => p.id === hoveredId)) {
+                const newStack = [...stackedParentsRef.current, { id: hoveredId, label: targetNode.label, type: intent.type as "child" | "sibling" }];
                 stackedParentsRef.current = newStack;
                 setStackedParents(newStack);
               }
               // Ctrl: stack as cross-link (dashed)
-              if (crossLinkModeRef.current && !stackedCrossLinksRef.current.some((p) => p.id === parentId)) {
-                const newStack = [...stackedCrossLinksRef.current, { id: parentId, label: targetNode.label }];
+              if (crossLinkModeRef.current && !stackedCrossLinksRef.current.some((p) => p.id === hoveredId)) {
+                const newStack = [...stackedCrossLinksRef.current, { id: hoveredId, label: targetNode.label }];
                 stackedCrossLinksRef.current = newStack;
                 setStackedCrossLinks(newStack);
               }

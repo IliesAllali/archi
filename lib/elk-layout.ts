@@ -204,7 +204,6 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
         type: "default",
         className: "edge-multiparent",
         style: {
-          strokeDasharray: "6 3",
           strokeWidth: 1.5,
           stroke: "var(--accent)",
           opacity: 0.65,
