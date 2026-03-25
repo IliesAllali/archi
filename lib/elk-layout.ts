@@ -187,6 +187,32 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     });
   });
 
+  // Secondary parent edges (multi-parent links — solid, colored)
+  const allNodes = [...treeNodes, ...isolatedNodes];
+  allNodes.forEach((n) => {
+    if (!n.secondaryParentIds || n.secondaryParentIds.length === 0) return;
+    n.secondaryParentIds.forEach((secParentId) => {
+      // Only draw if both nodes exist in layout
+      const sourceExists = positionMap[secParentId] || isolatedNodes.some((iso) => iso.id === secParentId);
+      const targetExists = positionMap[n.id] || isolatedNodes.some((iso) => iso.id === n.id);
+      if (!sourceExists || !targetExists) return;
+
+      rfEdges.push({
+        id: `multiparent_${secParentId}->${n.id}`,
+        source: secParentId,
+        target: n.id,
+        type: "default",
+        className: "edge-multiparent",
+        style: {
+          strokeDasharray: "6 3",
+          strokeWidth: 1.5,
+          stroke: "var(--accent)",
+          opacity: 0.65,
+        },
+      });
+    });
+  });
+
   // Isolated standalone nodes — placed in a row below the tree
   if (isolatedNodes.length > 0) {
     // Compute the bounding box of the ELK layout

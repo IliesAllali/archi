@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Home, LayoutGrid, FileText, PenLine, Sparkles, HelpCircle,
   Search, AlertTriangle, Scale, Layers, Tag, MousePointerClick,
-  Lightbulb, MessageSquare, Globe, Trash2,
+  Lightbulb, MessageSquare, Globe, Trash2, Link2, Unlink,
 } from "lucide-react";
 import type { SiteNode, Project, NodeData } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
@@ -291,7 +291,8 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                   value={node.description || ""}
                   onChange={(v) => handleFieldChange("description", v)}
                   placeholder="Description de la page..."
-                  rows={2}
+                  minRows={2}
+                  maxRows={10}
                 />
               </SectionAnimated>
 
@@ -319,7 +320,8 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                   value={node.rationale || ""}
                   onChange={(v) => handleFieldChange("rationale", v)}
                   placeholder="Pourquoi cette page existe..."
-                  rows={3}
+                  minRows={2}
+                  maxRows={6}
                 />
               </SectionAnimated>
 
@@ -328,7 +330,8 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                   value={node.notes || ""}
                   onChange={(v) => handleFieldChange("notes", v)}
                   placeholder="Notes internes, insights UX..."
-                  rows={3}
+                  minRows={2}
+                  maxRows={6}
                 />
               </SectionAnimated>
 
@@ -348,6 +351,42 @@ export default function DetailPanel({ node, project, onClose, onOpenComments }: 
                   placeholder="Ajouter un tag..."
                 />
               </SectionAnimated>
+
+              {/* Secondary parents (multi-parent links) */}
+              {node.secondaryParentIds && node.secondaryParentIds.length > 0 && (
+                <SectionAnimated index={7} title="Parents secondaires" icon={Link2}>
+                  <div className="flex flex-col gap-1.5">
+                    {node.secondaryParentIds.map((pid) => {
+                      const parentNode = nodes.find((n) => n.id === pid);
+                      if (!parentNode) return null;
+                      return (
+                        <div
+                          key={pid}
+                          className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md"
+                          style={{ background: "var(--bg-hover)" }}
+                        >
+                          <span className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                            {parentNode.label}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const unlinkFromParent = useCanvasStore.getState().unlinkFromParent;
+                              unlinkFromParent(node.id, pid);
+                            }}
+                            className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
+                            title="Supprimer ce lien"
+                          >
+                            <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                      Shift + Drag pour ajouter des parents
+                    </p>
+                  </div>
+                </SectionAnimated>
+              )}
 
               {/* Delete zone */}
               {node.type !== "home" && (
@@ -515,14 +554,26 @@ function EditableText({
 /* ─── Editable textarea ─── */
 
 function EditableTextarea({
-  value, onChange, placeholder, rows = 2,
+  value, onChange, placeholder, minRows = 2, maxRows = 8,
 }: {
-  value: string; onChange: (v: string) => void; placeholder?: string; rows?: number;
+  value: string; onChange: (v: string) => void; placeholder?: string; minRows?: number; maxRows?: number;
 }) {
   const [draft, setDraft] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { setDraft(value); }, [value]);
+
+  const autoResize = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
+    const min = lineHeight * minRows;
+    const max = lineHeight * maxRows;
+    ta.style.height = `${Math.max(min, Math.min(ta.scrollHeight, max))}px`;
+  }, [minRows, maxRows]);
+
+  useEffect(() => { autoResize(); }, [draft, autoResize]);
 
   const commit = () => {
     if (draft !== value) onChange(draft);
@@ -532,11 +583,10 @@ function EditableTextarea({
     <textarea
       ref={textareaRef}
       value={draft}
-      onChange={(e) => setDraft(e.target.value)}
+      onChange={(e) => { setDraft(e.target.value); }}
       onBlur={commit}
-      rows={rows}
       placeholder={placeholder}
-      className="w-full text-sm leading-relaxed bg-transparent border-none outline-none resize-none"
+      className="w-full text-sm leading-relaxed bg-transparent border-none outline-none resize-none overflow-hidden"
       style={{
         color: "var(--text-secondary)",
         caretColor: "var(--accent)",

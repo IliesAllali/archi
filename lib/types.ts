@@ -59,6 +59,9 @@ export interface NodeData {
   zoningHtml?: string
   /** @deprecated Kept for migration — use zoningBlocks */
   zoning?: ZoningType
+  // Multi-parent: additional parent IDs (node appears under primary parent in layout,
+  // but draws edges from these secondary parents too)
+  secondaryParentIds?: string[]
   // IA metadata
   lastModifiedBy?: 'human' | 'ai'
   lastModifiedByName?: string

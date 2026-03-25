@@ -17,7 +17,7 @@ export interface AiNode {
 }
 
 export interface AiEditAction {
-  action: "add" | "update" | "delete" | "move";
+  action: "add" | "update" | "delete" | "move" | "link";
   node_id?: string; // for update/delete/move
   temp_id?: string; // for add
   parent_temp_id?: string | null; // for add
@@ -115,6 +115,7 @@ Actions possibles :
 - "update" : modifier une page existante (node_id + champs à modifier). Utilise ceci pour ajouter/modifier des sections (zoningBlocks), changer un label, une description, etc.
 - "delete" : supprimer une page (node_id)
 - "move" : déplacer une page (node_id + nouveau parent_id)
+- "link" : relier une page à un parent ADDITIONNEL (multi-parent). La page garde son parent principal mais un lien visuel est tracé depuis le parent secondaire. Utilise ceci quand une page est accessible depuis plusieurs endroits du site (ex: page "Contact" accessible depuis "Accueil" ET "Services"). Champs : node_id + parent_id (le parent secondaire à ajouter).
 
 Règles :
 - CHAQUE page ajoutée DOIT avoir un parent_id valide (un ID existant dans l'arbre fourni) ou un parent_temp_id (si son parent est aussi un "add" dans la même réponse).
@@ -150,7 +151,8 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown :
     { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...], "zoningExpanded": true },
     { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
     { "action": "delete", "node_id": "REAL_ID" },
-    { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" }
+    { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" },
+    { "action": "link", "node_id": "REAL_ID", "parent_id": "SECONDARY_PARENT_ID" }
   ],
   "summary": "Courte explication de ce qui a été fait (ou réponse complète si type chat)"
 }`;

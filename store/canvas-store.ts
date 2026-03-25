@@ -71,6 +71,10 @@ interface CanvasState {
   reorderSiblings: (parentId: string | null, orderedIds: string[]) => void;
   duplicateNode: (nodeId: string) => void;
 
+  // Actions — multi-parent linking
+  linkToParents: (nodeId: string, parentIds: string[]) => void;
+  unlinkFromParent: (nodeId: string, parentId: string) => void;
+
   // Actions — undo/redo
   undo: () => void;
   redo: () => void;
@@ -421,6 +425,40 @@ export const useCanvasStore = create<CanvasState>()(
         state.selectedNodeId = newRootId;
       });
       get().markDirty("create_node");
+    },
+
+    // ─── Multi-parent linking ─────────────────────────────────────────────
+
+    linkToParents: (nodeId: string, parentIds: string[]) => {
+      if (parentIds.length === 0) return;
+      get()._pushHistory();
+      set((state) => {
+        const node = state.nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+        const existing = new Set(node.secondaryParentIds || []);
+        // Don't add the primary parent as secondary
+        const primaryParentId = getParentId(nodeId, state.nodes);
+        for (const pid of parentIds) {
+          if (pid !== nodeId && pid !== primaryParentId && !existing.has(pid)) {
+            existing.add(pid);
+          }
+        }
+        node.secondaryParentIds = [...existing];
+        state.nodeMap = buildNodeMap(state.nodes);
+      });
+      get().markDirty("reparent");
+    },
+
+    unlinkFromParent: (nodeId: string, parentId: string) => {
+      get()._pushHistory();
+      set((state) => {
+        const node = state.nodes.find((n) => n.id === nodeId);
+        if (!node || !node.secondaryParentIds) return;
+        node.secondaryParentIds = node.secondaryParentIds.filter((id) => id !== parentId);
+        if (node.secondaryParentIds.length === 0) delete node.secondaryParentIds;
+        state.nodeMap = buildNodeMap(state.nodes);
+      });
+      get().markDirty("reparent");
     },
 
     // ─── Undo/Redo ────────────────────────────────────────────────────────

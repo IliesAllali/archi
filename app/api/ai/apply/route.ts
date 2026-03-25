@@ -168,6 +168,33 @@ export async function POST(req: NextRequest) {
 
           applied.push({ type: "move", id: action.node_id });
         }
+
+        if (action.action === "link" && action.node_id && action.parent_id) {
+          // Add a secondary parent link to the node's data
+          const existing = db
+            .prepare("SELECT * FROM nodes WHERE id = ? AND project_id = ? AND archived = 0")
+            .get(action.node_id, projectId) as DbNode | undefined;
+
+          if (existing) {
+            // Validate secondary parent exists
+            const parentExists = db.prepare("SELECT 1 FROM nodes WHERE id = ? AND project_id = ? AND archived = 0").get(action.parent_id, projectId);
+            if (parentExists) {
+              const data = JSON.parse(existing.data);
+              const secondaryParents: string[] = data.secondaryParentIds || [];
+              if (!secondaryParents.includes(action.parent_id) && action.parent_id !== existing.parent_id) {
+                secondaryParents.push(action.parent_id);
+                data.secondaryParentIds = secondaryParents;
+                data.lastModifiedBy = "ai";
+                data.lastModifiedByName = aiLabel;
+
+                db.prepare("UPDATE nodes SET data = ?, updated_at = ? WHERE id = ?")
+                  .run(JSON.stringify(data), now, action.node_id);
+
+                applied.push({ type: "link", id: action.node_id });
+              }
+            }
+          }
+        }
       }
     })();
 

@@ -191,10 +191,10 @@ export default function VersionHistoryPanel({ projectId, open, onClose }: Props)
                         >
                           {/* Timeline dot */}
                           <div
-                            className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-2 z-10"
+                            className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-3 z-10"
                             style={{
-                              background: `${meta.color}20`,
-                              border: `2px solid ${meta.color}`,
+                              background: "var(--elevated)",
+                              boxShadow: `inset 0 0 0 2px ${meta.color}, inset 0 0 0 10px ${meta.color}20`,
                               transition: "transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)",
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.2)"}
@@ -257,7 +257,7 @@ export default function VersionHistoryPanel({ projectId, open, onClose }: Props)
                                   <motion.button
                                     key="restore"
                                     initial={{ opacity: 0 }}
-                                    animate={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 0.15 }}
                                     onClick={() => setConfirmId(snap.id)}

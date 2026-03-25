@@ -14,6 +14,8 @@ import ReactFlow, {
   type NodeDragHandler,
   BackgroundVariant,
 } from "reactflow";
+import { AnimatePresence, motion } from "framer-motion";
+import { Link2, ArrowDown, ArrowRight } from "lucide-react";
 import "reactflow/dist/style.css";
 import { computeLayout } from "@/lib/elk-layout";
 import type { Project, SiteNode } from "@/lib/types";
@@ -279,9 +281,22 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
 
   // Alt key for drag-duplicate
   const altKeyRef = useRef(false);
+  // Shift key for multi-parent linking
+  const shiftKeyRef = useRef(false);
+  const [linkMode, setLinkMode] = useState(false);
+  const [stackedParents, setStackedParents] = useState<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
+  const stackedParentsRef = useRef<{ id: string; label: string; type: "child" | "sibling" }[]>([]);
+  const linkToParents = useCanvasStore((s) => s.linkToParents);
+
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { if (e.altKey) altKeyRef.current = true; };
-    const up = (e: KeyboardEvent) => { if (!e.altKey) altKeyRef.current = false; };
+    const down = (e: KeyboardEvent) => {
+      if (e.altKey) altKeyRef.current = true;
+      if (e.shiftKey) shiftKeyRef.current = true;
+    };
+    const up = (e: KeyboardEvent) => {
+      if (!e.altKey) altKeyRef.current = false;
+      if (!e.shiftKey) shiftKeyRef.current = false;
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
@@ -482,15 +497,74 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         position: { ...n.position },
       }));
       baseEdgesRef.current = [...rfEdgesRef.current];
+
+      // Shift+drag = link mode
+      if (shiftKeyRef.current) {
+        setLinkMode(true);
+        setStackedParents([]);
+        stackedParentsRef.current = [];
+      }
     },
     []
   );
+
+  // Last hover target for link mode (to avoid re-adding same parent on every frame)
+  const lastLinkHoverRef = useRef<string | null>(null);
 
   const onNodeDrag: NodeDragHandler = useCallback(
     (_event, draggedNode) => {
       if (draggedNode.id.startsWith("ep_")) return;
 
       const intent = calculateDropIntent(draggedNode, baseNodesRef.current, nodes);
+
+      // ─── SHIFT+DRAG: link mode (stack parents) ─────────────────────────
+      if (linkMode) {
+        if (intent) {
+          const targetParentId = intent.type === "child" ? intent.targetId : intent.parentId;
+          if (targetParentId && targetParentId !== draggedNode.id && targetParentId !== lastLinkHoverRef.current) {
+            lastLinkHoverRef.current = targetParentId;
+            const targetNode = nodes.find((n) => n.id === targetParentId);
+            if (targetNode && !stackedParentsRef.current.some((p) => p.id === targetParentId)) {
+              const intentType = intent.type === "child" ? "child" as const : "sibling" as const;
+              const newStack = [...stackedParentsRef.current, { id: targetParentId, label: targetNode.label, type: intentType }];
+              stackedParentsRef.current = newStack;
+              setStackedParents(newStack);
+            }
+          }
+        } else {
+          lastLinkHoverRef.current = null;
+        }
+
+        // In link mode, show preview edges to all stacked parents but don't shift nodes
+        const previewEdges: Edge[] = stackedParentsRef.current.map((p, i) => ({
+          id: `${PREVIEW_EDGE_ID}_link_${i}`,
+          source: p.id,
+          target: draggedNode.id,
+          type: "default",
+          animated: true,
+          style: {
+            strokeDasharray: "6 3",
+            strokeWidth: 2,
+            stroke: "var(--accent)",
+            opacity: 0.6,
+          },
+        }));
+        setRfEdges([...baseEdgesRef.current, ...previewEdges]);
+
+        // Restore base positions (no shifts in link mode)
+        setRfNodes((currentNodes) =>
+          currentNodes
+            .filter((n) => n.id !== DROP_INDICATOR_ID)
+            .map((n) => {
+              if (n.id === draggedNode.id) return n;
+              const base = baseNodesRef.current.find((bn) => bn.id === n.id);
+              return base ? { ...n, position: { ...base.position } } : n;
+            })
+        );
+        return;
+      }
+
+      // ─── Normal drag mode ────────────────────────────────────────────────
       setDropIntent(intent);
 
       if (!intent) {
@@ -569,12 +643,13 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         setRfEdges([...baseEdgesRef.current, previewEdge]);
       }
     },
-    [nodes, setDropIntent, setRfNodes, setRfEdges]
+    [nodes, setDropIntent, setRfNodes, setRfEdges, linkMode]
   );
 
   const onNodeDragStop: NodeDragHandler = useCallback(
     (_event, draggedNode) => {
       isDraggingRef.current = false;
+      lastLinkHoverRef.current = null;
 
       const intent = useCanvasStore.getState().dropIntent;
       setDropIntent(null);
@@ -590,7 +665,25 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
       );
       setRfEdges(baseEdgesRef.current);
 
-      if (draggedNode.id.startsWith("ep_")) return;
+      if (draggedNode.id.startsWith("ep_")) {
+        setLinkMode(false);
+        setStackedParents([]);
+        stackedParentsRef.current = [];
+        return;
+      }
+
+      // ─── SHIFT+DRAG: apply stacked links ─────────────────────────────────
+      if (linkMode && stackedParentsRef.current.length > 0) {
+        linkToParents(draggedNode.id, stackedParentsRef.current.map((p) => p.id));
+        setLinkMode(false);
+        setStackedParents([]);
+        stackedParentsRef.current = [];
+        return;
+      }
+
+      setLinkMode(false);
+      setStackedParents([]);
+      stackedParentsRef.current = [];
 
       // Alt+drag = duplicate
       if (altKeyRef.current) {
@@ -603,7 +696,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
         moveNode(draggedNode.id, intent);
       }
     },
-    [setDropIntent, setRfNodes, setRfEdges, duplicateNode, moveNode]
+    [setDropIntent, setRfNodes, setRfEdges, duplicateNode, moveNode, linkMode, linkToParents]
   );
 
   const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 0.9 }), []);
@@ -722,6 +815,62 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, onO
           maskColor="var(--minimap-mask)"
         />
       </ReactFlow>
+
+      {/* Multi-parent link mode indicator */}
+      <AnimatePresence>
+        {linkMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2 }}
+            className="absolute z-50 flex items-center gap-2 px-3 py-2 rounded-lg"
+            style={{
+              bottom: 60,
+              left: 16,
+              background: "var(--elevated)",
+              border: "1px solid var(--accent)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+              maxWidth: 320,
+            }}
+          >
+            <Link2 className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--accent)" }} />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-2xs font-medium" style={{ color: "var(--accent)" }}>
+                Mode lien multi-parent
+              </span>
+              {stackedParents.length === 0 ? (
+                <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                  Survole un parent pour l'ajouter
+                </span>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {stackedParents.map((p, i) => (
+                    <span
+                      key={p.id}
+                      className="inline-flex items-center gap-0.5 text-2xs px-1.5 py-0.5 rounded"
+                      style={{
+                        background: "var(--accent-muted)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {p.type === "child" ? (
+                        <ArrowDown className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
+                      ) : (
+                        <ArrowRight className="w-2.5 h-2.5" style={{ color: "var(--accent)" }} />
+                      )}
+                      {p.label}
+                      {i < stackedParents.length - 1 && (
+                        <span style={{ color: "var(--text-faint)" }}>+</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <CommentOverlay
         projectId={project.id}
