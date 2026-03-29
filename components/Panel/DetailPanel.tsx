@@ -381,8 +381,8 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                     value={node.description || ""}
                     onChange={(v) => handleFieldChange("description", v)}
                     placeholder="Description de la page..."
-                    minRows={2}
-                    maxRows={10}
+                    minRows={3}
+                    maxRows={40}
                   />
                 )}
               </SectionAnimated>
