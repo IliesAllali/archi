@@ -13,6 +13,7 @@ import {
 } from "framer-motion"
 import { ArrowRight, Check, ChevronDown, Plus } from "lucide-react"
 import Logo from "@/components/Logo"
+import HeroTreeIllustration from "./HeroTreeIllustration"
 import { detectLocale, getTranslations } from "@/lib/landing-i18n"
 import type { Locale, Translations } from "@/lib/landing-i18n"
 
@@ -222,7 +223,7 @@ function Nav({
             {t.nav.login}
           </Link>
           <MagneticButton
-            href="/register"
+            href="/signup"
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.97]"
             style={{ background: "var(--accent)", color: "#fff" }}
           >
@@ -270,7 +271,7 @@ function Hero({ t }: { t: Translations }) {
           className="mt-6 flex items-center justify-center gap-4"
         >
           <MagneticButton
-            href="/register"
+            href="/signup"
             className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
             style={{ background: "var(--accent)", color: "#fff" }}
           >
@@ -296,7 +297,6 @@ function HeroScreenshot() {
   })
   const scale = useTransform(scrollYProgress, [0, 0.3], [0.92, 1])
   const opacity = useTransform(scrollYProgress, [0, 0.2], [0.6, 1])
-  const borderRadius = useTransform(scrollYProgress, [0, 0.3], [20, 12])
 
   return (
     <div className="px-6 pb-0" ref={ref}>
@@ -304,18 +304,11 @@ function HeroScreenshot() {
         initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.8, delay: 0.35, ease }}
-        className="max-w-[1120px] mx-auto overflow-hidden"
-        style={{
-          border: "1px solid var(--line)",
-          boxShadow:
-            "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 24px 80px rgba(0,0,0,0.08)",
-          aspectRatio: "16/9",
-          background: "var(--surface)",
-          scale,
-          opacity,
-          borderRadius,
-        }}
-      />
+        className="max-w-[1120px] mx-auto"
+        style={{ scale, opacity }}
+      >
+        <HeroTreeIllustration />
+      </motion.div>
     </div>
   )
 }
@@ -583,7 +576,7 @@ function Pricing({ t }: { t: Translations }) {
             </div>
 
             <MagneticButton
-              href="/register"
+              href="/signup"
               className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
@@ -684,7 +677,7 @@ function FinalCta({ t }: { t: Translations }) {
           </h2>
           <div className="flex items-center justify-center gap-4">
             <MagneticButton
-              href="/register"
+              href="/signup"
               className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
