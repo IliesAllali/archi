@@ -19,8 +19,21 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "arbo",
-  description: "Visual sitemap builder",
+  metadataBase: new URL("https://arbo.patchou.cloud"),
+  title: {
+    default: "Arbo — AI-powered visual sitemap builder",
+    template: "%s | Arbo",
+  },
+  description:
+    "Describe your website in plain text. Get a complete sitemap in seconds. Edit with AI, collaborate in real-time, export to PDF.",
+  openGraph: {
+    type: "website",
+    siteName: "Arbo",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

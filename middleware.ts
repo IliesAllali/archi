@@ -21,6 +21,17 @@ export async function middleware(req: NextRequest) {
   if (pathname === '/favicon.ico') return NextResponse.next()
   if (isPublicPrefix) return NextResponse.next()
 
+  // Redirect root to landing for unauthenticated users
+  if (pathname === '/') {
+    const accessToken = req.cookies.get(ACCESS_COOKIE)?.value
+    const legacyToken = req.cookies.get(COOKIE_NAME)?.value
+    const hasAuth = (accessToken && await verifyAccessToken(accessToken)) ||
+                    (legacyToken && await verifySession(legacyToken))
+    if (!hasAuth) {
+      return NextResponse.redirect(new URL('/landing', req.url))
+    }
+  }
+
   // ─── CSRF check for internal API mutations ────────────────────────────────
   // Only applies to internal routes (not /api/v1/ — those use Bearer tokens)
   // Not applied to auth routes (login uses credentials, not session cookies)
