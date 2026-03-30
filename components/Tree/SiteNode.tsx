@@ -75,10 +75,10 @@ export const ZONING_SECTIONS: Partial<Record<ZoningType, Section[]>> = {
 
 /* ─── Layout constants ─── */
 
-const SECTION_GAP = 2;
-const CARD_PAD = 5;
+const SECTION_GAP = 3;
+const CARD_PAD = 6;
 const TITLE_HEIGHT = 32;
-const LABEL_H = 18;
+const LABEL_H = 26;
 export const CARD_WIDTH = 110;
 export const HOME_CARD_WIDTH = 200;
 
@@ -94,7 +94,7 @@ function sectionsHeight(sections: Section[]): number {
 }
 
 function blocksHeight(blocks: ZoningBlock[]): number {
-  const totalH = blocks.reduce((sum, b) => sum + b.height + LABEL_H, 0);
+  const totalH = blocks.reduce((sum, b) => sum + Math.max(b.height * 1.3, 6) + LABEL_H, 0);
   const gaps = Math.max(0, blocks.length - 1) * SECTION_GAP;
   return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
 }
@@ -742,12 +742,12 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
                   const border = SECTION_BORDER_COLORS[block.skin] || "var(--wireframe-strong)";
                   return (
                     <div key={block.id} className="flex flex-col rounded-sm overflow-hidden" style={{ background: bg, borderLeft: `3px solid ${border}` }}>
-                      <div className="flex items-center px-[4px] shrink-0" style={{ height: LABEL_H, paddingTop: 2 }}>
-                        <span className="select-none font-semibold truncate" style={{ fontSize: "8px", lineHeight: "14px", color: "var(--label-color)" }}>
+                      <div className="flex items-start px-[4px] shrink-0" style={{ minHeight: LABEL_H, paddingTop: 3, paddingBottom: 2 }}>
+                        <span className="select-none font-semibold" style={{ fontSize: "8.5px", lineHeight: "11px", color: "var(--label-color)", wordBreak: "break-word", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                           {block.label}
                         </span>
                       </div>
-                      <div style={{ height: block.height }}>
+                      <div style={{ height: Math.max(block.height * 1.3, 6) }}>
                         <Skin />
                       </div>
                     </div>
