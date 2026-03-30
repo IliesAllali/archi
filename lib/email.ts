@@ -21,7 +21,7 @@ function layout(content: string) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:12px;border:1px solid #e5e5e5;overflow:hidden">
         <!-- Header -->
         <tr><td style="padding:28px 32px 0;text-align:center">
-          <img src="${BASE_URL}/logo-64.png" alt="Arbo" width="32" height="32" style="display:block;margin:0 auto;border-radius:8px" />
+          <img src="${BASE_URL}/static/logo-64.png" alt="Arbo" width="32" height="32" style="display:block;margin:0 auto;border-radius:8px" />
           <div style="margin-top:8px;font-size:13px;font-weight:600;color:#18181b;letter-spacing:-0.2px">arbo</div>
         </td></tr>
         <!-- Content -->
