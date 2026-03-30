@@ -5,6 +5,7 @@ import { db } from '@/lib/db'
 import { setAuthCookies, createAuthToken } from '@/lib/auth'
 import { checkAuthLimit } from '@/lib/rate-limiter'
 import { sanitizeText } from '@/lib/sanitize'
+import { sendVerificationEmail } from '@/lib/email'
 
 export const dynamic = "force-dynamic"
 
@@ -46,26 +47,35 @@ export async function POST(req: NextRequest) {
   const passwordHash = hashSync(password, 12)
   const now          = Date.now()
 
-  // Auto-verify all users (no email service configured)
   const userCount = (db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number }).c
-  const autoVerify = 1
-  const role = userCount === 0 ? 'admin' : 'user'
+  const isFirstUser = userCount === 0
+  const role = isFirstUser ? 'admin' : 'user'
 
   db.prepare(
     `INSERT INTO users (id, email, email_verified, password_hash, name, color, role_global, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, '#F76B15', ?, ?, ?)`
-  ).run(userId, email, autoVerify, passwordHash, name, role, now, now)
+  ).run(userId, email, isFirstUser ? 1 : 0, passwordHash, name, role, now, now)
 
   // Give new user free AI credits (discovery quota)
   db.prepare(
     `INSERT INTO ai_credits (user_id, credits_total, credits_used, created_at) VALUES (?, 20, 0, ?)`
   ).run(userId, now)
 
-  // Auto-verified: log them in directly
-  const res = NextResponse.json({
-    user: { id: userId, email, name, role },
-    redirect: '/',
+  // First user (admin) — auto-verified, log in directly
+  if (isFirstUser) {
+    const res = NextResponse.json({
+      user: { id: userId, email, name, role },
+      redirect: '/',
+    })
+    await setAuthCookies(res, userId, { sub: userId, email, name, role })
+    return res
+  }
+
+  // Normal users — send verification email
+  const token = createAuthToken(userId, 'verify_email')
+  await sendVerificationEmail(email, name, token).catch(console.error)
+
+  return NextResponse.json({
+    message: 'Compte créé ! Vérifiez votre boîte mail pour confirmer votre adresse.'
   })
-  await setAuthCookies(res, userId, { sub: userId, email, name, role })
-  return res
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
+import { sendInvitationEmail } from "@/lib/email"
 import type { DbProject } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
@@ -73,6 +74,22 @@ export async function POST(
   db.prepare(
     "INSERT INTO project_invitations (id, project_id, email, role, token, expires_at) VALUES (?, ?, ?, ?, ?, ?)"
   ).run(id, params.id, body.email, body.role, token, expiresAt)
+
+  // Send invitation email
+  const project = db
+    .prepare("SELECT name FROM projects WHERE id = ?")
+    .get(params.id) as { name: string } | undefined
+  const inviterUser = db
+    .prepare("SELECT name FROM users WHERE id = ?")
+    .get(session.sub) as { name: string } | undefined
+
+  await sendInvitationEmail(
+    body.email,
+    inviterUser?.name || "Un membre",
+    project?.name || "un projet",
+    body.role,
+    token
+  ).catch(console.error)
 
   return NextResponse.json({ id, email: body.email, role: body.role, token, expires_at: expiresAt }, { status: 201 })
 }

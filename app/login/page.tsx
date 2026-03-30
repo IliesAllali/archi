@@ -12,10 +12,13 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
+  const justVerified = searchParams.get("verified") === "1";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -44,6 +47,26 @@ function LoginForm() {
     }
   }
 
+  const needsVerification = error.includes("confirmer votre adresse");
+
+  async function handleResend() {
+    if (!email.trim()) return;
+    setResending(true);
+    setResendSuccess(false);
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      setResendSuccess(true);
+    } catch {
+      // Silently fail — anti-enumeration
+    } finally {
+      setResending(false);
+    }
+  }
+
   const inputStyle = (hasError?: boolean) => ({
     background: "var(--elevated)",
     color: "var(--text-primary)",
@@ -53,6 +76,15 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {justVerified && (
+        <div
+          className="px-4 py-3 rounded-lg text-2xs text-center animate-fade-in"
+          style={{ background: "var(--success-bg)", color: "var(--success-text)" }}
+        >
+          Email confirm\u00e9 ! Vous pouvez maintenant vous connecter.
+        </div>
+      )}
+
       <div>
         <input
           ref={emailRef}
@@ -107,10 +139,26 @@ function LoginForm() {
         </button>
       </div>
 
-      <div className="h-4 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center gap-1 min-h-[16px]">
         {error && (
           <p className="text-2xs animate-fade-in" style={{ color: "var(--error-text)" }}>
             {error}
+          </p>
+        )}
+        {needsVerification && !resendSuccess && (
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending}
+            className="text-2xs font-medium hover:underline transition-opacity disabled:opacity-50"
+            style={{ color: "var(--accent)" }}
+          >
+            {resending ? "Envoi en cours..." : "Renvoyer l\u2019email de confirmation"}
+          </button>
+        )}
+        {resendSuccess && (
+          <p className="text-2xs animate-fade-in" style={{ color: "var(--success-text)" }}>
+            Email renvoy\u00e9 ! V\u00e9rifiez votre bo\u00eete mail.
           </p>
         )}
       </div>
