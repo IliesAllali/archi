@@ -8,6 +8,47 @@ function getResend() {
 const FROM = process.env.EMAIL_FROM || 'Arbo <noreply@arbo.app>'
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 
+// ─── Shared layout ──────────────────────────────────────────────────────────
+
+function layout(content: string) {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;padding:40px 16px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:12px;border:1px solid #e5e5e5;overflow:hidden">
+        <!-- Header -->
+        <tr><td style="padding:28px 32px 0;text-align:center">
+          <img src="${BASE_URL}/logo-64.png" alt="Arbo" width="32" height="32" style="display:block;margin:0 auto;border-radius:8px" />
+          <div style="margin-top:8px;font-size:13px;font-weight:600;color:#18181b;letter-spacing:-0.2px">arbo</div>
+        </td></tr>
+        <!-- Content -->
+        <tr><td style="padding:24px 32px 32px">
+          ${content}
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:16px 32px;border-top:1px solid #f0f0f0;text-align:center">
+          <a href="${BASE_URL}" style="color:#a3a3a3;font-size:11px;text-decoration:none">arbo.patchou.cloud</a>
+          <div style="margin-top:4px;font-size:10px;color:#d4d4d4">Visual sitemap builder</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+function button(href: string, label: string) {
+  return `
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px auto 0">
+    <tr><td style="background:#F76B15;border-radius:8px">
+      <a href="${href}" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;letter-spacing:-0.1px">${label}</a>
+    </td></tr>
+  </table>`
+}
+
 // ─── Email verification ───────────────────────────────────────────────────────
 
 export async function sendVerificationEmail(email: string, name: string, token: string) {
@@ -16,23 +57,17 @@ export async function sendVerificationEmail(email: string, name: string, token: 
   return getResend().emails.send({
     from: FROM,
     to: email,
-    subject: 'Confirmez votre adresse email — Arbo',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-        <h2 style="margin:0 0 8px">Bonjour ${name},</h2>
-        <p style="color:#555;margin:0 0 24px">
-          Cliquez sur le bouton ci-dessous pour confirmer votre adresse email et accéder à Arbo.
-        </p>
-        <a href="${link}"
-           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
-                  padding:12px 24px;border-radius:6px;font-weight:600">
-          Confirmer mon email
-        </a>
-        <p style="color:#999;font-size:12px;margin:24px 0 0">
-          Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte, ignorez cet email.
-        </p>
-      </div>
-    `,
+    subject: 'Confirmez votre email \u2014 Arbo',
+    html: layout(`
+      <h2 style="margin:0 0 6px;font-size:17px;font-weight:600;color:#18181b">Bienvenue sur Arbo</h2>
+      <p style="margin:0;font-size:13px;color:#737373;line-height:1.5">
+        Bonjour ${name}, confirmez votre adresse email pour acc\u00e9der \u00e0 votre compte.
+      </p>
+      ${button(link, 'Confirmer mon email')}
+      <p style="margin:20px 0 0;font-size:11px;color:#a3a3a3;text-align:center;line-height:1.4">
+        Ce lien expire dans 24 heures.<br>Si vous n\u2019avez pas cr\u00e9\u00e9 de compte, ignorez cet email.
+      </p>
+    `),
   })
 }
 
@@ -44,23 +79,17 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
   return getResend().emails.send({
     from: FROM,
     to: email,
-    subject: 'Réinitialisation de votre mot de passe — Arbo',
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-        <h2 style="margin:0 0 8px">Bonjour ${name},</h2>
-        <p style="color:#555;margin:0 0 24px">
-          Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous.
-        </p>
-        <a href="${link}"
-           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
-                  padding:12px 24px;border-radius:6px;font-weight:600">
-          Réinitialiser mon mot de passe
-        </a>
-        <p style="color:#999;font-size:12px;margin:24px 0 0">
-          Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.
-        </p>
-      </div>
-    `,
+    subject: 'R\u00e9initialisation de mot de passe \u2014 Arbo',
+    html: layout(`
+      <h2 style="margin:0 0 6px;font-size:17px;font-weight:600;color:#18181b">R\u00e9initialiser votre mot de passe</h2>
+      <p style="margin:0;font-size:13px;color:#737373;line-height:1.5">
+        Bonjour ${name}, cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+      </p>
+      ${button(link, 'R\u00e9initialiser')}
+      <p style="margin:20px 0 0;font-size:11px;color:#a3a3a3;text-align:center;line-height:1.4">
+        Ce lien expire dans 1 heure.<br>Si vous n\u2019avez pas fait cette demande, ignorez cet email.
+      </p>
+    `),
   })
 }
 
@@ -75,31 +104,25 @@ export async function sendInvitationEmail(
 ) {
   const link = `${BASE_URL}/invite?token=${token}`
   const roleLabel: Record<string, string> = {
-    editor: 'éditeur',
+    editor: '\u00e9diteur',
     viewer: 'lecteur',
-    owner:  'propriétaire',
+    owner:  'propri\u00e9taire',
   }
 
   return getResend().emails.send({
     from: FROM,
     to: email,
-    subject: `${inviterName} vous invite à collaborer sur "${projectName}" — Arbo`,
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-        <h2 style="margin:0 0 8px">Vous avez une invitation</h2>
-        <p style="color:#555;margin:0 0 24px">
-          <strong>${inviterName}</strong> vous invite à rejoindre le projet
-          <strong>"${projectName}"</strong> en tant que <strong>${roleLabel[role] || role}</strong>.
-        </p>
-        <a href="${link}"
-           style="display:inline-block;background:#F76B15;color:#fff;text-decoration:none;
-                  padding:12px 24px;border-radius:6px;font-weight:600">
-          Rejoindre le projet
-        </a>
-        <p style="color:#999;font-size:12px;margin:24px 0 0">
-          Ce lien expire dans 24 heures.
-        </p>
-      </div>
-    `,
+    subject: `${inviterName} vous invite sur "${projectName}" \u2014 Arbo`,
+    html: layout(`
+      <h2 style="margin:0 0 6px;font-size:17px;font-weight:600;color:#18181b">Vous avez une invitation</h2>
+      <p style="margin:0;font-size:13px;color:#737373;line-height:1.5">
+        <strong style="color:#18181b">${inviterName}</strong> vous invite \u00e0 rejoindre
+        <strong style="color:#18181b">\u201c${projectName}\u201d</strong> en tant que <strong style="color:#18181b">${roleLabel[role] || role}</strong>.
+      </p>
+      ${button(link, 'Rejoindre le projet')}
+      <p style="margin:20px 0 0;font-size:11px;color:#a3a3a3;text-align:center;line-height:1.4">
+        Ce lien expire dans 7 jours.
+      </p>
+    `),
   })
 }

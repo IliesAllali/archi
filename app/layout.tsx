@@ -21,6 +21,13 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "arbo",
   description: "Visual sitemap builder",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport = {
