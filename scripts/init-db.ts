@@ -125,9 +125,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_nodes_parent  ON nodes(parent_id);
 
   -- ─── AI tokens ─────────────────────────────────────────────────────────────
+  -- project_id NULL = account-level token (access to all user's projects)
   CREATE TABLE IF NOT EXISTS ai_tokens (
     id           TEXT PRIMARY KEY,
-    project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id      TEXT REFERENCES users(id),
+    project_id   TEXT REFERENCES projects(id) ON DELETE CASCADE,
     name         TEXT NOT NULL,
     token_hash   TEXT UNIQUE NOT NULL,
     scope        TEXT NOT NULL DEFAULT 'write:nodes',
@@ -135,6 +137,7 @@ db.exec(`
     created_at   INTEGER NOT NULL,
     revoked_at   INTEGER
   );
+  -- idx_ai_tokens_user created in migration 002
 
   -- ─── User API keys ────────────────────────────────────────────────────────
   CREATE TABLE IF NOT EXISTS user_api_keys (
@@ -209,6 +212,24 @@ if (!already) {
   console.log('✅ Migration 001_initial_schema applied')
 } else {
   console.log('→  Migration 001_initial_schema already applied, skipping')
+}
+
+// ─── Migration 002: Account-level MCP tokens ─────────────────────────────────
+const m002 = db.prepare("SELECT name FROM _migrations WHERE name = '002_account_mcp_tokens'").get()
+if (!m002) {
+  // Add user_id column (nullable for backwards compat with existing project-scoped tokens)
+  const cols = db.prepare("PRAGMA table_info(ai_tokens)").all() as { name: string }[]
+  if (!cols.some(c => c.name === 'user_id')) {
+    db.exec("ALTER TABLE ai_tokens ADD COLUMN user_id TEXT REFERENCES users(id)")
+    console.log('  + Added user_id to ai_tokens')
+  }
+  // Make project_id nullable: SQLite can't ALTER NOT NULL, but new inserts can pass NULL
+  // Existing rows keep their project_id, new account-level tokens have project_id = NULL
+  db.exec("CREATE INDEX IF NOT EXISTS idx_ai_tokens_user ON ai_tokens(user_id)")
+  db.prepare("INSERT INTO _migrations (name, applied_at) VALUES (?, ?)").run('002_account_mcp_tokens', Date.now())
+  console.log('✅ Migration 002_account_mcp_tokens applied')
+} else {
+  console.log('→  Migration 002_account_mcp_tokens already applied, skipping')
 }
 
 db.close()

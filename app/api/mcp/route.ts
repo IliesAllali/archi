@@ -9,7 +9,14 @@ export const dynamic = "force-dynamic"
 
 // ─── Auth helper ────────────────────────────────────────────────────────────
 
-function authenticateToken(req: Request): { valid: boolean; tokenName?: string; projectIds?: string[] } {
+interface AuthResult {
+  valid: boolean
+  tokenName?: string
+  userId?: string        // account-level token → user_id
+  projectId?: string     // project-scoped token → single project
+}
+
+function authenticateToken(req: Request): AuthResult {
   const auth = req.headers.get("authorization")
   if (!auth?.startsWith("Bearer ")) return { valid: false }
 
@@ -18,20 +25,47 @@ function authenticateToken(req: Request): { valid: boolean; tokenName?: string; 
   const hash = crypto.createHash("sha256").update(rawToken).digest("hex")
 
   const row = db.prepare(
-    "SELECT id, name, project_id, scope FROM ai_tokens WHERE token_hash = ? AND revoked_at IS NULL"
-  ).get(hash) as { id: string; name: string; project_id: string; scope: string } | undefined
+    "SELECT id, name, user_id, project_id, scope FROM ai_tokens WHERE token_hash = ? AND revoked_at IS NULL"
+  ).get(hash) as { id: string; name: string; user_id: string | null; project_id: string | null; scope: string } | undefined
 
   if (!row) return { valid: false }
 
-  // Update last_used_at
   db.prepare("UPDATE ai_tokens SET last_used_at = ? WHERE id = ?").run(Date.now(), row.id)
 
-  return { valid: true, tokenName: row.name, projectIds: [row.project_id] }
+  return {
+    valid: true,
+    tokenName: row.name,
+    userId: row.user_id || undefined,
+    projectId: row.project_id || undefined,
+  }
+}
+
+/** Get all project IDs this token can access */
+function getAccessibleProjectIds(auth: AuthResult): string[] | null {
+  // Account-level token → all user's projects (owned + member)
+  if (auth.userId) {
+    const owned = db.prepare(
+      "SELECT id FROM projects WHERE owner_id = ? AND archived = 0"
+    ).all(auth.userId) as { id: string }[]
+    const member = db.prepare(
+      "SELECT project_id FROM project_members WHERE user_id = ?"
+    ).all(auth.userId) as { project_id: string }[]
+    const ids = new Set([...owned.map(r => r.id), ...member.map(r => r.project_id)])
+    return [...ids]
+  }
+  // Project-scoped token → single project
+  if (auth.projectId) return [auth.projectId]
+  return null
+}
+
+function canAccessProject(auth: AuthResult, projectId: string): boolean {
+  const ids = getAccessibleProjectIds(auth)
+  return ids === null || ids.includes(projectId)
 }
 
 // ─── Build MCP Server ───────────────────────────────────────────────────────
 
-function createMcpServer() {
+function createMcpServer(auth: AuthResult) {
   const server = new McpServer({
     name: "arbo",
     version: "1.0.0",
@@ -44,9 +78,22 @@ function createMcpServer() {
     "List all projects accessible with this token",
     {},
     async () => {
-      const projects = db
-        .prepare("SELECT id, slug, name, client, accent, version, created_at FROM projects WHERE archived = 0 ORDER BY created_at DESC")
-        .all() as DbProject[]
+      const accessibleIds = getAccessibleProjectIds(auth)
+
+      let projects: DbProject[]
+      if (accessibleIds && accessibleIds.length > 0) {
+        const placeholders = accessibleIds.map(() => "?").join(",")
+        projects = db
+          .prepare(`SELECT id, slug, name, client, accent, version, created_at FROM projects WHERE id IN (${placeholders}) AND archived = 0 ORDER BY created_at DESC`)
+          .all(...accessibleIds) as DbProject[]
+      } else if (accessibleIds && accessibleIds.length === 0) {
+        projects = []
+      } else {
+        // Fallback: no filtering (legacy tokens without user_id or project_id)
+        projects = db
+          .prepare("SELECT id, slug, name, client, accent, version, created_at FROM projects WHERE archived = 0 ORDER BY created_at DESC")
+          .all() as DbProject[]
+      }
 
       return {
         content: [{
@@ -71,6 +118,10 @@ function createMcpServer() {
     "Get a project with its full sitemap tree",
     { project_id: z.string().describe("The project ID") },
     async ({ project_id }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
       const project = db
         .prepare("SELECT * FROM projects WHERE id = ? AND archived = 0")
         .get(project_id) as DbProject | undefined
@@ -117,14 +168,22 @@ function createMcpServer() {
       accent: z.string().optional().describe("Accent color hex (e.g. #2563EB)"),
     },
     async ({ name, client, accent }) => {
+      const ownerId = auth.userId || "ai"
       const projectId = nanoid()
       const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${nanoid(6)}`
       const now = Date.now()
 
       db.prepare(
         `INSERT INTO projects (id, slug, name, client, accent, version, owner_id, archived, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'v1', 'ai', 0, ?, ?)`
-      ).run(projectId, slug, name, client || null, accent || "#F76B15", now, now)
+         VALUES (?, ?, ?, ?, ?, 'v1', ?, 0, ?, ?)`
+      ).run(projectId, slug, name, client || null, accent || "#F76B15", ownerId, now, now)
+
+      // Add owner as project member
+      if (auth.userId) {
+        db.prepare(
+          "INSERT INTO project_members (project_id, user_id, role, added_at) VALUES (?, ?, 'owner', ?)"
+        ).run(projectId, auth.userId, now)
+      }
 
       return {
         content: [{
@@ -164,6 +223,10 @@ function createMcpServer() {
       zoning_expanded: z.boolean().optional().describe("If true, zoning is shown expanded by default on the canvas"),
     },
     async ({ project_id, label, type, priority, description, parent_id, rationale, notes, cta, tags, entry_points, zoning_blocks, zoning_expanded }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
       const nodeId = nanoid()
       const now = Date.now()
 
@@ -218,6 +281,10 @@ function createMcpServer() {
       parent_id: z.string().optional().nullable().describe("Move to new parent"),
     },
     async ({ project_id, node_id, label, type, priority, description, rationale, notes, parent_id }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
       const existing = db.prepare(
         "SELECT * FROM nodes WHERE id = ? AND project_id = ? AND archived = 0"
       ).get(node_id, project_id) as DbNode | undefined
@@ -258,6 +325,10 @@ function createMcpServer() {
       cascade: z.boolean().optional().describe("If true, also deletes all children. Default: false (children are reparented to grandparent)"),
     },
     async ({ project_id, node_id, cascade }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
       const node = db.prepare(
         "SELECT * FROM nodes WHERE id = ? AND project_id = ? AND archived = 0"
       ).get(node_id, project_id) as DbNode | undefined
@@ -269,7 +340,6 @@ function createMcpServer() {
       const now = Date.now()
 
       if (cascade) {
-        // Archive all descendants recursively
         const archiveDescendants = (parentId: string) => {
           const children = db.prepare(
             "SELECT id FROM nodes WHERE parent_id = ? AND project_id = ? AND archived = 0"
@@ -281,7 +351,6 @@ function createMcpServer() {
         }
         archiveDescendants(node_id)
       } else {
-        // Reparent children to grandparent
         db.prepare(
           "UPDATE nodes SET parent_id = ?, updated_at = ? WHERE parent_id = ? AND project_id = ? AND archived = 0"
         ).run(node.parent_id, now, node_id, project_id)
@@ -327,6 +396,10 @@ function createMcpServer() {
       })).describe("Flat list of nodes with temp_id references for parent-child relationships"),
     },
     async ({ project_id, nodes }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
       const project = db.prepare(
         "SELECT id FROM projects WHERE id = ? AND archived = 0"
       ).get(project_id)
@@ -394,7 +467,6 @@ function createMcpServer() {
 // ─── Stateless transport per request ────────────────────────────────────────
 
 async function handleMcpRequest(req: Request): Promise<Response> {
-  // Auth check
   const auth = authenticateToken(req)
   if (!auth.valid) {
     return new Response(JSON.stringify({ error: "Invalid or missing API token" }), {
@@ -403,9 +475,9 @@ async function handleMcpRequest(req: Request): Promise<Response> {
     })
   }
 
-  const server = createMcpServer()
+  const server = createMcpServer(auth)
   const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // Stateless mode
+    sessionIdGenerator: undefined,
     enableJsonResponse: true,
   })
 

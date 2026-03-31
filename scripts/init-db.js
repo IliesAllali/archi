@@ -171,5 +171,20 @@ if (!already) {
   console.log('→  Migration 001_initial_schema already applied, skipping')
 }
 
+// ─── Migration 002: Account-level MCP tokens ─────────────────────────────────
+const m002 = db.prepare("SELECT name FROM _migrations WHERE name = '002_account_mcp_tokens'").get()
+if (!m002) {
+  const cols = db.prepare("PRAGMA table_info(ai_tokens)").all()
+  if (!cols.some(c => c.name === 'user_id')) {
+    db.exec("ALTER TABLE ai_tokens ADD COLUMN user_id TEXT REFERENCES users(id)")
+    console.log('  + Added user_id to ai_tokens')
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS idx_ai_tokens_user ON ai_tokens(user_id)")
+  db.prepare("INSERT INTO _migrations (name, applied_at) VALUES (?, ?)").run('002_account_mcp_tokens', Date.now())
+  console.log('✅ Migration 002_account_mcp_tokens applied')
+} else {
+  console.log('→  Migration 002_account_mcp_tokens already applied, skipping')
+}
+
 db.close()
 console.log('✅ Database initialized')

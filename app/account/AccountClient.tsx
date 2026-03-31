@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown, HardDrive } from "lucide-react"
+import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown, HardDrive, Terminal, Copy } from "lucide-react"
 import { motion } from "framer-motion"
 import Logo from "@/components/Logo"
 import { AI_PROVIDERS, getStoredApiKey, type AiProvider } from "@/lib/ai-providers"
@@ -16,6 +16,7 @@ function getCsrfToken(): string | null {
 interface UserData { id: string; name: string; email: string; color: string; avatar: string | null; role: string }
 interface ApiKey { id: string; provider: string; key_hint: string; label: string | null; created_at: number }
 interface Credits { creditsTotal: number; creditsUsed: number; creditsRemaining: number }
+interface McpToken { id: string; name: string; scope: string; last_used_at: number | null; created_at: number; revoked_at: number | null }
 
 const PROVIDERS = [
   { id: "openai", label: "OpenAI", placeholder: "sk-...", url: "https://platform.openai.com/api-keys" },
@@ -62,6 +63,16 @@ export default function AccountClient() {
   // Local BYOK keys (localStorage)
   const [localKeys, setLocalKeys] = useState<{ provider: AiProvider; hint: string }[]>([])
 
+  // MCP tokens
+  const [mcpTokens, setMcpTokens] = useState<McpToken[]>([])
+  const [mcpLoading, setMcpLoading] = useState(true)
+  const [mcpCreating, setMcpCreating] = useState(false)
+  const [mcpName, setMcpName] = useState("")
+  const [mcpRevealed, setMcpRevealed] = useState<string | null>(null)
+  const [mcpCopied, setMcpCopied] = useState<string | null>(null)
+  const [mcpShowForm, setMcpShowForm] = useState(false)
+  const [mcpConfigTab, setMcpConfigTab] = useState<"claude" | "claude-code" | "cursor" | "chatgpt">("claude-code")
+
   // Demo
   const [hasDemo, setHasDemo] = useState(false)
   const [deletingDemo, setDeletingDemo] = useState(false)
@@ -73,12 +84,15 @@ export default function AccountClient() {
       fetch("/api/me/api-keys").then(r => r.json()),
       fetch("/api/demo").then(r => r.json()).catch(() => ({ exists: false })),
       fetch("/api/me/ai-credits").then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([u, k, d, c]) => {
+      fetch("/api/me/mcp-tokens").then(r => r.json()).catch(() => []),
+    ]).then(([u, k, d, c, mcp]) => {
       setUser(u)
       setKeys(Array.isArray(k) ? k : [])
       setNameValue(u?.name || "")
       setHasDemo(!!d?.exists)
       setCredits(c)
+      setMcpTokens(Array.isArray(mcp) ? mcp.filter((t: McpToken) => !t.revoked_at) : [])
+      setMcpLoading(false)
     }).finally(() => setLoading(false))
 
     // Detect localStorage BYOK keys
@@ -198,6 +212,42 @@ export default function AccountClient() {
       setHasDemo(false); setConfirmDemo(false)
     }
     setDeletingDemo(false)
+  }
+
+  // ─── MCP tokens ─────────────────────────────────────────────
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://arbo.patchou.cloud"
+  const mcpTokenValue = mcpRevealed || "<YOUR_TOKEN>"
+
+  const createMcpToken = async () => {
+    if (!mcpName.trim()) return
+    setMcpCreating(true)
+    const res = await fetch("/api/me/mcp-tokens", { method: "POST", headers: headers(), body: JSON.stringify({ name: mcpName.trim() }) })
+    if (res.ok) {
+      const data = await res.json()
+      setMcpRevealed(data.token)
+      setMcpTokens(prev => [{ id: data.id, name: data.name, scope: "write:nodes", last_used_at: null, created_at: data.createdAt, revoked_at: null }, ...prev])
+      setMcpName("")
+      setMcpShowForm(false)
+    }
+    setMcpCreating(false)
+  }
+
+  const revokeMcpToken = async (tokenId: string) => {
+    await fetch(`/api/me/mcp-tokens?id=${tokenId}`, { method: "DELETE", headers: csrfHeaders() })
+    setMcpTokens(prev => prev.filter(t => t.id !== tokenId))
+  }
+
+  const copyMcp = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text)
+    setMcpCopied(key)
+    setTimeout(() => setMcpCopied(null), 2000)
+  }
+
+  const mcpConfigs: Record<string, string> = {
+    "claude": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
+    "claude-code": `claude mcp add arbo --transport streamable-http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
+    "cursor": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
+    "chatgpt": `URL: ${baseUrl}/api/mcp\nHeader: Authorization: Bearer ${mcpTokenValue}`,
   }
 
   if (loading) return (
@@ -633,6 +683,121 @@ export default function AccountClient() {
                   {saving ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Enregistrer"}
                 </button>
               </div>
+            </div>
+          )}
+        </section>
+
+        {/* ─── MCP / Integrations ─────────────────────────── */}
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Serveur MCP</h3>
+            <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+              Connecte Claude, Cursor, ChatGPT ou tout client MCP pour modifier tes projets par IA.
+            </p>
+          </div>
+
+          {/* Token revealed */}
+          {mcpRevealed && (
+            <div className="p-3 rounded-lg space-y-2" style={{ background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.25)" }}>
+              <p className="text-2xs font-medium" style={{ color: "#16a34a" }}>
+                Token cr&eacute;&eacute; ! Copie-le maintenant, il ne sera plus affich&eacute;.
+              </p>
+              <div className="flex gap-2">
+                <code className="flex-1 px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--canvas-bg)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>
+                  {mcpRevealed}
+                </code>
+                <button onClick={() => copyMcp(mcpRevealed, "token")} className="px-3 py-2 rounded-md text-2xs font-medium shrink-0" style={{ background: mcpCopied === "token" ? "#16a34a" : "var(--accent)", color: "#fff" }}>
+                  {mcpCopied === "token" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Existing tokens */}
+          {!mcpLoading && mcpTokens.length > 0 && (
+            <div className="space-y-1.5">
+              {mcpTokens.map(t => (
+                <div key={t.id} className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                    <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>{t.name}</span>
+                    {t.last_used_at && (
+                      <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                        utilis&eacute; {new Date(t.last_used_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={() => revokeMcpToken(t.id)} className="p-1 rounded hover:bg-red-500/10 transition-colors" style={{ color: "var(--text-faint)" }}>
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Create form */}
+          {!mcpShowForm ? (
+            <button onClick={() => setMcpShowForm(true)} className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--accent)" }}>
+              <Plus className="w-3 h-3" />
+              {mcpTokens.length > 0 ? "Nouveau token" : "Cr\u00e9er un token MCP"}
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={mcpName}
+                onChange={e => setMcpName(e.target.value)}
+                placeholder="Nom (ex: Mon Claude Code)"
+                autoFocus
+                className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none"
+                style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                onKeyDown={e => { if (e.key === "Enter") createMcpToken() }}
+              />
+              <button onClick={createMcpToken} disabled={mcpCreating || !mcpName.trim()} className="px-3 h-8 rounded-md text-2xs font-medium disabled:opacity-40" style={{ background: "var(--accent)", color: "#fff" }}>
+                {mcpCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Cr\u00e9er"}
+              </button>
+            </div>
+          )}
+
+          {/* Config instructions (shown when token exists) */}
+          {(mcpRevealed || mcpTokens.length > 0) && (
+            <div className="space-y-2 mt-2">
+              <p className="text-2xs font-medium" style={{ color: "var(--text-muted)" }}>Configuration</p>
+              <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: "var(--surface)" }}>
+                {(["claude-code", "claude", "cursor", "chatgpt"] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setMcpConfigTab(tab)}
+                    className="flex-1 px-2 py-1.5 rounded-md text-2xs font-medium transition-all"
+                    style={{
+                      background: mcpConfigTab === tab ? "var(--elevated)" : "transparent",
+                      color: mcpConfigTab === tab ? "var(--text-primary)" : "var(--text-faint)",
+                      border: mcpConfigTab === tab ? "1px solid var(--line)" : "1px solid transparent",
+                    }}
+                  >
+                    {tab === "claude-code" ? "Claude Code" : tab === "claude" ? "Claude Desktop" : tab === "chatgpt" ? "ChatGPT" : "Cursor"}
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--line)" }}>
+                <pre className="p-3 text-2xs font-mono overflow-x-auto whitespace-pre-wrap" style={{ background: "var(--canvas-bg)", color: "var(--text-secondary)" }}>
+                  {mcpConfigs[mcpConfigTab]}
+                </pre>
+                <div className="px-3 py-2 flex justify-end" style={{ background: "var(--surface)", borderTop: "1px solid var(--line)" }}>
+                  <button
+                    onClick={() => copyMcp(mcpConfigs[mcpConfigTab], "config")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-2xs font-medium"
+                    style={{ background: mcpCopied === "config" ? "#16a34a" : "var(--accent)", color: "#fff" }}
+                  >
+                    {mcpCopied === "config" ? <><Check className="w-3 h-3" /> Copi&eacute;</> : <><Copy className="w-3 h-3" /> Copier</>}
+                  </button>
+                </div>
+              </div>
+              {!mcpRevealed && (
+                <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                  Cr&eacute;e un nouveau token ci-dessus pour obtenir une config pr&ecirc;te &agrave; coller.
+                </p>
+              )}
             </div>
           )}
         </section>

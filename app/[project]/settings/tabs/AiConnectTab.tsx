@@ -59,11 +59,11 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://arbo.patchou.cloud"
 
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/tokens`)
+    fetch("/api/me/mcp-tokens")
       .then(r => r.json())
       .then(data => setTokens(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false))
-  }, [projectId])
+  }, [])
 
   useEffect(() => {
     const p = getStoredProvider()
@@ -149,7 +149,7 @@ My request: `
   const createToken = async () => {
     if (!newTokenName.trim()) return
     setCreating(true)
-    const res = await fetch(`/api/projects/${projectId}/tokens`, {
+    const res = await fetch("/api/me/mcp-tokens", {
       method: "POST",
       headers: csrfHeaders(),
       body: JSON.stringify({ name: newTokenName.trim() }),
@@ -169,7 +169,7 @@ My request: `
     const csrf = getCsrfToken()
     const h: Record<string, string> = {}
     if (csrf) h["x-csrf-token"] = csrf
-    await fetch(`/api/projects/${projectId}/tokens/${tokenId}`, { method: "DELETE", headers: h })
+    await fetch(`/api/me/mcp-tokens?id=${tokenId}`, { method: "DELETE", headers: h })
     setTokens(prev => prev.filter(t => t.id !== tokenId))
   }
 
@@ -433,105 +433,26 @@ My request: `
 
       {/* ─── Section: MCP Server ──────────────────────────────────────────── */}
       {section === "mcp" && (
-        <div className="space-y-6">
-          {/* Step 1: Token */}
-          <div className="space-y-3">
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold" style={{ background: "var(--accent)", color: "#fff" }}>1</div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Créer un token API</p>
+              <Terminal className="w-4 h-4" style={{ color: "var(--accent)" }} />
+              <h4 className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                Serveur MCP
+              </h4>
             </div>
-
-            {revealedToken && (
-              <div className="p-3 rounded-lg space-y-2" style={{ background: "#16a34a15", border: "1px solid #16a34a40" }}>
-                <p className="text-2xs font-medium" style={{ color: "#16a34a" }}>
-                  Token créé ! Copiez-le maintenant, il ne sera plus affiché.
-                </p>
-                <div className="flex gap-2">
-                  <code className="flex-1 px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--canvas-bg)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>
-                    {revealedToken}
-                  </code>
-                  <button onClick={() => copyText(revealedToken, "token")} className="px-3 py-2 rounded-md text-2xs font-medium shrink-0 transition-all" style={{ background: copied === "token" ? "#16a34a" : "var(--accent)", color: "#fff" }}>
-                    {copied === "token" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--text-faint)" }} />
-            ) : tokens.length > 0 ? (
-              <div className="space-y-1.5">
-                {tokens.map(token => (
-                  <div key={token.id} className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-                    <div className="flex items-center gap-2">
-                      <Key className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-                      <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>{token.name}</span>
-                    </div>
-                    <button onClick={() => revokeToken(token.id)} className="p-1 rounded hover:bg-red-500/10 text-label-faint hover:text-red-400 transition-colors">
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {!showCreate ? (
-              <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 text-2xs font-medium transition-colors" style={{ color: "var(--accent)" }}>
-                <Plus className="w-3 h-3" />
-                {tokens.length > 0 ? "Nouveau token" : "Créer un token"}
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <input type="text" value={newTokenName} onChange={e => setNewTokenName(e.target.value)} placeholder="Nom du token (ex: Mon Claude)" autoFocus className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }} onKeyDown={e => { if (e.key === "Enter") createToken() }} />
-                <button onClick={createToken} disabled={creating || !newTokenName.trim()} className="px-3 h-8 rounded-md text-2xs font-medium disabled:opacity-40" style={{ background: "var(--accent)", color: "#fff" }}>
-                  {creating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Créer"}
-                </button>
-              </div>
-            )}
+            <p className="text-2xs" style={{ color: "var(--text-muted)" }}>
+              Les tokens MCP sont li&eacute;s &agrave; ton compte et donnent acc&egrave;s &agrave; tous tes projets.
+              Configure-les depuis ton profil.
+            </p>
+            <a
+              href="/account"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-2xs font-medium transition-all hover:brightness-110"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              Configurer dans Mon compte
+            </a>
           </div>
-
-          {/* Step 2: Config */}
-          {hasToken && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center text-2xs font-bold" style={{ background: "var(--accent)", color: "#fff" }}>2</div>
-                <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Configurer ton IA</p>
-              </div>
-
-              {!hasRealToken && (
-                <div className="p-2.5 rounded-lg text-2xs" style={{ background: "rgba(234,179,8,0.10)", border: "1px solid rgba(234,179,8,0.30)", color: "rgba(202,138,4,1)" }}>
-                  Crée un token ci-dessus pour obtenir une config prête à coller.
-                </div>
-              )}
-
-              <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: "var(--surface)" }}>
-                {configTabs.map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className="flex-1 flex items-center justify-center px-2 py-1.5 rounded-md text-2xs font-medium transition-all" style={{ background: activeTab === tab.id ? "var(--elevated)" : "transparent", color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-faint)", border: activeTab === tab.id ? "1px solid var(--line)" : "1px solid transparent" }}>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--line)" }}>
-                {activeTab === "chatgpt" ? (
-                  <div className="p-3 space-y-3" style={{ background: "var(--canvas-bg)" }}>
-                    <p className="text-2xs" style={{ color: "var(--text-muted)" }}>Settings → Connections → Add MCP Server</p>
-                    <div><p className="text-2xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>URL</p><code className="block px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>{baseUrl}/api/mcp</code></div>
-                    <div><p className="text-2xs font-medium mb-1" style={{ color: "var(--text-muted)" }}>Header</p><code className="block px-3 py-2 rounded-md text-2xs font-mono break-all" style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}>Authorization: Bearer {tokenValue}</code></div>
-                  </div>
-                ) : activeTab === "claude-code" ? (
-                  <pre className="p-3 text-2xs font-mono overflow-x-auto whitespace-pre-wrap" style={{ background: "var(--canvas-bg)", color: "var(--text-secondary)" }}>{claudeCodeCommand}</pre>
-                ) : (
-                  <pre className="p-3 text-2xs font-mono overflow-x-auto" style={{ background: "var(--canvas-bg)", color: "var(--text-secondary)" }}>{mcpConfig}</pre>
-                )}
-                <div className="px-3 py-2 flex justify-end" style={{ background: "var(--surface)", borderTop: "1px solid var(--line)" }}>
-                  <button onClick={() => copyText(activeTab === "chatgpt" ? `${baseUrl}/api/mcp\nAuthorization: Bearer ${tokenValue}` : activeTab === "claude-code" ? claudeCodeCommand : mcpConfig, "config")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-2xs font-medium transition-all" style={{ background: copied === "config" ? "#16a34a" : "var(--accent)", color: "#fff" }}>
-                    {copied === "config" ? <><Check className="w-3 h-3" /> Copié</> : <><Copy className="w-3 h-3" /> Copier</>}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
