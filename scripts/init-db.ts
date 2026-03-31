@@ -232,5 +232,43 @@ if (!m002) {
   console.log('→  Migration 002_account_mcp_tokens already applied, skipping')
 }
 
+// ─── Migration 003: Make ai_tokens.project_id nullable ───────────────────────
+const m003 = db.prepare("SELECT name FROM _migrations WHERE name = '003_ai_tokens_nullable_project_id'").get()
+if (!m003) {
+  const cols = db.prepare("PRAGMA table_info(ai_tokens)").all() as { name: string; notnull: number }[]
+  const projectIdCol = cols.find(c => c.name === 'project_id')
+
+  if (projectIdCol?.notnull === 1) {
+    db.exec(`
+      CREATE TABLE ai_tokens_migrated (
+        id           TEXT PRIMARY KEY,
+        user_id      TEXT REFERENCES users(id),
+        project_id   TEXT REFERENCES projects(id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        token_hash   TEXT UNIQUE NOT NULL,
+        scope        TEXT NOT NULL DEFAULT 'write:nodes',
+        last_used_at INTEGER,
+        created_at   INTEGER NOT NULL,
+        revoked_at   INTEGER
+      );
+
+      INSERT INTO ai_tokens_migrated (id, user_id, project_id, name, token_hash, scope, last_used_at, created_at, revoked_at)
+      SELECT id, user_id, project_id, name, token_hash, scope, last_used_at, created_at, revoked_at
+      FROM ai_tokens;
+
+      DROP TABLE ai_tokens;
+      ALTER TABLE ai_tokens_migrated RENAME TO ai_tokens;
+    `)
+    console.log('  + Rebuilt ai_tokens with nullable project_id')
+  }
+
+  db.exec("CREATE INDEX IF NOT EXISTS idx_ai_tokens_user ON ai_tokens(user_id)")
+  db.exec("CREATE INDEX IF NOT EXISTS idx_ai_tokens_project ON ai_tokens(project_id)")
+  db.prepare("INSERT INTO _migrations (name, applied_at) VALUES (?, ?)").run('003_ai_tokens_nullable_project_id', Date.now())
+  console.log('✅ Migration 003_ai_tokens_nullable_project_id applied')
+} else {
+  console.log('→  Migration 003_ai_tokens_nullable_project_id already applied, skipping')
+}
+
 db.close()
 console.log('✅ Database initialized')

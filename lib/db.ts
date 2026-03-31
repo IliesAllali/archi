@@ -25,6 +25,58 @@ function createDb(): Database.Database {
   db.pragma('foreign_keys = OFF')
 
   try {
+    // Ensure ai_tokens exists with the latest account-level MCP schema.
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS ai_tokens (
+        id           TEXT PRIMARY KEY,
+        user_id      TEXT REFERENCES users(id),
+        project_id   TEXT REFERENCES projects(id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        token_hash   TEXT UNIQUE NOT NULL,
+        scope        TEXT NOT NULL DEFAULT 'write:nodes',
+        last_used_at INTEGER,
+        created_at   INTEGER NOT NULL,
+        revoked_at   INTEGER
+      );
+    `)
+
+    const aiTokenCols = db.prepare("PRAGMA table_info(ai_tokens)").all() as {
+      name: string
+      notnull: number
+    }[]
+
+    if (!aiTokenCols.some((c) => c.name === "user_id")) {
+      db.exec("ALTER TABLE ai_tokens ADD COLUMN user_id TEXT REFERENCES users(id)")
+    }
+
+    if (aiTokenCols.some((c) => c.name === "project_id" && c.notnull === 1)) {
+      db.exec(`
+        CREATE TABLE ai_tokens_migrated (
+          id           TEXT PRIMARY KEY,
+          user_id      TEXT REFERENCES users(id),
+          project_id   TEXT REFERENCES projects(id) ON DELETE CASCADE,
+          name         TEXT NOT NULL,
+          token_hash   TEXT UNIQUE NOT NULL,
+          scope        TEXT NOT NULL DEFAULT 'write:nodes',
+          last_used_at INTEGER,
+          created_at   INTEGER NOT NULL,
+          revoked_at   INTEGER
+        );
+
+        INSERT INTO ai_tokens_migrated (id, user_id, project_id, name, token_hash, scope, last_used_at, created_at, revoked_at)
+        SELECT id, user_id, project_id, name, token_hash, scope, last_used_at, created_at, revoked_at
+        FROM ai_tokens;
+
+        DROP TABLE ai_tokens;
+        ALTER TABLE ai_tokens_migrated RENAME TO ai_tokens;
+      `)
+    }
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_ai_tokens_user ON ai_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_tokens_project ON ai_tokens(project_id);
+    `)
+
     // Ensure user_api_keys table exists (auto-migration)
     db.exec(`
       CREATE TABLE IF NOT EXISTS user_api_keys (
