@@ -93,10 +93,21 @@ function sectionsHeight(sections: Section[]): number {
   return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
 }
 
+function estimateBlockLabelHeight(label: string): number {
+  // Label container: HOME_CARD_WIDTH(200) - 3px border - 2*4px padding ≈ 189px usable
+  // font-size 8.5px, approx 0.55 char width ratio → ~40 chars/line
+  const CHARS_PER_LINE = 40;
+  const LINE_HEIGHT = 11;
+  const VERT_PADDING = 5; // paddingTop(3) + paddingBottom(2)
+  const lines = Math.min(3, Math.max(1, Math.ceil((label || " ").length / CHARS_PER_LINE)));
+  return Math.max(LABEL_H, lines * LINE_HEIGHT + VERT_PADDING);
+}
+
 function blocksHeight(blocks: ZoningBlock[]): number {
-  const totalH = blocks.reduce((sum, b) => sum + Math.max(b.height * 1.3, 6) + LABEL_H, 0);
+  const totalH = blocks.reduce((sum, b) => sum + Math.max(b.height * 1.3, 6) + estimateBlockLabelHeight(b.label), 0);
   const gaps = Math.max(0, blocks.length - 1) * SECTION_GAP;
-  return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2;
+  const EXPANDED_STRIP = 4; // colored top strip added when showExpanded
+  return TITLE_HEIGHT + totalH + gaps + CARD_PAD * 2 + EXPANDED_STRIP;
 }
 
 function resolveExpandedSections(type: string, zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): { blocks?: ZoningBlock[]; sections?: Section[] } | null {
