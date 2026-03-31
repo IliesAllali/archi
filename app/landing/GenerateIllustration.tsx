@@ -6,6 +6,61 @@ import { useRef, useState, useEffect } from "react"
 
 const ease = [0.16, 1, 0.3, 1] as const
 
+const txt = {
+  fr: {
+    recentProjects: "Projets récents",
+    projects: [
+      { name: "E-commerce sneakers", pages: "24", time: "il y a 2h" },
+      { name: "Portfolio agence", pages: "8", time: "hier" },
+      { name: "App SaaS B2B", pages: "31", time: "il y a 3j" },
+    ],
+    newProject: "Nouveau projet",
+    generateAi: "Générer avec l'IA",
+    generateAiDesc: "Décris ton site, l'IA crée l'arborescence",
+    emptyProject: "Projet vide",
+    emptyProjectDesc: "Construire manuellement",
+    importSite: "Importer un site existant",
+    importSiteDesc: "URL, sitemap XML ou liste de pages",
+    projectName: "Nom du projet",
+    optional: "optionnel",
+    describeLabel: "Décris ton site",
+    descPlaceholder: "Ex : Site e-commerce de sneakers vintage...",
+    typedName: "Refonte site ACME",
+    typedDesc: "Site e-commerce de sneakers vintage avec blog, espace membre, programme de fidélité et click & collect",
+    fast: "Rapide",
+    quality: "Qualité",
+    back: "Retour",
+    generate: "Générer l'arborescence",
+    hint: "Ctrl+Enter pour générer · Clé API perso dans Paramètres > IA",
+  },
+  en: {
+    recentProjects: "Recent projects",
+    projects: [
+      { name: "Sneakers e-commerce", pages: "24", time: "2h ago" },
+      { name: "Agency portfolio", pages: "8", time: "yesterday" },
+      { name: "B2B SaaS App", pages: "31", time: "3d ago" },
+    ],
+    newProject: "New project",
+    generateAi: "Generate with AI",
+    generateAiDesc: "Describe your site, AI creates the sitemap",
+    emptyProject: "Empty project",
+    emptyProjectDesc: "Build manually",
+    importSite: "Import existing site",
+    importSiteDesc: "URL, XML sitemap or page list",
+    projectName: "Project name",
+    optional: "optional",
+    describeLabel: "Describe your site",
+    descPlaceholder: "E.g.: Vintage sneakers e-commerce with blog...",
+    typedName: "ACME Website Redesign",
+    typedDesc: "Vintage sneakers e-commerce with blog, member area, loyalty program and click & collect",
+    fast: "Fast",
+    quality: "Quality",
+    back: "Back",
+    generate: "Generate sitemap",
+    hint: "Ctrl+Enter to generate · Custom API key in Settings > AI",
+  },
+} as const
+
 /* ═══ Icons ═══ */
 const IconX = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>)
 const IconSparkles = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /><path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" /></svg>)
@@ -44,7 +99,8 @@ const IconMoon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconPlus = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>)
 
 /* ═══ Background: real app home page ═══ */
-function BlurredBackground() {
+function BlurredBackground({ l }: { l: "fr" | "en" }) {
+  const t = txt[l]
   return (
     <div style={{ position: "absolute", inset: 0, background: "var(--canvas-bg)", overflow: "hidden" }}>
       {/* Header — exact match of app/page.tsx header */}
@@ -67,7 +123,7 @@ function BlurredBackground() {
         </div>
         {/* Right: project count + theme toggle + avatar */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-faint)" }}>3 projets</span>
+          <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-faint)" }}>{l === "fr" ? "3 projets" : "3 projects"}</span>
           {/* Theme toggle — exact match */}
           <div style={{
             width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
@@ -85,22 +141,18 @@ function BlurredBackground() {
       <div style={{ maxWidth: 512, margin: "0 auto", padding: "32px 16px 0" }}>
         {/* Header row */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, color: "var(--text-faint)" }}>Projets récents</span>
+          <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, color: "var(--text-faint)" }}>{t.recentProjects}</span>
           {/* NewProjectButton "small" variant — exact match */}
           <div style={{
             display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 8,
             background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 500,
           }}>
-            <IconPlus /> Nouveau
+            <IconPlus /> {l === "fr" ? "Nouveau" : "New"}
           </div>
         </div>
 
         {/* ProjectCard rows — exact style from ProjectCard component */}
-        {[
-          { name: "E-commerce sneakers", pages: "24", time: "il y a 2h" },
-          { name: "Portfolio agence", pages: "8", time: "hier" },
-          { name: "App SaaS B2B", pages: "31", time: "il y a 3j" },
-        ].map((p, i) => (
+        {t.projects.map((p, i) => (
           <div key={i} style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "10px 12px", borderRadius: 8, marginBottom: 2,
@@ -128,7 +180,8 @@ function BlurredBackground() {
 }
 
 /* ═══ Step 1: "Nouveau projet" modal ═══ */
-function NewProjectModal({ onSelect }: { onSelect: () => void }) {
+function NewProjectModal({ onSelect, l }: { onSelect: () => void; l: "fr" | "en" }) {
+  const t = txt[l]
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -143,16 +196,16 @@ function NewProjectModal({ onSelect }: { onSelect: () => void }) {
     >
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Nouveau projet</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{t.newProject}</h3>
         <div style={{ padding: 6, borderRadius: 6, color: "var(--text-muted)" }}><IconX /></div>
       </div>
 
       {/* Options */}
       <div style={{ padding: "0 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
         {[
-          { icon: <IconSparkles />, iconBg: "var(--accent)", iconColor: "#fff", title: "Générer avec l'IA", desc: "Décris ton site, l'IA crée l'arborescence", active: true },
-          { icon: <IconFileText />, iconBg: "var(--elevated)", iconColor: "var(--text-muted)", title: "Projet vide", desc: "Construire manuellement", active: false },
-          { icon: <IconGlobe />, iconBg: "var(--elevated)", iconColor: "var(--text-muted)", title: "Importer un site existant", desc: "URL, sitemap XML ou liste de pages", active: false },
+          { icon: <IconSparkles />, iconBg: "var(--accent)", iconColor: "#fff", title: t.generateAi, desc: t.generateAiDesc, active: true },
+          { icon: <IconFileText />, iconBg: "var(--elevated)", iconColor: "var(--text-muted)", title: t.emptyProject, desc: t.emptyProjectDesc, active: false },
+          { icon: <IconGlobe />, iconBg: "var(--elevated)", iconColor: "var(--text-muted)", title: t.importSite, desc: t.importSiteDesc, active: false },
         ].map((opt, i) => (
           <button
             key={i}
@@ -184,10 +237,11 @@ function NewProjectModal({ onSelect }: { onSelect: () => void }) {
 }
 
 /* ═══ Step 2: "Générer avec l'IA" modal ═══ */
-function GenerateModal({ active }: { active: boolean }) {
-  const projectName = useTyping("Refonte site ACME", active ? 400 : 99999, 50)
+function GenerateModal({ active, l }: { active: boolean; l: "fr" | "en" }) {
+  const t = txt[l]
+  const projectName = useTyping(t.typedName, active ? 400 : 99999, 50)
   const description = useTyping(
-    "Site e-commerce de sneakers vintage avec blog, espace membre, programme de fidélité et click & collect",
+    t.typedDesc,
     active ? 1400 : 99999,
     30,
   )
@@ -207,7 +261,7 @@ function GenerateModal({ active }: { active: boolean }) {
     >
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 12px" }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Générer avec l&apos;IA</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{t.generateAi}</h3>
         <div style={{ padding: 6, borderRadius: 6, color: "var(--text-muted)" }}><IconX /></div>
       </div>
 
@@ -216,7 +270,7 @@ function GenerateModal({ active }: { active: boolean }) {
         {/* Project name */}
         <div>
           <label style={{ fontSize: 10, fontWeight: 500, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>
-            Nom du projet <span style={{ color: "var(--text-faint)" }}>(optionnel)</span>
+            {t.projectName} <span style={{ color: "var(--text-faint)" }}>({t.optional})</span>
           </label>
           <div style={{
             width: "100%", height: 36, padding: "0 12px", borderRadius: 8, fontSize: 12,
@@ -230,14 +284,14 @@ function GenerateModal({ active }: { active: boolean }) {
         {/* Description */}
         <div>
           <label style={{ fontSize: 10, fontWeight: 500, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>
-            Décris ton site
+            {t.describeLabel}
           </label>
           <div style={{
             width: "100%", minHeight: 72, padding: "8px 12px", borderRadius: 8, fontSize: 12, lineHeight: 1.5,
             background: "var(--elevated)", color: "var(--text-primary)",
             border: "1px solid var(--line-strong)",
           }}>
-            {description || <span style={{ color: "var(--text-faint)" }}>Ex : Site e-commerce de sneakers vintage...</span>}
+            {description || <span style={{ color: "var(--text-faint)" }}>{t.descPlaceholder}</span>}
             <span className="animate-pulse" style={{ display: active && description.length < 100 ? "inline" : "none", width: 1, height: 14, background: "var(--text-primary)", marginLeft: 1, verticalAlign: "middle" }} />
           </div>
         </div>
@@ -249,12 +303,12 @@ function GenerateModal({ active }: { active: boolean }) {
               height: 32, padding: "0 12px", borderRadius: 8, fontSize: 10, fontWeight: 500,
               display: "flex", alignItems: "center", gap: 6,
               background: "var(--surface)", color: "var(--text-faint)", border: "1px solid var(--line)",
-            }}><IconZap /> Rapide</div>
+            }}><IconZap /> {t.fast}</div>
             <div style={{
               height: 32, padding: "0 12px", borderRadius: 8, fontSize: 10, fontWeight: 500,
               display: "flex", alignItems: "center", gap: 6,
               background: "var(--accent-muted)", color: "var(--accent)", border: "1px solid var(--accent-strong)",
-            }}><IconGem /> Qualité <span style={{ opacity: 0.6 }}>3x</span></div>
+            }}><IconGem /> {t.quality} <span style={{ opacity: 0.6 }}>3x</span></div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 8px", borderRadius: 6, color: "var(--text-faint)", fontSize: 10 }}>
             <IconKey /> BYOK
@@ -266,7 +320,7 @@ function GenerateModal({ active }: { active: boolean }) {
           <div style={{
             padding: "0 12px", height: 36, borderRadius: 8, fontSize: 10, display: "flex", alignItems: "center",
             color: "var(--text-muted)", border: "1px solid var(--line)",
-          }}>Retour</div>
+          }}>{t.back}</div>
           <motion.div
             animate={{ opacity: canGenerate ? 1 : 0.4 }}
             style={{
@@ -275,12 +329,12 @@ function GenerateModal({ active }: { active: boolean }) {
               background: "var(--accent)", color: "#fff",
             }}
           >
-            <IconWand /> Générer l&apos;arborescence
+            <IconWand /> {t.generate}
           </motion.div>
         </div>
 
         <p style={{ fontSize: 10, color: "var(--text-faint)", textAlign: "center" }}>
-          Ctrl+Enter pour générer · Clé API perso dans Paramètres &gt; IA
+          {t.hint}
         </p>
       </div>
     </motion.div>
@@ -288,7 +342,7 @@ function GenerateModal({ active }: { active: boolean }) {
 }
 
 /* ═══ Main Illustration ═══ */
-export default function GenerateIllustration() {
+export default function GenerateIllustration({ locale = "fr" }: { locale?: "fr" | "en" }) {
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-80px" })
   const [step, setStep] = useState<1 | 2>(1)
@@ -322,7 +376,7 @@ export default function GenerateIllustration() {
     >
       {inView && (
         <>
-          <BlurredBackground />
+          <BlurredBackground l={locale} />
 
           {/* Modal centered */}
           <div style={{
@@ -331,9 +385,9 @@ export default function GenerateIllustration() {
           }}>
             <AnimatePresence mode="wait">
               {step === 1 ? (
-                <NewProjectModal key="new" onSelect={() => setStep(2)} />
+                <NewProjectModal key="new" onSelect={() => setStep(2)} l={locale} />
               ) : (
-                <GenerateModal key="gen" active={true} />
+                <GenerateModal key="gen" active={true} l={locale} />
               )}
             </AnimatePresence>
           </div>

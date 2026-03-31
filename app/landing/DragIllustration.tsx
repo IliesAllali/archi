@@ -5,6 +5,13 @@ import { useInView } from "framer-motion"
 import { useRef, useState, useEffect } from "react"
 
 const ease = [0.16, 1, 0.3, 1] as const
+
+type DTxt = { project: string; saved: string; share: string; home: string; produit: string; ressources: string; solutions: string; blog: string; webinaires: string; api: string }
+const dtxt: Record<string, DTxt> = {
+  fr: { project: "Mon site web", saved: "Sauvegardé", share: "Partager", home: "Accueil", produit: "Produit", ressources: "Ressources", solutions: "Solutions", blog: "Blog", webinaires: "Webinaires", api: "API Docs" },
+  en: { project: "My website", saved: "Saved", share: "Share", home: "Home", produit: "Product", ressources: "Resources", solutions: "Solutions", blog: "Blog", webinaires: "Webinars", api: "API Docs" },
+}
+
 const CANVAS_W = 1100
 const CANVAS_H = 580
 const CHROME_H = 44
@@ -178,7 +185,7 @@ function PresenceAvatarsDemo() {
 }
 
 /* ─── App Chrome ─── */
-function AppChrome() {
+function AppChrome({ dt }: { dt: DTxt }) {
   return (
     <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
       style={{ height: CHROME_H, padding: "0 8px 0 4px", background: "var(--surface)", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 2 }}>
@@ -186,7 +193,7 @@ function AppChrome() {
         <HBtn style={{ padding: 6, color: "var(--text-faint)" }}><IconChevronLeft /></HBtn>
         <div style={{ width: 20, height: 20, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--card-title-bg)", border: "1px solid var(--card-ring)" }}><ArboLogo /></div>
         <span style={{ fontSize: 12, color: "var(--text-faint)" }}>/</span>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>Mon site web</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{dt.project}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 8 }}>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }}><IconUndo2 /></HBtn>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }}><IconRedo2 /></HBtn>
@@ -195,14 +202,14 @@ function AppChrome() {
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <PresenceAvatarsDemo />
         <div style={{ width: 1, height: 16, background: "var(--line)", margin: "0 4px" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", color: "var(--text-faint)", fontSize: 10 }}><IconCloud /><span>Sauvegardé</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", color: "var(--text-faint)", fontSize: 10 }}><IconCloud /><span>{dt.saved}</span></div>
         <HBtn style={{ padding: "5px 10px", color: "var(--text-muted)", fontSize: 10, fontWeight: 500, gap: 5 }}><IconFileDown /><span>PDF</span></HBtn>
         <HBtn style={{ padding: 6, color: "var(--text-muted)" }}><IconMore /></HBtn>
         <button className="transition-all duration-200 hover:scale-110 hover:shadow-theme-glow active:scale-90" style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--controls-bg,var(--surface))", border: "1px solid var(--line)", cursor: "pointer" }}>
           <span style={{ color: "var(--controls-fill,var(--text-muted))" }}><IconMoon /></span>
         </button>
         <button className="transition-all duration-150 hover:brightness-125 active:scale-95" style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 6, backgroundColor: "#F76B1520", color: "#F76B15", fontSize: 11, fontWeight: 500, border: "none", cursor: "pointer" }}>
-          <IconShare2 /><span>Partager</span>
+          <IconShare2 /><span>{dt.share}</span>
         </button>
       </div>
     </motion.header>
@@ -210,14 +217,14 @@ function AppChrome() {
 }
 
 /* ─── Home card ─── */
-function HomeCard() {
+function HomeCard({ homeLabel }: { homeLabel: string }) {
   const n = SN.home
   return (
     <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.1, ease }}
       style={{ position: "absolute", left: n.x, top: n.y, width: n.w, height: "auto", background: "var(--card-bg)", borderRadius: 4, overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.10), 0 0 0 1.5px var(--accent)", cursor: "pointer" }}>
       <div style={{ height: 6, background: "var(--accent)" }} />
       <div style={{ height: 30, background: "var(--accent-muted)", borderBottom: "1px solid var(--accent-strong)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 9px" }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--title-color)" }}>Accueil</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--title-color)" }}>{homeLabel}</span>
         <span style={{ fontSize: 9, fontFamily: "monospace", color: "var(--label-color)", opacity: 0.7 }}>7↓</span>
       </div>
       <div style={{ padding: "5px 5px 0" }}>
@@ -333,7 +340,8 @@ function FakeMiniMap({ blogX }: { blogX: number }) {
 /* ═══════════════════════════
    Main
 ═══════════════════════════ */
-export default function DragIllustration() {
+export default function DragIllustration({ locale = "fr" }: { locale?: "fr" | "en" }) {
+  const dt = dtxt[locale]
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-60px" })
   const [scale, setScale] = useState(0.7)
@@ -419,7 +427,7 @@ export default function DragIllustration() {
       boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06), 0 24px 80px rgba(0,0,0,0.08)",
     }}>
       {inView && <>
-        {!mobile && <AppChrome />}
+        {!mobile && <AppChrome dt={dt} />}
         <div style={{ position: "relative", width: "100%", height: mobile ? "100%" : `calc(100% - ${CHROME_H}px)`, overflow: "hidden" }}>
           {/* Dot grid */}
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(circle, var(--dot-color) 1px, transparent 1px)", backgroundSize: "20px 20px", opacity: 0.5 }} />
@@ -480,15 +488,15 @@ export default function DragIllustration() {
             </svg>
 
             {/* ── Static level 1 ── */}
-            <HomeCard />
-            <SCard id="produit"    label="Produit"    delay={0.28} />
-            <SCard id="ressources" label="Ressources" delay={0.31} badge={resBadge} />
-            <SCard id="solutions"  label="Solutions"  delay={0.34} badge="2↓" />
+            <HomeCard homeLabel={dt.home} />
+            <SCard id="produit"    label={dt.produit}    delay={0.28} />
+            <SCard id="ressources" label={dt.ressources} delay={0.31} badge={resBadge} />
+            <SCard id="solutions"  label={dt.solutions}  delay={0.34} badge="2↓" />
 
 
             {/* ── Dynamic Ressources children ── */}
-            <DNode label="Webinaires" baseX={I0.webinaires.x} baseY={I0.webinaires.y} dx={DX.webinaires} atFinal={atFinal} />
-            <DNode label="API Docs"   baseX={I0.api.x}        baseY={I0.api.y}        dx={DX.api}        atFinal={atFinal} />
+            <DNode label={dt.webinaires} baseX={I0.webinaires.x} baseY={I0.webinaires.y} dx={DX.webinaires} atFinal={atFinal} />
+            <DNode label={dt.api}        baseX={I0.api.x}        baseY={I0.api.y}        dx={DX.api}        atFinal={atFinal} />
 
             {/* ── Ghost at source (Ressources slot) while dragging forward ── */}
             <AnimatePresence>
@@ -534,7 +542,7 @@ export default function DragIllustration() {
 
             {/* ── Blog node — THE dragged card ── */}
             <DNode
-              label="Blog"
+              label={dt.blog}
               baseX={I0.blog.x} baseY={I0.blog.y}
               dx={DX.blog} atFinal={atFinal}
               isDragged isLifted={blogLifted} isSnap={blogSnap}

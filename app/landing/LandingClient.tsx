@@ -276,7 +276,7 @@ function Hero({ t }: { t: Translations }) {
 
 /* ───── Hero Screenshot ───── */
 
-function HeroScreenshot() {
+function HeroScreenshot({ locale = "fr" }: { locale?: Locale }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -294,7 +294,7 @@ function HeroScreenshot() {
         className="max-w-[1120px] mx-auto"
         style={{ scale, opacity }}
       >
-        <HeroTreeIllustration />
+        <HeroTreeIllustration locale={locale} />
       </motion.div>
     </div>
   )
@@ -386,9 +386,11 @@ function PillarIllustration({ placeholder }: { placeholder: string }) {
 function Pillar({
   pillar,
   index,
+  locale,
 }: {
   pillar: Translations["pillars"][0]
   index: number
+  locale: Locale
 }) {
   const [expandedSub, setExpandedSub] = useState<number | null>(null)
 
@@ -429,7 +431,7 @@ function Pillar({
 
         {/* Illustration with parallax */}
         <FadeUp delay={0.1}>
-          {index === 0 ? <GenerateIllustration /> : index === 1 ? <DragIllustration /> : index === 2 ? <ShareIllustration /> : <PillarIllustration placeholder={pillar.placeholder} />}
+          {index === 0 ? <GenerateIllustration locale={locale} /> : index === 1 ? <DragIllustration locale={locale} /> : index === 2 ? <ShareIllustration locale={locale} /> : <PillarIllustration placeholder={pillar.placeholder} />}
         </FadeUp>
 
         {/* Sub-features accordion */}
@@ -790,12 +792,12 @@ export default function LandingClient() {
       <ScrollProgress />
       <Nav t={t} locale={locale} onLocaleChange={setLocale} />
       <Hero t={t} />
-      <HeroScreenshot />
+      <HeroScreenshot locale={locale} />
 
       <Manifesto t={t} />
 
       {t.pillars.map((pillar, i) => (
-        <Pillar key={i} pillar={pillar} index={i} />
+        <Pillar key={i} pillar={pillar} index={i} locale={locale} />
       ))}
 
       <SocialProof t={t} />

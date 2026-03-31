@@ -248,7 +248,7 @@ const IconMoon = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const IconShare2 = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" x2="15.42" y1="13.51" y2="17.49" /><line x1="15.41" x2="8.59" y1="6.51" y2="10.49" /></svg>)
 
 /* ═══ App Chrome (1:1 from CanvasPage header) ═══ */
-function AppChrome() {
+function AppChrome({ isFr = true }: { isFr?: boolean }) {
   return (
     <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease }}
       className="flex items-center justify-between shrink-0"
@@ -261,7 +261,7 @@ function AppChrome() {
           <ArboLogo />
         </div>
         <span style={{ fontSize: 12, color: "var(--text-faint)", userSelect: "none" }}>/</span>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>Mon site web</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{isFr ? "Mon site web" : "My website"}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 8 }}>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }} title="Annuler (Ctrl+Z)"><IconUndo2 /></HBtn>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }} title="Rétablir (Ctrl+Y)"><IconRedo2 /></HBtn>
@@ -271,7 +271,7 @@ function AppChrome() {
       {/* Right — actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, color: "var(--text-faint)", fontSize: 10 }}>
-          <IconCloud /><span>Sauvegardé</span>
+          <IconCloud /><span>{isFr ? "Sauvegardé" : "Saved"}</span>
         </div>
         <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-faint)", marginLeft: 2 }}>11p</span>
         <HBtn style={{ padding: "5px 10px", color: "var(--text-muted)", fontSize: 10, fontWeight: 500, gap: 5 }} title="Exporter en PDF">
@@ -297,7 +297,7 @@ function AppChrome() {
             border: "none", cursor: "pointer",
           }}
         >
-          <IconShare2 /><span>Partager</span>
+          <IconShare2 /><span>{isFr ? "Partager" : "Share"}</span>
         </button>
       </div>
     </motion.header>
@@ -629,7 +629,8 @@ function AiBar() {
 }
 
 /* ═══ Main ═══ */
-export default function HeroTreeIllustration() {
+export default function HeroTreeIllustration({ locale = "fr" }: { locale?: "fr" | "en" }) {
+  const isFr = locale === "fr"
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: true, margin: "-60px" })
   const [scale, setScale] = useState(0.6)
@@ -661,7 +662,7 @@ export default function HeroTreeIllustration() {
       }}>
         {inView && (
           <>
-            <AppChrome />
+            <AppChrome isFr={isFr} />
             <div style={{ position: "relative", width: "100%", height: `calc(100% - ${CHROME_H}px)`, overflow: "hidden" }}
               onClick={(e) => { if (e.target === e.currentTarget) setSelectedNode(null) }}>
               <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(circle, var(--dot-color) 1px, transparent 1px)", backgroundSize: "20px 20px", opacity: 0.5 }} />

@@ -5,6 +5,13 @@ import { useInView } from "framer-motion"
 import { useRef, useState, useEffect, useCallback } from "react"
 
 const ease = [0.16, 1, 0.3, 1] as const
+
+type STxt = { project: string; readOnly: string; share: string; createLink: string; activeLinks: string; visits: string; exportPdf: string; exportPdfDesc: string; export: string }
+const stxt: Record<string, STxt> = {
+  fr: { project: "Refonte site vitrine", readOnly: "Lecture seule", share: "Partager le projet", createLink: "Créer un lien de partage", activeLinks: "Liens actifs", visits: "0 visite", exportPdf: "Exporter en PDF", exportPdfDesc: "Télécharger un livrable propre", export: "Export" },
+  en: { project: "Website Redesign", readOnly: "Read only", share: "Share project", createLink: "Create a share link", activeLinks: "Active links", visits: "0 visits", exportPdf: "Export as PDF", exportPdfDesc: "Download a clean deliverable", export: "Export" },
+}
+
 const CANVAS_W = 1100
 const CANVAS_H = 920
 const CHROME_H = 44
@@ -211,14 +218,14 @@ function ZoomControls() {
 }
 
 /* ─── App chrome (read-only variant) ─── */
-function AppChrome() {
+function AppChrome({ st }: { st: STxt }) {
   return (
     <div style={{ height: CHROME_H, padding: "0 8px 0 4px", background: "var(--surface)", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <HBtn style={{ padding: 6, color: "var(--text-faint)" }}><IconChevronLeft /></HBtn>
         <div style={{ width: 20, height: 20, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--card-title-bg)", border: "1px solid var(--card-ring)" }}><ArboLogo /></div>
         <span style={{ fontSize: 12, color: "var(--text-faint)" }}>/</span>
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>Refonte site vitrine</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{st.project}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-faint)" }}>11p</span>
@@ -228,7 +235,7 @@ function AppChrome() {
           <span style={{ color: "var(--controls-fill,var(--text-muted))" }}><IconMoon /></span>
         </button>
         <span style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 6, background: "var(--surface-hover, var(--surface))", color: "var(--text-muted)", fontSize: 11, fontWeight: 500 }}>
-          <IconMonitor /><span>Lecture seule</span>
+          <IconMonitor /><span>{st.readOnly}</span>
         </span>
       </div>
     </div>
@@ -236,7 +243,7 @@ function AppChrome() {
 }
 
 /* ─── Step 1: Modal (matches real ShareModal.tsx) ─── */
-function ShareModalStep({ onDone }: { onDone: () => void }) {
+function ShareModalStep({ onDone, st }: { onDone: () => void; st: STxt }) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -258,8 +265,8 @@ function ShareModalStep({ onDone }: { onDone: () => void }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px", borderBottom: "1px solid var(--line)" }}>
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Partager le projet</h3>
-          <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>Refonte site vitrine</p>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{st.share}</h3>
+          <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>{st.project}</p>
         </div>
         <div style={{ padding: 6, borderRadius: 6, color: "var(--text-muted)" }}><IconX /></div>
       </div>
@@ -268,12 +275,12 @@ function ShareModalStep({ onDone }: { onDone: () => void }) {
       <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
         {/* Create button */}
         <button style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "var(--accent-muted)", color: "var(--accent)", border: "none", cursor: "pointer" }}>
-          <IconPlus /> Créer un lien de partage
+          <IconPlus /> {st.createLink}
         </button>
 
         {/* Existing links section */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, color: "var(--text-faint)" }}>Liens actifs</p>
+          <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, color: "var(--text-faint)" }}>{st.activeLinks}</p>
 
           {/* Link row */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 8, background: "var(--surface)", border: "1px solid var(--line)" }}>
@@ -283,7 +290,7 @@ function ShareModalStep({ onDone }: { onDone: () => void }) {
                 /share/e8f3k2a9...
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, fontSize: 10, color: "var(--text-faint)" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IconEye /> 0 visite</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IconEye /> {st.visits}</span>
               </div>
             </div>
             {/* Copy button */}
@@ -292,7 +299,7 @@ function ShareModalStep({ onDone }: { onDone: () => void }) {
               transition={{ duration: 0.15 }}
               style={{ padding: "6px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, cursor: "pointer", border: "none", background: copied ? "var(--success-bg, #dcfce7)" : "var(--accent-muted)", color: copied ? "var(--success-text, #16a34a)" : "var(--accent)" }}
             >
-              {copied ? <IconCheck /> : "Copier"}
+              {copied ? <IconCheck /> : (st.readOnly === "Lecture seule" ? "Copier" : "Copy")}
             </motion.button>
             <button style={{ padding: 6, borderRadius: 6, background: "transparent", border: "none", color: "var(--text-faint)", cursor: "pointer" }}>
               <IconTrash2 />
@@ -305,7 +312,7 @@ function ShareModalStep({ onDone }: { onDone: () => void }) {
 }
 
 /* ─── Step 2: Canvas guest view ─── */
-function GuestCanvas({ scale }: { scale: number }) {
+function GuestCanvas({ scale, st }: { scale: number; st: STxt }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -314,7 +321,7 @@ function GuestCanvas({ scale }: { scale: number }) {
       transition={{ duration: 0.6, ease }}
       style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}
     >
-      <AppChrome />
+      <AppChrome st={st} />
       <div style={{ position: "relative", width: "100%", height: `calc(100% - ${CHROME_H}px)`, overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(circle, var(--dot-color) 1px, transparent 1px)", backgroundSize: "20px 20px", opacity: 0.5 }} />
         <div style={{ width: CANVAS_W, height: CANVAS_H, position: "absolute", left: "50%", top: 20, transform: `translateX(-50%) scale(${scale})`, transformOrigin: "top center" }}>
@@ -353,24 +360,24 @@ function GuestCanvas({ scale }: { scale: number }) {
 }
 
 /* ─── Static mobile modal (no animation, with PDF export) ─── */
-function MobileShareView() {
+function MobileShareView({ st }: { st: STxt }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "16px 16px", gap: 12 }}>
       {/* Share modal */}
       <div style={{ width: "100%", maxWidth: 400, borderRadius: 12, overflow: "hidden", background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--modal-shadow)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px", borderBottom: "1px solid var(--line)" }}>
           <div>
-            <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Partager le projet</h3>
-            <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>Refonte site vitrine</p>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{st.share}</h3>
+            <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>{st.project}</p>
           </div>
           <div style={{ padding: 6, borderRadius: 6, color: "var(--text-muted)" }}><IconX /></div>
         </div>
         <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
           <button style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 12, fontWeight: 500, background: "var(--accent-muted)", color: "var(--accent)", border: "none", cursor: "pointer" }}>
-            <IconPlus /> Créer un lien de partage
+            <IconPlus /> {st.createLink}
           </button>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, color: "var(--text-faint)" }}>Liens actifs</p>
+            <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500, color: "var(--text-faint)" }}>{st.activeLinks}</p>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 8, background: "var(--surface)", border: "1px solid var(--line)" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "monospace", color: "var(--text-secondary)" }}>
@@ -378,7 +385,7 @@ function MobileShareView() {
                   /share/e8f3k2a9...
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, fontSize: 10, color: "var(--text-faint)" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IconEye /> 0 visite</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 3 }}><IconEye /> {st.visits}</span>
                 </div>
               </div>
               <div style={{ padding: "6px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "var(--success-bg, #dcfce7)", color: "var(--success-text, #16a34a)" }}>
@@ -398,8 +405,8 @@ function MobileShareView() {
           <IconFileDown />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>Exporter en PDF</p>
-          <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>Télécharger un livrable propre</p>
+          <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>{st.exportPdf}</p>
+          <p style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 1 }}>{st.exportPdfDesc}</p>
         </div>
         <div style={{ padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "var(--accent)", color: "#fff" }}>
           Export
@@ -410,7 +417,8 @@ function MobileShareView() {
 }
 
 /* ─── Main ─── */
-export default function ShareIllustration() {
+export default function ShareIllustration({ locale = "fr" }: { locale?: "fr" | "en" }) {
+  const st = stxt[locale]
   const ref = useRef<HTMLDivElement>(null)
   const inView = useInView(ref, { once: false, margin: "-60px" })
   const [scale, setScale] = useState(0.6)
@@ -455,7 +463,7 @@ export default function ShareIllustration() {
       }}
     >
       {inView && mobile ? (
-        <MobileShareView />
+        <MobileShareView st={st} />
       ) : inView ? (
         <AnimatePresence mode="wait">
             {step === 1 ? (
@@ -464,10 +472,10 @@ export default function ShareIllustration() {
                 transition={{ duration: 0.3 }}
                 style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 20px", zIndex: 2 }}
               >
-                <ShareModalStep onDone={onDone} />
+                <ShareModalStep onDone={onDone} st={st} />
               </motion.div>
             ) : (
-              <GuestCanvas key="guest" scale={scale} />
+              <GuestCanvas key="guest" scale={scale} st={st} />
             )}
           </AnimatePresence>
       ) : null}
