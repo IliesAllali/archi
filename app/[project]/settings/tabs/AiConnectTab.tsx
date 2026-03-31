@@ -245,7 +245,7 @@ My request: `
     },
   }, null, 2)
 
-  const claudeCodeCommand = `claude mcp add arbo --transport streamable-http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${tokenValue}"`
+  const claudeCodeCommand = `claude mcp add arbo --transport http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${tokenValue}"`
 
   const configTabs = [
     { id: "claude" as const, label: "Claude Desktop" },

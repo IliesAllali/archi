@@ -163,7 +163,7 @@ async function main() {
   // 5. Register MCP in Claude Code (native Streamable HTTP, no mcp-remote needed)
   info("Registering MCP server...")
 
-  const mcpCmd = `claude mcp add ${MCP_NAME} -s user --transport streamable-http "${BASE}/api/mcp" --header "Authorization: Bearer ${token}"`
+  const mcpCmd = `claude mcp add ${MCP_NAME} -s user --transport http "${BASE}/api/mcp" --header "Authorization: Bearer ${token}"`
 
   try {
     execSync(mcpCmd, { stdio: "pipe" })

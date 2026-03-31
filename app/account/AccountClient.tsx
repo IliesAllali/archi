@@ -245,7 +245,7 @@ export default function AccountClient() {
 
   const mcpConfigs: Record<string, string> = {
     "claude": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
-    "claude-code": `claude mcp add arbo --transport streamable-http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
+    "claude-code": `claude mcp add arbo --transport http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
     "cursor": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
     "chatgpt": `URL: ${baseUrl}/api/mcp\nHeader: Authorization: Bearer ${mcpTokenValue}`,
   }
