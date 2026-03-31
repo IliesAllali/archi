@@ -131,9 +131,9 @@ const HTML = `<!DOCTYPE html>
 { "success": false, "error": { "code": "INSUFFICIENT_SCOPE", "message": "..." } }</code></pre>
 
 <h2>MCP Server</h2>
-<p>Arbo also exposes an MCP server at <code>/api/mcp</code> for Claude Desktop, Claude Code, and Cursor.</p>
-<pre><code>// Claude Desktop config
-{
+<p>Arbo also exposes an MCP server at <code>/api/mcp</code>.</p>
+<p>Claude Desktop and Cursor can use a JSON config like this:</p>
+<pre><code>{
   "mcpServers": {
     "arbo": {
       "url": "https://arbo.patchou.cloud/api/mcp",
@@ -141,6 +141,9 @@ const HTML = `<!DOCTYPE html>
     }
   }
 }</code></pre>
+<p>Claude Code can register the same remote server with:</p>
+<pre><code>claude mcp add --transport http arbo "https://arbo.patchou.cloud/api/mcp" --header "Authorization: Bearer YOUR_TOKEN"</code></pre>
+<p>ChatGPT uses the Apps / Developer mode flow in the web UI instead of a CLI command. Create an app, provide the MCP endpoint, then choose the appropriate authentication method for your workspace.</p>
 
 <h2>OpenAPI Schema</h2>
 <p>Download the full OpenAPI 3.1 spec: <a href="/api/v1/openapi.json">/api/v1/openapi.json</a></p>

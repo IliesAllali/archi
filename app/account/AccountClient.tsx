@@ -17,6 +17,7 @@ interface UserData { id: string; name: string; email: string; color: string; ava
 interface ApiKey { id: string; provider: string; key_hint: string; label: string | null; created_at: number }
 interface Credits { creditsTotal: number; creditsUsed: number; creditsRemaining: number }
 interface McpToken { id: string; name: string; scope: string; last_used_at: number | null; created_at: number; revoked_at: number | null }
+type McpClientTab = "claude" | "claude-code" | "cursor" | "chatgpt"
 
 const PROVIDERS = [
   { id: "openai", label: "OpenAI", placeholder: "sk-...", url: "https://platform.openai.com/api-keys" },
@@ -71,7 +72,7 @@ export default function AccountClient() {
   const [mcpRevealed, setMcpRevealed] = useState<string | null>(null)
   const [mcpCopied, setMcpCopied] = useState<string | null>(null)
   const [mcpShowForm, setMcpShowForm] = useState(false)
-  const [mcpConfigTab, setMcpConfigTab] = useState<"claude" | "claude-code" | "cursor" | "chatgpt">("claude-code")
+  const [mcpConfigTab, setMcpConfigTab] = useState<McpClientTab>("claude-code")
 
   // Demo
   const [hasDemo, setHasDemo] = useState(false)
@@ -243,11 +244,25 @@ export default function AccountClient() {
     setTimeout(() => setMcpCopied(null), 2000)
   }
 
-  const mcpConfigs: Record<string, string> = {
+  const mcpConfigs: Record<McpClientTab, string> = {
     "claude": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
-    "claude-code": `claude mcp add arbo --transport http "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
+    "claude-code": `claude mcp add --transport http arbo "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
     "cursor": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
-    "chatgpt": `URL: ${baseUrl}/api/mcp\nHeader: Authorization: Bearer ${mcpTokenValue}`,
+    "chatgpt": `1. Ouvre ChatGPT sur le web
+2. Settings -> Apps -> Advanced Settings -> active Developer mode
+3. Apps -> Create
+4. Endpoint MCP: ${baseUrl}/api/mcp
+5. Choisis l'authentification de ton connecteur puis configure le Bearer token Arbo si l'interface le demande
+
+Bearer token Arbo
+Authorization: Bearer ${mcpTokenValue}`,
+  }
+
+  const mcpConfigHints: Record<McpClientTab, string> = {
+    "claude": "Colle ce JSON dans la configuration MCP de Claude Desktop.",
+    "claude-code": "Commande officielle Claude Code pour enregistrer un serveur MCP distant en HTTP.",
+    "cursor": "Colle ce JSON dans le fichier mcp.json de Cursor.",
+    "chatgpt": "ChatGPT passe par l'interface Apps, pas par une commande CLI. Le parcours exact depend de ton plan et des permissions de ton workspace.",
   }
 
   if (loading) return (
@@ -793,6 +808,9 @@ export default function AccountClient() {
                   </button>
                 </div>
               </div>
+              <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                {mcpConfigHints[mcpConfigTab]}
+              </p>
               {!mcpRevealed && (
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
                   Cr&eacute;e un nouveau token ci-dessus pour obtenir une config pr&ecirc;te &agrave; coller.

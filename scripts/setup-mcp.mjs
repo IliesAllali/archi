@@ -160,10 +160,10 @@ async function main() {
   const { token } = await tokenRes.json()
   ok(`Token: ${token.slice(0, 12)}${"*".repeat(8)}`)
 
-  // 5. Register MCP in Claude Code (native Streamable HTTP, no mcp-remote needed)
+  // 5. Register MCP in Claude Code using the native remote HTTP transport
   info("Registering MCP server...")
 
-  const mcpCmd = `claude mcp add ${MCP_NAME} -s user --transport http "${BASE}/api/mcp" --header "Authorization: Bearer ${token}"`
+  const mcpCmd = `claude mcp add -s user --transport http ${MCP_NAME} "${BASE}/api/mcp" --header "Authorization: Bearer ${token}"`
 
   try {
     execSync(mcpCmd, { stdio: "pipe" })
