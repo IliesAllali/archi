@@ -232,7 +232,7 @@ function HBtn({ children, style, title, onClick, disabled }: {
       className="transition-colors duration-100 active:scale-95"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: disabled ? "default" : "pointer", background: "transparent", borderRadius: 6, ...style }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = "var(--bg-hover, rgba(0,0,0,0.04))" }}
-      onMouseLeave={e => { e.currentTarget.style.background = style?.background || "transparent" }}
+      onMouseLeave={e => { e.currentTarget.style.background = (style?.background as string) || "transparent" }}
     >{children}</button>
   )
 }
