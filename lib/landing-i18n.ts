@@ -20,8 +20,8 @@ const t = {
       ctaSecondary: "No credit card required",
     },
     manifesto: {
-      title: "Stop dragging boxes. Start describing.",
-      subtitle: "Arbo is an AI sitemap generator that turns a text prompt into a full website structure. Edit with natural language or by hand, share a live link with clients, export a clean PDF. That's it.",
+      title: "A sitemap builder that starts from words, not boxes.",
+      subtitle: "Built around AI from day one. Describe your project, get a complete site structure. Edit it with natural language or by hand, share a live link with clients, export a clean PDF.",
       points: [
         {
           title: "AI sitemap generation",
@@ -48,7 +48,7 @@ const t = {
         subs: [
           { id: "1.1", title: "Text to sitemap", desc: "One sentence in, full page tree out. AI understands context, page types, and information architecture." },
           { id: "1.2", title: "Smart structure", desc: "Pages are organized logically with types, descriptions, and parent-child relationships. Ready for design handoff." },
-          { id: "1.3", title: "Bring your own key", desc: "Use included AI credits or plug your own API key. OpenAI, Anthropic, or Google. Unlimited generation with BYOK." },
+          { id: "1.3", title: "Bring your own key", desc: "Use included AI credits or plug your own API key. OpenAI, Anthropic, Mistral, or Google. Unlimited generation with BYOK." },
         ],
       },
       {
@@ -83,9 +83,9 @@ const t = {
     },
     pricing: {
       label: "Pricing",
-      title: "Free sitemap builder. No catch.",
-      subtitle: "3 projects, 20 AI credits, all features included. No credit card, no trial timer, no surprise paywall.",
-      cta: "Start building sitemaps for free",
+      title: "Everything you need. Free to start.",
+      subtitle: "3 projects and 20 AI generations included during beta. Every feature unlocked from day one.",
+      cta: "Create your first sitemap",
       soon: "Pro plans coming soon",
       perks: [
         "3 projects included",
@@ -109,7 +109,7 @@ const t = {
         },
         {
           q: "What happens when I run out of AI credits?",
-          a: "You can plug your own API key (OpenAI, Anthropic, or Google) and keep using AI generation with no limits. BYOK is free forever.",
+          a: "You can plug your own API key (OpenAI, Anthropic, Mistral, or Google) and keep using AI generation with no limits. BYOK is free forever.",
         },
         {
           q: "Can my client view the sitemap without an account?",
@@ -149,8 +149,8 @@ const t = {
       ctaSecondary: "Pas de carte bancaire",
     },
     manifesto: {
-      title: "Arrête de glisser des boîtes. Commence à décrire.",
-      subtitle: "Arbo est un générateur de sitemap IA qui transforme un texte en arborescence complète. Édite en langage naturel ou à la main, partage un lien live avec tes clients, exporte un PDF propre. C'est tout.",
+      title: "Un outil d'arborescence qui part du texte, pas des boîtes.",
+      subtitle: "Pensé autour de l'IA depuis le premier jour. Décris ton projet, obtiens une structure de site complète. Édite en langage naturel ou à la main, partage un lien live avec tes clients, exporte un PDF propre.",
       points: [
         {
           title: "Génération IA de sitemap",
@@ -177,7 +177,7 @@ const t = {
         subs: [
           { id: "1.1", title: "Du texte au sitemap", desc: "Une phrase en entrée, un arbre complet en sortie. L'IA comprend le contexte, les types de pages et l'architecture d'information." },
           { id: "1.2", title: "Structure intelligente", desc: "Les pages sont organisées logiquement avec types, descriptions et relations parent-enfant. Prêt pour le handoff design." },
-          { id: "1.3", title: "Apporte ta propre clé", desc: "Utilise les crédits IA inclus ou branche ta propre clé API. OpenAI, Anthropic ou Google. Génération illimitée en BYOK." },
+          { id: "1.3", title: "Apporte ta propre clé", desc: "Utilise les crédits IA inclus ou branche ta propre clé API. OpenAI, Anthropic, Mistral ou Google. Génération illimitée en BYOK." },
         ],
       },
       {
@@ -212,9 +212,9 @@ const t = {
     },
     pricing: {
       label: "Tarifs",
-      title: "Outil de sitemap gratuit. Pas de piège.",
-      subtitle: "3 projets, 20 crédits IA, toutes les fonctions incluses. Pas de carte bancaire, pas de compte à rebours, pas de paywall surprise.",
-      cta: "Crée tes sitemaps gratuitement",
+      title: "Tout ce qu'il faut. Gratuit pour commencer.",
+      subtitle: "3 projets et 20 générations IA inclus pendant la bêta. Toutes les fonctions débloquées dès le premier jour.",
+      cta: "Crée ton premier sitemap",
       soon: "Offres Pro bientôt disponibles",
       perks: [
         "3 projets inclus",
@@ -238,7 +238,7 @@ const t = {
         },
         {
           q: "Et quand j'ai plus de crédits IA ?",
-          a: "Tu peux brancher ta propre clé API (OpenAI, Anthropic ou Google) et continuer à utiliser la génération IA sans limite. Le BYOK est gratuit pour toujours.",
+          a: "Tu peux brancher ta propre clé API (OpenAI, Anthropic, Mistral ou Google) et continuer à utiliser la génération IA sans limite. Le BYOK est gratuit pour toujours.",
         },
         {
           q: "Mon client peut voir le sitemap sans créer de compte ?",

@@ -7,20 +7,20 @@ import {
   useInView,
   useScroll,
   useTransform,
-  useMotionValue,
   useSpring,
-  type MotionValue,
 } from "framer-motion"
 import { ArrowRight, Check, ChevronDown, Plus } from "lucide-react"
 import Logo from "@/components/Logo"
 import HeroTreeIllustration from "./HeroTreeIllustration"
+import GenerateIllustration from "./GenerateIllustration"
+import DragIllustration from "./DragIllustration"
+import ShareIllustration from "./ShareIllustration"
 import { detectLocale, getTranslations } from "@/lib/landing-i18n"
 import type { Locale, Translations } from "@/lib/landing-i18n"
 
 /* ───── Shared ───── */
 
 const ease = [0.16, 1, 0.3, 1] as const
-const springConfig = { stiffness: 100, damping: 30, restDelta: 0.001 }
 
 /* ───── Scroll-linked fade + lift ───── */
 
@@ -103,9 +103,9 @@ function Parallax({
   )
 }
 
-/* ───── Magnetic button ───── */
+/* ───── CTA Button with glow hover ───── */
 
-function MagneticButton({
+function CtaButton({
   children,
   className = "",
   style,
@@ -116,29 +116,16 @@ function MagneticButton({
   style?: React.CSSProperties
   href: string
 }) {
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-  const springX = useSpring(x, springConfig)
-  const springY = useSpring(y, springConfig)
-
   return (
-    <motion.div
-      style={{ x: springX, y: springY }}
-      onMouseMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect()
-        x.set((e.clientX - rect.left - rect.width / 2) * 0.15)
-        y.set((e.clientY - rect.top - rect.height / 2) * 0.15)
-      }}
-      onMouseLeave={() => {
-        x.set(0)
-        y.set(0)
-      }}
-      className="inline-block"
-    >
-      <Link href={href} className={className} style={style}>
+    <Link href={href} className={`group/cta relative overflow-hidden ${className}`} style={style}>
+      <span
+        className="absolute inset-0 rounded-[inherit] opacity-0 group-hover/cta:opacity-100 transition-opacity duration-300"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%)" }}
+      />
+      <span className="relative z-10 flex items-center gap-2">
         {children}
-      </Link>
-    </motion.div>
+      </span>
+    </Link>
   )
 }
 
@@ -222,13 +209,13 @@ function Nav({
           >
             {t.nav.login}
           </Link>
-          <MagneticButton
+          <CtaButton
             href="/signup"
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.97]"
             style={{ background: "var(--accent)", color: "#fff" }}
           >
             {t.nav.cta}
-          </MagneticButton>
+          </CtaButton>
         </div>
       </div>
     </motion.nav>
@@ -239,9 +226,9 @@ function Nav({
 
 function Hero({ t }: { t: Translations }) {
   return (
-    <div className="pt-28 sm:pt-40 pb-10 sm:pb-12 px-6">
+    <div className="pt-28 sm:pt-44 pb-12 sm:pb-16 px-6">
       <div className="max-w-[1120px] mx-auto text-center">
-        <h1 className="text-4xl sm:text-[56px] lg:text-[64px] font-semibold leading-[1.06] tracking-tight">
+        <h1 className="text-[36px] sm:text-[56px] lg:text-[68px] font-semibold leading-[1.04] tracking-[-0.03em]">
           <RevealTitle
             text={t.hero.title}
             style={{ color: "var(--text-primary)" }}
@@ -258,7 +245,7 @@ function Hero({ t }: { t: Translations }) {
           initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.7, delay: 0.5, ease }}
-          className="text-base sm:text-lg mt-5 max-w-xl mx-auto leading-relaxed"
+          className="text-[15px] sm:text-lg mt-6 max-w-lg mx-auto leading-[1.65]"
           style={{ color: "var(--text-secondary)" }}
         >
           {t.hero.subtitle}
@@ -268,16 +255,16 @@ function Hero({ t }: { t: Translations }) {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.65, ease }}
-          className="mt-6 flex items-center justify-center gap-4"
+          className="mt-8 flex items-center justify-center gap-4"
         >
-          <MagneticButton
+          <CtaButton
             href="/signup"
             className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
             style={{ background: "var(--accent)", color: "#fff" }}
           >
             {t.hero.cta}
             <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </MagneticButton>
+          </CtaButton>
           <span className="text-xs" style={{ color: "var(--text-faint)" }}>
             {t.hero.ctaSecondary}
           </span>
@@ -317,24 +304,24 @@ function HeroScreenshot() {
 
 function Manifesto({ t }: { t: Translations }) {
   return (
-    <section className="px-6 pt-20 sm:pt-28 pb-14 sm:pb-20">
+    <section className="px-6 pt-24 sm:pt-32 pb-16 sm:pb-24">
       <div className="max-w-[1120px] mx-auto">
         <FadeUp>
           <h2
-            className="text-2xl sm:text-[40px] lg:text-[48px] font-semibold tracking-tight leading-[1.08] max-w-2xl"
+            className="text-2xl sm:text-[36px] lg:text-[44px] font-semibold tracking-[-0.02em] leading-[1.08] max-w-xl"
             style={{ color: "var(--text-primary)" }}
           >
             {t.manifesto.title}
           </h2>
           <p
-            className="text-base sm:text-lg mt-3 max-w-2xl leading-relaxed"
+            className="text-[15px] sm:text-base mt-4 max-w-lg leading-[1.65]"
             style={{ color: "var(--text-secondary)" }}
           >
             {t.manifesto.subtitle}
           </p>
         </FadeUp>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-10 mt-10 sm:mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-12 mt-12 sm:mt-16">
           {t.manifesto.points.map((point, i) => (
             <FadeUp key={i} delay={0.08 * i}>
               <div className="group">
@@ -406,32 +393,32 @@ function Pillar({
   const [expandedSub, setExpandedSub] = useState<number | null>(null)
 
   return (
-    <section className="px-6 pt-12 sm:pt-16 pb-12 sm:pb-16">
+    <section className="px-6 pt-16 sm:pt-24 pb-14 sm:pb-20">
       <div className="max-w-[1120px] mx-auto">
         {/* Number + label + title + subtitle */}
         <FadeUp>
           <div className="flex items-start gap-4 sm:gap-6">
             <span
-              className="text-[11px] font-mono font-medium mt-1.5 shrink-0 tabular-nums"
-              style={{ color: "var(--accent)", opacity: 0.5 }}
+              className="text-[11px] font-mono font-medium shrink-0 tabular-nums"
+              style={{ color: "var(--accent)", opacity: 0.5, lineHeight: "1.6em", paddingTop: "0.05em" }}
             >
               {pillar.number}
             </span>
             <div>
               <p
-                className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-2"
+                className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
                 style={{ color: "var(--accent)" }}
               >
                 {pillar.label}
               </p>
               <h2
-                className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-tight leading-[1.1]"
+                className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-[-0.02em] leading-[1.1]"
                 style={{ color: "var(--text-primary)" }}
               >
                 {pillar.title}
               </h2>
               <p
-                className="text-[15px] sm:text-base mt-3 max-w-xl leading-[1.6]"
+                className="text-[15px] sm:text-base mt-4 max-w-lg leading-[1.65]"
                 style={{ color: "var(--text-secondary)" }}
               >
                 {pillar.subtitle}
@@ -442,7 +429,7 @@ function Pillar({
 
         {/* Illustration with parallax */}
         <FadeUp delay={0.1}>
-          <PillarIllustration placeholder={pillar.placeholder} />
+          {index === 0 ? <GenerateIllustration /> : index === 1 ? <DragIllustration /> : index === 2 ? <ShareIllustration /> : <PillarIllustration placeholder={pillar.placeholder} />}
         </FadeUp>
 
         {/* Sub-features accordion */}
@@ -529,67 +516,70 @@ function SocialProof({ t }: { t: Translations }) {
 
 function Pricing({ t }: { t: Translations }) {
   return (
-    <section id="pricing" className="px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
-      <div className="max-w-xl mx-auto">
+    <section id="pricing" className="px-6 pt-20 sm:pt-28 pb-14 sm:pb-20">
+      <div className="max-w-[1120px] mx-auto">
         <FadeUp>
-          <div
-            className="px-8 py-10 sm:px-10 sm:py-10 rounded-2xl text-center transition-shadow duration-500 hover:shadow-lg"
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--line)",
-            }}
-          >
+          <div className="max-w-xl">
             <p
-              className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-2"
-              style={{ color: "var(--text-faint)" }}
+              className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
+              style={{ color: "var(--accent)" }}
             >
               {t.pricing.label}
             </p>
             <h2
-              className="text-lg sm:text-xl font-semibold tracking-tight"
+              className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-[-0.02em] leading-[1.1] mb-4"
               style={{ color: "var(--text-primary)" }}
             >
               {t.pricing.title}
             </h2>
             <p
-              className="text-[13px] mt-1.5 mb-6"
+              className="text-[15px] sm:text-base leading-[1.65] mb-10"
               style={{ color: "var(--text-secondary)" }}
             >
               {t.pricing.subtitle}
             </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-6 max-w-sm mx-auto">
-              {t.pricing.perks.map((perk, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <Check
-                    className="w-3 h-3 shrink-0"
-                    style={{ color: "var(--accent)" }}
-                  />
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    {perk}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <MagneticButton
+            <CtaButton
               href="/signup"
-              className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
+              className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
               {t.pricing.cta}
               <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </MagneticButton>
-
+            </CtaButton>
             <p
               className="text-[11px] mt-3"
               style={{ color: "var(--text-faint)" }}
             >
               {t.pricing.soon}
             </p>
+          </div>
+        </FadeUp>
+
+        {/* Perks — full width below */}
+        <FadeUp delay={0.1}>
+          <div
+            className="mt-10 sm:mt-14 pt-8 sm:pt-10 grid grid-cols-2 sm:grid-cols-3 gap-6"
+            style={{ borderTop: "1px solid var(--line)" }}
+          >
+            {t.pricing.perks.map((perk, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: i * 0.05, ease }}
+                className="flex items-start gap-2.5"
+              >
+                <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+                <span
+                  className="text-xs sm:text-sm leading-snug"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {perk}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </FadeUp>
       </div>
@@ -599,27 +589,42 @@ function Pricing({ t }: { t: Translations }) {
 
 /* ───── FAQ ───── */
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ borderBottom: "1px solid var(--line)" }}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, delay: index * 0.05, ease }}
+      className="group"
+      style={{ borderBottom: "1px solid var(--line)" }}
+    >
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-3.5 text-left group"
+        className="w-full flex items-center justify-between py-4 sm:py-5 text-left"
       >
         <span
-          className="text-[13px] font-medium pr-4 transition-colors duration-200 group-hover:text-[var(--accent)]"
-          style={{ color: "var(--text-primary)" }}
+          className="text-sm sm:text-[15px] font-medium pr-6 transition-colors duration-200 group-hover:text-[var(--accent)]"
+          style={{ color: open ? "var(--accent)" : "var(--text-primary)" }}
         >
           {q}
         </span>
-        <ChevronDown
-          className="w-4 h-4 shrink-0 transition-all duration-300"
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300"
           style={{
-            color: "var(--text-faint)",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            background: open ? "var(--accent-muted)" : "var(--surface)",
+            border: `1px solid ${open ? "var(--accent-strong)" : "var(--line)"}`,
           }}
-        />
+        >
+          <Plus
+            className="w-3.5 h-3.5 transition-all duration-300"
+            style={{
+              color: open ? "var(--accent)" : "var(--text-faint)",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+            }}
+          />
+        </div>
       </button>
       <motion.div
         initial={false}
@@ -628,35 +633,39 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         className="overflow-hidden"
       >
         <p
-          className="text-[13px] leading-[1.6] pb-3.5"
+          className="text-[13px] sm:text-sm leading-[1.7] pb-5 pr-12"
           style={{ color: "var(--text-secondary)" }}
         >
           {a}
         </p>
       </motion.div>
-    </div>
+    </motion.div>
   )
 }
 
 function Faq({ t }: { t: Translations }) {
   return (
-    <section className="px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
+    <section className="px-6 pt-20 sm:pt-28 pb-16 sm:pb-24">
       <div className="max-w-2xl mx-auto">
         <FadeUp>
+          <p
+            className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
+            style={{ color: "var(--accent)" }}
+          >
+            FAQ
+          </p>
           <h2
-            className="text-lg sm:text-xl font-semibold tracking-tight mb-6"
+            className="text-2xl sm:text-[32px] font-semibold tracking-[-0.02em] leading-[1.1] mb-10 sm:mb-12"
             style={{ color: "var(--text-primary)" }}
           >
             {t.faq.title}
           </h2>
         </FadeUp>
-        <FadeUp delay={0.1}>
-          <div>
-            {t.faq.items.map((item, i) => (
-              <FaqItem key={i} q={item.q} a={item.a} />
-            ))}
-          </div>
-        </FadeUp>
+        <div style={{ borderTop: "1px solid var(--line)" }}>
+          {t.faq.items.map((item, i) => (
+            <FaqItem key={i} q={item.q} a={item.a} index={i} />
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -666,64 +675,83 @@ function Faq({ t }: { t: Translations }) {
 
 function FinalCta({ t }: { t: Translations }) {
   return (
-    <section className="px-6 pt-10 sm:pt-14 pb-16 sm:pb-20">
-      <div className="max-w-[1120px] mx-auto text-center">
+    <section className="relative px-6 pt-24 sm:pt-36 pb-24 sm:pb-40 overflow-hidden">
+      {/* Orange gradient blob from bottom */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 80% 70% at 50% 100%, #F76B15 0%, #F76B1560 25%, transparent 65%)",
+        }}
+      />
+
+      {/* Glass + grain overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backdropFilter: "blur(80px)",
+          WebkitBackdropFilter: "blur(80px)",
+          background: "rgba(255,255,255,0.55)",
+        }}
+      />
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <div className="max-w-[580px] mx-auto text-center relative z-10">
         <FadeUp>
           <h2
-            className="text-2xl sm:text-[32px] lg:text-[40px] font-semibold tracking-tight leading-[1.1] mb-6"
+            className="text-[28px] sm:text-[40px] lg:text-[48px] font-semibold tracking-[-0.03em] leading-[1.06] mb-5"
             style={{ color: "var(--text-primary)" }}
           >
             {t.finalCta.title}
           </h2>
-          <div className="flex items-center justify-center gap-4">
-            <MagneticButton
+          <p
+            className="text-[15px] sm:text-lg leading-[1.65] mb-10 max-w-sm mx-auto"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {t.finalCta.ctaSecondary}
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <CtaButton
               href="/signup"
-              className="group inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
+              className="group inline-flex items-center gap-2.5 px-8 py-4 rounded-xl text-[15px] font-medium transition-all duration-200 hover:shadow-2xl hover:shadow-orange-500/25 active:scale-[0.97]"
               style={{ background: "var(--accent)", color: "#fff" }}
             >
               {t.finalCta.cta}
               <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </MagneticButton>
-            <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-              {t.finalCta.ctaSecondary}
-            </span>
+            </CtaButton>
           </div>
         </FadeUp>
       </div>
-    </section>
-  )
-}
 
-/* ───── Footer ───── */
-
-function Footer({ t }: { t: Translations }) {
-  return (
-    <footer
-      className="px-6 py-6"
-      style={{ borderTop: "1px solid var(--line)" }}
-    >
-      <div className="max-w-[1120px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Logo size={14} />
+      {/* Footer inside CTA section */}
+      <footer className="relative z-10 mt-20 sm:mt-28 px-0">
+        <div className="max-w-[1120px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Logo size={14} />
+            <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+              {t.footer.built}{" "}
+              <a
+                href="https://www.linkedin.com/in/ilies-allali"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors duration-200 hover:text-[var(--accent)]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {t.footer.maker}
+              </a>
+              {" "}&middot; {t.footer.makerDesc}
+            </span>
+          </div>
           <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-            {t.footer.built}{" "}
-            <a
-              href="https://www.linkedin.com/in/ilies-allali"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-colors duration-200 hover:text-[var(--accent)]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {t.footer.maker}
-            </a>
-            {" "}&middot; {t.footer.makerDesc}
+            &copy; {new Date().getFullYear()} arbo
           </span>
         </div>
-        <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-          &copy; {new Date().getFullYear()} arbo
-        </span>
-      </div>
-    </footer>
+      </footer>
+    </section>
   )
 }
 
@@ -774,7 +802,6 @@ export default function LandingClient() {
       <Pricing t={t} />
       <Faq t={t} />
       <FinalCta t={t} />
-      <Footer t={t} />
     </div>
   )
 }
