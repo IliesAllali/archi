@@ -732,10 +732,11 @@ function EditableTextarea({
       onChange={(e) => { setDraft(e.target.value); }}
       onBlur={commit}
       placeholder={placeholder}
-      className="w-full text-sm leading-relaxed bg-transparent border-none outline-none resize-none overflow-hidden"
+      className="w-full text-sm leading-relaxed bg-transparent border-none outline-none resize-none overflow-y-auto"
       style={{
         color: "var(--text-secondary)",
         caretColor: "var(--accent)",
+        maxHeight: maxRows * 20 + "px",
       }}
     />
   );

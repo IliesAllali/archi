@@ -204,7 +204,7 @@ function createMcpServer(auth: AuthResult) {
       label: z.string().describe("Page name (e.g. 'Accueil', 'Contact')"),
       type: z.string().optional().describe("Page type: home, listing, detail, form, landing, quiz, search, hub, error, legal"),
       priority: z.enum(["primary", "secondary", "utility"]).optional().describe("Page importance"),
-      description: z.string().optional().describe("Short page description"),
+      description: z.string().optional().describe("Page description. Use real newlines for formatting. Supports long multiline content (SEO, copy, sections, CTAs, FAQ). No length limit."),
       parent_id: z.string().optional().nullable().describe("Parent node ID. Null = root page."),
       rationale: z.string().optional().describe("Why this page exists (UX insight)"),
       notes: z.string().optional().describe("Additional notes"),
@@ -268,14 +268,14 @@ function createMcpServer(auth: AuthResult) {
 
   server.tool(
     "update_node",
-    "Update a page's properties",
+    "Update a page's properties. For the description field: use real newlines (not literal \\n). Supports rich multiline content: SEO notes, copy, sections, CTAs, FAQ, maillage, etc. No length limit.",
     {
       project_id: z.string().describe("The project ID"),
       node_id: z.string().describe("The node ID to update"),
       label: z.string().optional().describe("New page name"),
       type: z.string().optional().describe("New page type"),
       priority: z.enum(["primary", "secondary", "utility"]).optional(),
-      description: z.string().optional(),
+      description: z.string().optional().describe("Page description. Use real newlines for formatting. Supports long multiline content (SEO, copy, sections, CTAs, FAQ). No length limit."),
       rationale: z.string().optional(),
       notes: z.string().optional(),
       parent_id: z.string().optional().nullable().describe("Move to new parent"),
