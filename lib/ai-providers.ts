@@ -52,6 +52,24 @@ export function storeApiKey(key: string, provider?: AiProvider) {
   }
 }
 
+export function clearApiKey(provider?: AiProvider) {
+  if (typeof window === "undefined") return;
+  const p = provider || getStoredProvider();
+  localStorage.removeItem(`${STORAGE_PREFIX}key_${p}`);
+  if (p === "anthropic") localStorage.removeItem("arbo_anthropic_key");
+}
+
+export function isByokEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  const val = localStorage.getItem(`${STORAGE_PREFIX}byok_enabled`);
+  return val === null ? true : val === "true";
+}
+
+export function setByokEnabled(enabled: boolean) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(`${STORAGE_PREFIX}byok_enabled`, String(enabled));
+}
+
 export function getProviderConfig(provider: AiProvider) {
   return AI_PROVIDERS.find((p) => p.id === provider) || AI_PROVIDERS[0];
 }

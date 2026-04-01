@@ -8,6 +8,7 @@ import { Events } from "@/lib/posthog";
 import {
   getStoredProvider,
   getStoredApiKey,
+  isByokEnabled,
   getStoredSpeed,
   storeSpeed,
 } from "@/lib/ai-providers";
@@ -67,9 +68,9 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
   const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
 
-    // Use BYOK key if available, otherwise server credits
+    // Use BYOK key if available and enabled, otherwise server credits
     const provider = getStoredProvider();
-    const byokKey = getStoredApiKey(provider);
+    const byokKey = isByokEnabled() ? getStoredApiKey(provider) : "";
     const apiKey = byokKey || "arbo_credits";
 
     const currentPrompt = prompt.trim();

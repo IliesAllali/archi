@@ -9,6 +9,7 @@ import { Events } from "@/lib/posthog"
 import {
   getStoredProvider,
   getStoredApiKey,
+  isByokEnabled,
   storeApiKey,
   getStoredSpeed,
   storeSpeed,
@@ -133,9 +134,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const handleAiGenerate = async () => {
     if (!aiPrompt.trim()) { setError("Décris ton site"); return }
 
-    // Use BYOK key if available, otherwise server credits
+    // Use BYOK key if available and enabled, otherwise server credits
     const provider = getStoredProvider()
-    const byokKey = getStoredApiKey(provider)
+    const byokKey = isByokEnabled() ? getStoredApiKey(provider) : ""
     const resolvedKey = byokKey || "arbo_credits"
 
     setLoading(true)

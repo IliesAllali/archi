@@ -9,6 +9,9 @@ import {
   storeProvider,
   getStoredApiKey,
   storeApiKey as storeProviderApiKey,
+  clearApiKey,
+  isByokEnabled,
+  setByokEnabled,
   getProviderConfig,
 } from "@/lib/ai-providers"
 import type { AiProvider } from "@/lib/ai-providers"
@@ -45,6 +48,7 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
   const [byokProvider, setByokProvider] = useState<AiProvider>("anthropic")
   const [byokKey, setByokKey] = useState("")
   const [keySaved, setKeySaved] = useState(false)
+  const [byokActive, setByokActive] = useState(true)
 
   // Credits state
   const [credits, setCredits] = useState<{ creditsTotal: number; creditsUsed: number; creditsRemaining: number } | null>(null)
@@ -69,6 +73,7 @@ export default function AiConnectTab({ projectId }: { projectId: string }) {
     const p = getStoredProvider()
     setByokProvider(p)
     setByokKey(getStoredApiKey(p))
+    setByokActive(isByokEnabled())
     // Fetch credits
     fetch("/api/me/ai-credits")
       .then(r => r.json())
@@ -183,6 +188,17 @@ My request: `
     storeProviderApiKey(byokKey, byokProvider)
     setKeySaved(true)
     setTimeout(() => setKeySaved(false), 2000)
+  }
+
+  const handleClearKey = () => {
+    clearApiKey(byokProvider)
+    setByokKey("")
+    setKeySaved(false)
+  }
+
+  const handleToggleByok = (enabled: boolean) => {
+    setByokEnabled(enabled)
+    setByokActive(enabled)
   }
 
   const handleByokProviderChange = (p: AiProvider) => {
@@ -411,6 +427,16 @@ My request: `
               >
                 {keySaved ? <Check className="w-3.5 h-3.5" /> : "Enregistrer"}
               </button>
+              {byokKey && (
+                <button
+                  onClick={handleClearKey}
+                  title="Supprimer la clé"
+                  className="px-3 h-9 rounded-lg transition-all"
+                  style={{ background: "var(--elevated)", color: "var(--text-muted)", border: "1px solid var(--line-strong)" }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
               <a
@@ -425,8 +451,30 @@ My request: `
             </p>
           </div>
 
+          {/* Toggle activer/désactiver BYOK */}
+          {byokKey && (
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+              <div>
+                <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Utiliser cette cl&eacute;</p>
+                <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                  {byokActive ? "Ta cl\u00e9 est utilis\u00e9e \u00e0 la place des cr\u00e9dits" : "Les cr\u00e9dits IA sont utilis\u00e9s"}
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggleByok(!byokActive)}
+                className="relative w-10 h-5 rounded-full transition-all duration-200 shrink-0"
+                style={{ background: byokActive ? "var(--accent)" : "var(--surface-hover)" }}
+              >
+                <span
+                  className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-200"
+                  style={{ left: byokActive ? "calc(100% - 1.125rem)" : "0.125rem" }}
+                />
+              </button>
+            </div>
+          )}
+
           <div className="p-3 rounded-lg text-2xs" style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-muted)" }}>
-            Quand une cl&eacute; est configur&eacute;e, elle est utilis&eacute;e automatiquement &agrave; la place des cr&eacute;dits. Tes cr&eacute;dits ne sont pas consomm&eacute;s.
+            Quand une cl&eacute; est configur&eacute;e et active, elle est utilis&eacute;e &agrave; la place des cr&eacute;dits. Tes cr&eacute;dits ne sont pas consomm&eacute;s.
           </div>
         </div>
       )}
