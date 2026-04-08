@@ -149,6 +149,8 @@ export interface WireframeSettings {
   guestVisible: boolean
   /** What guests can see: sitemap only, wireframe only, or both */
   shareView: ShareView
+  /** Whether guests can download the PDF export */
+  guestCanExport: boolean
   /** Google Font family used in wireframes */
   font: string
   /** Wireframe fidelity level */
@@ -158,6 +160,7 @@ export interface WireframeSettings {
 export const DEFAULT_WIREFRAME_SETTINGS: WireframeSettings = {
   guestVisible: true,
   shareView: 'both',
+  guestCanExport: false,
   font: 'Inter',
   fidelity: 'lo-fi',
 }

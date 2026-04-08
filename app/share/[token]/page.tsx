@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -12,7 +12,48 @@ export default function ShareAccessPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [needsPassword, setNeedsPassword] = useState(false);
+
+  // On mount: resolve token. If no password required, verify + redirect immediately.
+  useEffect(() => {
+    (async () => {
+      try {
+        const infoRes = await fetch(`/api/share/resolve?token=${encodeURIComponent(token)}`);
+        if (!infoRes.ok) {
+          const data = await infoRes.json().catch(() => ({}));
+          setError(data.error || "Lien invalide ou expiré");
+          setLoading(false);
+          return;
+        }
+
+        const info = await infoRes.json();
+
+        if (info.requiresPassword) {
+          setNeedsPassword(true);
+          setLoading(false);
+          return;
+        }
+
+        // No password — verify and redirect directly
+        const res = await fetch(`/api/projects/${info.projectId}/share/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+
+        if (res.ok) {
+          window.location.href = `/${info.projectId}`;
+        } else {
+          setError("Erreur d'accès");
+          setLoading(false);
+        }
+      } catch {
+        setError("Erreur de connexion");
+        setLoading(false);
+      }
+    })();
+  }, [token]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -20,44 +61,63 @@ export default function ShareAccessPage() {
     setLoading(true);
 
     try {
-      // First, resolve the token to find the project
       const infoRes = await fetch(`/api/share/resolve?token=${encodeURIComponent(token)}`);
       if (!infoRes.ok) {
-        const data = await infoRes.json().catch(() => ({}));
-        setError(data.error || "Lien invalide");
+        setError("Lien invalide");
         setLoading(false);
         return;
       }
 
       const info = await infoRes.json();
-      const projectId = info.projectId;
 
-      // Verify the share link with password
-      const res = await fetch(`/api/projects/${projectId}/share/verify`, {
+      const res = await fetch(`/api/projects/${info.projectId}/share/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password: password.trim() || undefined }),
+        body: JSON.stringify({ token, password: password.trim() }),
       });
 
       if (res.ok) {
-        // Guest cookie set — redirect to project
-        window.location.href = `/${projectId}`;
-        return;
+        window.location.href = `/${info.projectId}`;
       } else {
         const data = await res.json().catch(() => ({}));
-        if (data.error?.includes("Mot de passe")) {
-          setError("Mot de passe incorrect");
-        } else {
-          setError(data.error || "Erreur d'accès");
-        }
+        setError(data.error?.includes("Mot de passe") ? "Mot de passe incorrect" : data.error || "Erreur d'accès");
+        setLoading(false);
       }
     } catch {
       setError("Erreur de connexion");
-    } finally {
       setLoading(false);
     }
   }
 
+  // Loading state (resolving token or redirecting)
+  if (loading && !needsPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-faint)" }} />
+      </div>
+    );
+  }
+
+  // Error without password form (invalid/expired link)
+  if (error && !needsPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: "var(--card-title-bg)", border: "1px solid var(--card-ring)" }}
+            >
+              <Logo size={22} />
+            </div>
+          </div>
+          <p className="text-sm" style={{ color: "var(--error-text)" }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Password form
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
       <div className="w-full max-w-[320px] mx-4">
@@ -76,7 +136,7 @@ export default function ShareAccessPage() {
             style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-muted)" }}
           >
             <Lock className="w-3 h-3" />
-            Acc{"è"}s prot{"é"}g{"é"}
+            Accès protégé
           </div>
         </div>
 

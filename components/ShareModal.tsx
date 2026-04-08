@@ -36,6 +36,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
   const [showCreate, setShowCreate] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [newShareView, setNewShareView] = useState<ShareView>("both");
+  const [newGuestCanExport, setNewGuestCanExport] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -64,6 +65,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
           ...(project.wireframeSettings || {}),
           shareView: newShareView,
           guestVisible: newShareView !== "sitemap",
+          guestCanExport: newGuestCanExport,
         },
       }),
     });
@@ -82,6 +84,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
       setLinks((prev) => [link, ...prev]);
       setNewPassword("");
       setNewShareView("both");
+      setNewGuestCanExport(false);
       setShowCreate(false);
       Events.shareLinkCreated(!!newPassword.trim(), false);
     }
@@ -192,6 +195,26 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                       })}
                     </div>
                   </div>
+
+                  {/* Guest PDF export toggle */}
+                  <button
+                    onClick={() => setNewGuestCanExport(v => !v)}
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-left transition-all"
+                    style={{ border: `1px solid ${newGuestCanExport ? project.accent : "var(--line)"}` }}
+                  >
+                    <div
+                      className="w-8 h-4 rounded-full relative transition-colors duration-200 shrink-0"
+                      style={{ background: newGuestCanExport ? project.accent : "var(--line-strong)" }}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full absolute top-0.5 transition-all duration-200"
+                        style={{ background: "#fff", left: newGuestCanExport ? 17 : 2, boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}
+                      />
+                    </div>
+                    <span className="text-2xs" style={{ color: "var(--text-secondary)" }}>
+                      Autoriser le export PDF
+                    </span>
+                  </button>
 
                   {/* Password */}
                   <div>

@@ -451,7 +451,9 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
             {nodes.length}p
           </span>
 
-          <ExportButton project={liveProject} />
+          {(!readOnly || wfSettings.guestCanExport) && (
+            <ExportButton project={liveProject} />
+          )}
 
           {/* Comment mode toggle — switches behavior based on active tab */}
           {(activeTab === "wireframe" || !readOnly) && (
