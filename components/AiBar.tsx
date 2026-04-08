@@ -22,14 +22,36 @@ function getCsrfToken(): string | null {
   return match ? match[1] : null;
 }
 
+interface WireframeContext {
+  pageId: string;
+  pageLabel: string;
+  pageType: string;
+  description: string;
+  blocks: { label: string; skin: string; height: number }[];
+  currentHtml: string | undefined;
+  hasGlobalHeader: boolean;
+  hasGlobalFooter: boolean;
+  /** Header global component HTML */
+  headerHtml?: string;
+  /** Footer global component HTML */
+  footerHtml?: string;
+  /** Callback to save a global component update */
+  onSaveGlobalHtml?: (slot: "header" | "footer", viewport: string, html: string) => void;
+}
+
 interface Props {
   projectId: string;
+  projectName: string;
   chatMessages: ChatMessage[];
   onChatMessage: (userMsg: ChatMessage, aiMsg: ChatMessage) => void;
   onOpenChat: () => void;
+  /** When set, AI operates on wireframe instead of sitemap */
+  wireframeContext?: WireframeContext | null;
+  /** Callback when wireframe HTML is generated/updated. Called progressively during streaming. */
+  onWireframeResult?: (html: string, done: boolean) => void;
 }
 
-export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenChat }: Props) {
+export default function AiBar({ projectId, projectName, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult }: Props) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,6 +62,9 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
   const [speed, setSpeed] = useState<AiSpeed>("fast");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
+  // Target for wireframe mode: "page" (default), "header", or "footer"
+  type WireframeTarget = "page" | "header" | "footer";
+  const [wireframeTarget, setWireframeTarget] = useState<WireframeTarget>("page");
 
   // Toggle with Ctrl+I
   useEffect(() => {
@@ -62,13 +87,13 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
       setError("");
       setSuccess("");
       setSpeed(getStoredSpeed());
+      if (!wireframeContext) setWireframeTarget("page");
     }
   }, [open]);
 
   const handleSubmit = useCallback(async () => {
     if (!prompt.trim()) return;
 
-    // Use BYOK key if available and enabled, otherwise server credits
     const provider = getStoredProvider();
     const byokKey = isByokEnabled() ? getStoredApiKey(provider) : "";
     const apiKey = byokKey || "arbo_credits";
@@ -80,9 +105,175 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
     setStatusMsg("");
     setActionLog([]);
 
-    const localActions: { type: string; label?: string }[] = [];
+    // ─── Wireframe mode ───
+    if (wireframeContext && onWireframeResult) {
+      // Fetch wireframe settings for fidelity/font
+      let wfFidelity = "lo-fi";
+      let wfFont = "Inter";
+      try {
+        const pRes = await fetch(`/api/projects/${projectId}`);
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          if (pData.wireframeSettings) {
+            wfFidelity = pData.wireframeSettings.fidelity || "lo-fi";
+            wfFont = pData.wireframeSettings.font || "Inter";
+          }
+        }
+      } catch { /* use defaults */ }
 
-    // Build conversation history for the API
+      // Determine what we're targeting
+      const isGlobalTarget = wireframeTarget !== "page" && wireframeContext.onSaveGlobalHtml;
+      const globalSlot = wireframeTarget as "header" | "footer";
+      const globalDesktopHtml = wireframeTarget === "header" ? wireframeContext.headerHtml
+        : wireframeTarget === "footer" ? wireframeContext.footerHtml : undefined;
+
+      if (isGlobalTarget && globalDesktopHtml) {
+        // ─── Global component mode ───
+        setStatusMsg(`${globalSlot === "header" ? "Header" : "Footer"}...`);
+        try {
+          const res = await fetch("/api/ai/wireframe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              apiKey,
+              pageLabel: globalSlot === "header" ? "Header" : "Footer",
+              pageType: "component",
+              projectName,
+              currentHtml: globalDesktopHtml,
+              editPrompt: currentPrompt,
+              fidelity: wfFidelity,
+              font: wfFont,
+            }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            setError(err.error || "Erreur");
+            setLoading(false);
+            return;
+          }
+
+          const reader = res.body?.getReader();
+          if (!reader) { setError("Erreur"); setLoading(false); return; }
+
+          const decoder = new TextDecoder();
+          let fullHtml = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const text = decoder.decode(value, { stream: true });
+            for (const line of text.split("\n")) {
+              if (!line.startsWith("data: ")) continue;
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.type === "chunk") fullHtml += data.text;
+                else if (data.type === "error") setError(data.error);
+              } catch { /* partial */ }
+            }
+          }
+
+          if (fullHtml.trim()) {
+            let clean = fullHtml.trim();
+            const bodyMatch = clean.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            if (bodyMatch) clean = bodyMatch[1].trim();
+            const wrapperMatch = clean.match(/<div[^>]*max-width[^>]*>([\s\S]*)<\/div>\s*$/i);
+            if (wrapperMatch) clean = wrapperMatch[1].trim();
+
+            wireframeContext.onSaveGlobalHtml!(globalSlot, "desktop", clean);
+            setSuccess(`${globalSlot === "header" ? "Header" : "Footer"} mis \u00e0 jour`);
+            setPrompt("");
+            setTimeout(() => setSuccess(""), 3000);
+          }
+        } catch {
+          setError("Erreur r\u00e9seau");
+        } finally {
+          setLoading(false);
+          setStatusMsg("");
+        }
+        return;
+      }
+
+      // ─── Page wireframe mode ───
+      setStatusMsg("G\u00e9n\u00e9ration du wireframe...");
+      try {
+        const res = await fetch("/api/ai/wireframe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            apiKey,
+            pageLabel: wireframeContext.pageLabel,
+            pageType: wireframeContext.pageType,
+            projectName,
+            description: wireframeContext.description,
+            blocks: wireframeContext.blocks.length > 0
+              ? wireframeContext.blocks
+              : [],
+            hasGlobalHeader: wireframeContext.hasGlobalHeader,
+            hasGlobalFooter: wireframeContext.hasGlobalFooter,
+            fidelity: wfFidelity,
+            font: wfFont,
+            ...(wireframeContext.currentHtml ? {
+              currentHtml: wireframeContext.currentHtml,
+              editPrompt: currentPrompt,
+            } : {
+              editPrompt: currentPrompt,
+            }),
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          setError(err.error || "Erreur");
+          setLoading(false);
+          return;
+        }
+
+        const reader = res.body?.getReader();
+        if (!reader) { setError("Erreur de connexion"); setLoading(false); return; }
+
+        const decoder = new TextDecoder();
+        let fullHtml = "";
+        let lastPush = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const text = decoder.decode(value, { stream: true });
+          for (const line of text.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === "chunk") {
+                fullHtml += data.text;
+                // Push progressive updates every 400ms
+                const now = Date.now();
+                if (now - lastPush > 400) {
+                  lastPush = now;
+                  onWireframeResult(fullHtml, false);
+                }
+              }
+              else if (data.type === "error") setError(data.error);
+            } catch { /* partial */ }
+          }
+        }
+
+        if (fullHtml.trim()) {
+          onWireframeResult(fullHtml.trim(), true);
+          setSuccess(wireframeContext.currentHtml ? "Wireframe mis \u00e0 jour" : "Wireframe g\u00e9n\u00e9r\u00e9");
+          setPrompt("");
+          setTimeout(() => setSuccess(""), 3000);
+        }
+      } catch {
+        setError("Erreur r\u00e9seau");
+      } finally {
+        setLoading(false);
+        setStatusMsg("");
+      }
+      return;
+    }
+
+    // ─── Sitemap mode: edit tree ───
+    const localActions: { type: string; label?: string }[] = [];
     const history = chatMessages.map(m => ({ role: m.role, content: m.content }));
 
     try {
@@ -190,7 +381,7 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, projectId, speed, initProject, chatMessages, onChatMessage, onOpenChat]);
+  }, [prompt, projectId, projectName, speed, initProject, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult]);
 
   return (
     <>
@@ -351,12 +542,35 @@ export default function AiBar({ projectId, chatMessages, onChatMessage, onOpenCh
 
             {/* Input area */}
             <div className="px-3 sm:px-4 py-2.5 sm:py-3">
+              {/* Target selector — only in wireframe mode when globals exist */}
+              {wireframeContext && (wireframeContext.hasGlobalHeader || wireframeContext.hasGlobalFooter) && (
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="text-[10px] mr-1" style={{ color: "var(--text-faint)" }}>Cible :</span>
+                  {(["page", ...(wireframeContext.hasGlobalHeader ? ["header"] : []), ...(wireframeContext.hasGlobalFooter ? ["footer"] : [])] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setWireframeTarget(t as "page" | "header" | "footer")}
+                      className="px-2 py-0.5 rounded text-[10px] font-medium transition-all"
+                      style={{
+                        background: wireframeTarget === t ? "var(--accent)" : "var(--bg-hover)",
+                        color: wireframeTarget === t ? "#fff" : "var(--text-faint)",
+                      }}
+                    >
+                      {t === "page" ? "Page" : t === "header" ? "Header" : "Footer"}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <textarea
                   ref={inputRef}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Modifie l'arbo ou pose une question..."
+                  placeholder={wireframeContext
+                    ? wireframeTarget === "header" ? "Modifie le Header global..."
+                    : wireframeTarget === "footer" ? "Modifie le Footer global..."
+                    : `Wireframe "${wireframeContext.pageLabel}" \u2014 d\u00e9cris les modifications...`
+                    : "Modifie l'arbo ou pose une question..."}
                   rows={1}
                   disabled={loading}
                   className="flex-1 px-2.5 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"

@@ -17,7 +17,7 @@ function getAccessSecret(): Uint8Array {
   if (!secret && process.env.NODE_ENV === 'production') {
     throw new Error('CRITICAL: JWT_ACCESS_SECRET must be set in production')
   }
-  return new TextEncoder().encode(secret || 'dev-access-secret-not-for-prod')
+  return new TextEncoder().encode(secret || 'dev-access-not-for-prod')
 }
 
 const ACCESS_SECRET = getAccessSecret()

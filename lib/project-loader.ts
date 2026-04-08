@@ -33,6 +33,14 @@ function buildChildrenMap(rows: DbNode[]): Map<string, string[]> {
 
 function dbProjectToProject(proj: DbProject, nodes: DbNode[]): Project {
   const childrenMap = buildChildrenMap(nodes)
+  let globalSections: import("@/lib/types").GlobalSection[] | undefined
+  try {
+    if (proj.global_sections) globalSections = JSON.parse(proj.global_sections)
+  } catch { /* invalid JSON, ignore */ }
+  let wireframeSettings: import("@/lib/types").WireframeSettings | undefined
+  try {
+    if (proj.wireframe_settings) wireframeSettings = JSON.parse(proj.wireframe_settings)
+  } catch { /* invalid JSON, ignore */ }
   return {
     id:      proj.id,
     slug:    proj.slug,
@@ -43,6 +51,8 @@ function dbProjectToProject(proj: DbProject, nodes: DbNode[]): Project {
     accent:  proj.accent,
     nodes:   nodes.map((n) => dbNodeToSiteNode(n, childrenMap)),
     ownerId: proj.owner_id,
+    globalSections,
+    wireframeSettings,
   }
 }
 
@@ -89,13 +99,15 @@ export function saveProject(project: Partial<Project> & { id: string }): void {
 
   if (existing) {
     db.prepare(
-      `UPDATE projects SET name = ?, client = ?, accent = ?, version = ?, updated_at = ?
+      `UPDATE projects SET name = ?, client = ?, accent = ?, version = ?, global_sections = ?, wireframe_settings = ?, updated_at = ?
        WHERE id = ?`
     ).run(
       project.name ?? '',
       project.client ?? null,
       project.accent ?? '#F76B15',
       project.version ?? 'v1',
+      project.globalSections ? JSON.stringify(project.globalSections) : null,
+      project.wireframeSettings ? JSON.stringify(project.wireframeSettings) : null,
       now,
       project.id
     )

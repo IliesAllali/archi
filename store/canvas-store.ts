@@ -3,8 +3,8 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { enableMapSet } from "immer";
-import type { SiteNode, Project, NodeData } from "@/lib/types";
-import { migrateNodeZoning } from "@/lib/types";
+import type { SiteNode, Project, NodeData, GlobalSection, WireframeSettings } from "@/lib/types";
+import { migrateNodeZoning, DEFAULT_WIREFRAME_SETTINGS } from "@/lib/types";
 import { Events } from "@/lib/posthog";
 
 enableMapSet();
@@ -29,6 +29,8 @@ interface CanvasState {
   projectId: string;
   projectSlug: string;
   accent: string;
+  globalSections: GlobalSection[];
+  wireframeSettings: WireframeSettings;
 
   // Node data
   nodes: SiteNode[];
@@ -85,6 +87,9 @@ interface CanvasState {
   canUndo: () => boolean;
   canRedo: () => boolean;
 
+  // Actions — wireframe globals
+  setGlobalSections: (sections: GlobalSection[]) => void;
+
   // Actions — save
   setSaveStatus: (status: SaveStatus) => void;
   markDirty: (trigger?: string) => void;
@@ -132,6 +137,8 @@ export const useCanvasStore = create<CanvasState>()(
     projectId: "",
     projectSlug: "",
     accent: "#F76B15",
+    globalSections: [],
+    wireframeSettings: DEFAULT_WIREFRAME_SETTINGS,
 
     nodes: [],
     nodeMap: new Map(),
@@ -179,6 +186,10 @@ export const useCanvasStore = create<CanvasState>()(
         state.projectId = project.id;
         state.projectSlug = project.slug;
         state.accent = project.accent;
+        state.globalSections = project.globalSections || [];
+        state.wireframeSettings = project.wireframeSettings
+          ? { ...DEFAULT_WIREFRAME_SETTINGS, ...project.wireframeSettings }
+          : DEFAULT_WIREFRAME_SETTINGS;
         state.nodes = migratedNodes;
         state.nodeMap = buildNodeMap(migratedNodes);
         state.saveStatus = "saved";
@@ -547,6 +558,12 @@ export const useCanvasStore = create<CanvasState>()(
 
     canUndo: () => get().past.length > 0,
     canRedo: () => get().future.length > 0,
+
+    // ─── Wireframe globals ──────────────────────────────────────────────────
+
+    setGlobalSections: (sections: GlobalSection[]) => {
+      set((state) => { state.globalSections = sections; });
+    },
 
     // ─── Save ──────────────────────────────────────────────────────────────
 

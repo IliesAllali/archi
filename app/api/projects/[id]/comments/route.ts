@@ -17,6 +17,8 @@ interface CommentRow {
   offset_x: number
   offset_y: number
   parent_id: string | null
+  section: string | null
+  tag: string | null
 }
 
 export async function GET(
@@ -48,6 +50,8 @@ export async function GET(
     offsetX: r.offset_x ?? 0,
     offsetY: r.offset_y ?? 0,
     parentId: r.parent_id ?? null,
+    section: r.section ?? null,
+    tag: r.tag ?? null,
   })))
 }
 
@@ -56,7 +60,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const body = await req.json()
-  const { nodeId, content, authorName, offsetX, offsetY, parentId } = body
+  const { nodeId, content, authorName, offsetX, offsetY, parentId, section, tag } = body
 
   if (!nodeId || !content?.trim()) {
     return NextResponse.json({ error: "nodeId and content required" }, { status: 400 })
@@ -76,10 +80,12 @@ export async function POST(
   const ox = typeof offsetX === "number" ? offsetX : 0
   const oy = typeof offsetY === "number" ? offsetY : 0
   const pid = typeof parentId === "string" ? parentId : null
+  const sec = typeof section === "string" ? section : null
+  const t = typeof tag === "string" ? tag : null
 
   db.prepare(
-    "INSERT INTO comments (id, project_id, node_id, author_name, author_id, content, created_at, offset_x, offset_y, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-  ).run(id, params.id, nodeId, name, session?.sub || null, content.trim(), now, ox, oy, pid)
+    "INSERT INTO comments (id, project_id, node_id, author_name, author_id, content, created_at, offset_x, offset_y, parent_id, section, tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(id, params.id, nodeId, name, session?.sub || null, content.trim(), now, ox, oy, pid, sec, t)
 
   return NextResponse.json({
     id,
@@ -92,5 +98,7 @@ export async function POST(
     offsetX: ox,
     offsetY: oy,
     parentId: pid,
+    section: sec,
+    tag: t,
   }, { status: 201 })
 }

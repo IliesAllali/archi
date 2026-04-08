@@ -268,7 +268,7 @@ function createMcpServer(auth: AuthResult) {
 
   server.tool(
     "update_node",
-    "Update a page's properties. For the description field: use real newlines (not literal \\n). Supports rich multiline content: SEO notes, copy, sections, CTAs, FAQ, maillage, etc. No length limit.",
+    "Update a page's properties. For the description field: use real newlines (not literal \\n). Supports rich multiline content: SEO notes, copy, sections, CTAs, FAQ, maillage, etc. No length limit. You can also set zoning_html (full wireframe HTML) and annotations (contextual notes per wireframe section).",
     {
       project_id: z.string().describe("The project ID"),
       node_id: z.string().describe("The node ID to update"),
@@ -279,8 +279,16 @@ function createMcpServer(auth: AuthResult) {
       rationale: z.string().optional(),
       notes: z.string().optional(),
       parent_id: z.string().optional().nullable().describe("Move to new parent"),
+      zoning_html: z.string().optional().describe("Full wireframe HTML (lo-fi, inline CSS, standalone). Replaces the current wireframe for this page."),
+      annotations: z.array(z.object({
+        id: z.string().describe("Unique annotation ID (e.g. 'ann_1')"),
+        section: z.string().describe("Section name in the wireframe this annotation refers to (e.g. 'Hero', 'Navigation')"),
+        tag: z.enum(["UX", "COPY", "SEO", "DEV", "DESIGN", "A11Y", "PERF", "TODO"]).describe("Annotation category"),
+        title: z.string().describe("Short annotation title"),
+        body: z.string().describe("Detailed annotation content"),
+      })).optional().describe("Contextual annotations for wireframe sections. These appear as a sidebar alongside the wireframe preview."),
     },
-    async ({ project_id, node_id, label, type, priority, description, rationale, notes, parent_id }) => {
+    async ({ project_id, node_id, label, type, priority, description, rationale, notes, parent_id, zoning_html, annotations }) => {
       if (!canAccessProject(auth, project_id)) {
         return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
       }
@@ -300,6 +308,8 @@ function createMcpServer(auth: AuthResult) {
       if (description !== undefined) data.description = description
       if (rationale !== undefined) data.rationale = rationale
       if (notes !== undefined) data.notes = notes
+      if (zoning_html !== undefined) data.zoningHtml = zoning_html
+      if (annotations !== undefined) data.annotations = annotations
 
       const now = Date.now()
       const newParent = parent_id !== undefined ? parent_id : existing.parent_id
@@ -310,6 +320,102 @@ function createMcpServer(auth: AuthResult) {
 
       return {
         content: [{ type: "text" as const, text: JSON.stringify({ id: node_id, ...data }, null, 2) }]
+      }
+    }
+  )
+
+  // ── Tool: generate_wireframe ────────────────────────────────────────────
+
+  server.tool(
+    "generate_wireframe",
+    "Generate a lo-fi wireframe HTML for a page using AI. The wireframe is saved to the node's zoningHtml field. Requires zoning blocks to be defined on the node. Costs 1 AI credit (or uses BYOK key). Returns the generated HTML.",
+    {
+      project_id: z.string().describe("The project ID"),
+      node_id: z.string().describe("The node ID to generate wireframe for"),
+    },
+    async ({ project_id, node_id }) => {
+      if (!canAccessProject(auth, project_id)) {
+        return { content: [{ type: "text" as const, text: "Access denied" }], isError: true }
+      }
+
+      const project = db.prepare(
+        "SELECT * FROM projects WHERE id = ? AND archived = 0"
+      ).get(project_id) as DbProject | undefined
+
+      if (!project) {
+        return { content: [{ type: "text" as const, text: "Project not found" }], isError: true }
+      }
+
+      const node = db.prepare(
+        "SELECT * FROM nodes WHERE id = ? AND project_id = ? AND archived = 0"
+      ).get(node_id, project_id) as DbNode | undefined
+
+      if (!node) {
+        return { content: [{ type: "text" as const, text: "Node not found" }], isError: true }
+      }
+
+      const nodeData = JSON.parse(node.data)
+      const blocks = nodeData.zoningBlocks
+
+      if (!blocks || blocks.length === 0) {
+        return { content: [{ type: "text" as const, text: "Node has no zoning blocks. Add zoning_blocks first via create_node or update_node." }], isError: true }
+      }
+
+      // Use server AI key
+      const { getServerAiKey } = await import("@/lib/ai-credits")
+      const serverKey = getServerAiKey()
+      if (!serverKey) {
+        return { content: [{ type: "text" as const, text: "AI credits not available on this instance. Configure ARBO_ANTHROPIC_KEY." }], isError: true }
+      }
+
+      try {
+        const Anthropic = (await import("@anthropic-ai/sdk")).default
+        const client = new Anthropic({ apiKey: serverKey })
+
+        const blockList = blocks
+          .map((b: { label: string; skin: string }, i: number) => `${i + 1}. ${b.label} (type: ${b.skin})`)
+          .join("\n")
+
+        const systemPrompt = `Tu es un expert UX/UI wireframe. Tu g\u00e9n\u00e8res des wireframes lo-fi en HTML/CSS inline.
+R\u00e8gles : HTML + CSS inline uniquement. Tons gris (#F4F4F5, #E5E7EB, #D1D5DB, #9CA3AF, #6B7280, #374151). Texte r\u00e9aliste (pas de lorem ipsum). Flexbox only. Max-width 1440px. PascalCase classes. Font-family: -apple-system, sans-serif. Renvoie UNIQUEMENT le HTML complet avec <!DOCTYPE html>.`
+
+        const userPrompt = `G\u00e9n\u00e8re un wireframe HTML lo-fi pour :
+Projet : ${project.name}
+Page : ${nodeData.label} (type: ${nodeData.type})
+${nodeData.description ? `Description : ${nodeData.description.slice(0, 500)}` : ""}
+Sections :
+${blockList}`
+
+        const response = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 6000,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        })
+
+        const html = response.content[0].type === "text" ? response.content[0].text : ""
+
+        // Save to node
+        nodeData.zoningHtml = html.trim()
+        const now = Date.now()
+        db.prepare(
+          "UPDATE nodes SET data = ?, updated_at = ? WHERE id = ? AND project_id = ?"
+        ).run(JSON.stringify(nodeData), now, node_id, project_id)
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              node_id,
+              wireframe_saved: true,
+              html_length: html.length,
+              html: html.slice(0, 2000) + (html.length > 2000 ? "\n... (truncated, full HTML saved to node)" : ""),
+            }, null, 2)
+          }]
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
+        return { content: [{ type: "text" as const, text: `AI error: ${message.slice(0, 200)}` }], isError: true }
       }
     }
   )

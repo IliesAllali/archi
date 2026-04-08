@@ -37,8 +37,9 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   const epOverhead: Record<string, number> = {};
 
   nodes.forEach((n) => {
-    pageHeight[n.id] = getCardHeight(n.type, n.label, n.zoningExpanded, n.zoningBlocks) + LABEL_HEIGHT;
-    pageWidth[n.id] = getCardWidth(n.type, n.zoningExpanded) + 20;
+    const isExpanded = n.zoningCanvasMode === "wireframe" || n.zoningCanvasMode === "zoning" || n.zoningExpanded;
+    pageHeight[n.id] = getCardHeight(n.type, n.label, n.zoningExpanded, n.zoningBlocks, n.zoningCanvasMode, n.zoningHtml, n.id) + LABEL_HEIGHT;
+    pageWidth[n.id] = getCardWidth(n.type, isExpanded) + 20;
     epOverhead[n.id] =
       n.entryPoints && n.entryPoints.length > 0
         ? getEntryPointGroupHeight(n.entryPoints, n.type === "home") + EP_MARGIN

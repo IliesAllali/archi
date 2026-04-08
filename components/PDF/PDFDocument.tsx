@@ -317,6 +317,37 @@ const styles = StyleSheet.create({
     color: "#d1d5db",
     fontFamily: "Helvetica",
   },
+  /* Wireframe page */
+  wireframePage: {
+    padding: 0,
+    flexDirection: "column",
+    backgroundColor: "#ffffff",
+  },
+  wireframeHeader: {
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e5e8",
+    backgroundColor: "#fafafa",
+  },
+  wireframeHeaderTitle: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: "#3a3a42",
+    letterSpacing: 0.5,
+  },
+  wireframeHeaderMeta: {
+    fontSize: 8,
+    color: "#9ca3af",
+  },
+  wireframeImage: {
+    flex: 1,
+    objectFit: "contain",
+    margin: 0,
+  },
   /* Node index page */
   indexPage: {
     padding: 48,
@@ -494,9 +525,10 @@ function NodeDetailPage({
 export interface PDFDocumentProps {
   project: Project;
   treeImageDataUrl: string;
+  wireframeImages?: Record<string, string>; // nodeId → PNG data URL
 }
 
-export function PDFDocumentComponent({ project, treeImageDataUrl }: PDFDocumentProps) {
+export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImages }: PDFDocumentProps) {
   const accent = project.accent;
   const formattedDate = new Date(project.date).toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -509,8 +541,11 @@ export function PDFDocumentComponent({ project, treeImageDataUrl }: PDFDocumentP
   const secondaryNodes = project.nodes.filter((n) => n.priority !== "primary");
   const orderedNodes = [...primaryNodes, ...secondaryNodes];
 
-  // Page count: cover(1) + tree(1) + index(1) + nodes(N)
-  const totalPages = 3 + orderedNodes.length;
+  const wireframeNodeIds = wireframeImages ? Object.keys(wireframeImages) : [];
+  const wireframeNodes = orderedNodes.filter(n => wireframeNodeIds.includes(n.id));
+
+  // Page count: cover(1) + tree(1) + index(1) + nodes(N) + wireframes(W)
+  const totalPages = 3 + orderedNodes.length + wireframeNodes.length;
 
   return (
     <Document
@@ -602,6 +637,17 @@ export function PDFDocumentComponent({ project, treeImageDataUrl }: PDFDocumentP
           pageNum={i + 4}
           totalPages={totalPages}
         />
+      ))}
+
+      {/* ── Wireframe pages (optional) ── */}
+      {wireframeNodes.map((node, i) => (
+        <Page key={`wf_${node.id}`} size="A4" orientation="landscape" style={styles.wireframePage}>
+          <View style={styles.wireframeHeader}>
+            <Text style={styles.wireframeHeaderTitle}>WIREFRAME — {node.label.toUpperCase()}</Text>
+            <Text style={styles.wireframeHeaderMeta}>{project.name} · {project.version} · p. {3 + orderedNodes.length + i + 1}</Text>
+          </View>
+          <Image src={wireframeImages![node.id]} style={styles.wireframeImage} />
+        </Page>
       ))}
     </Document>
   );

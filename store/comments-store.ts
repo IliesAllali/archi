@@ -2,6 +2,8 @@
 
 import { create } from "zustand"
 
+export type CommentTag = 'UX' | 'COPY' | 'SEO' | 'DEV' | 'DESIGN' | 'A11Y' | 'PERF' | 'TODO' | null
+
 export interface CanvasComment {
   id: string
   nodeId: string
@@ -13,6 +15,10 @@ export interface CanvasComment {
   offsetX: number
   offsetY: number
   parentId: string | null
+  /** Wireframe section this comment is attached to (null = canvas comment) */
+  section: string | null
+  /** Annotation tag for categorization (null = regular comment) */
+  tag: CommentTag
 }
 
 interface CommentsState {
@@ -30,9 +36,11 @@ interface CommentsState {
     nodeId: string
     content: string
     authorName: string
-    offsetX: number
-    offsetY: number
+    offsetX?: number
+    offsetY?: number
     parentId?: string | null
+    section?: string | null
+    tag?: CommentTag
   }) => Promise<CanvasComment | null>
   resolveComment: (projectId: string, commentId: string, resolved: boolean) => Promise<void>
   deleteComment: (projectId: string, commentId: string) => Promise<void>

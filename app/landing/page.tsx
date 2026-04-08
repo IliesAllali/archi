@@ -60,7 +60,7 @@ const jsonLd = {
     "Share links without account required",
     "SEO metadata per page node",
     "Version history with restore",
-    "Bring your own API key (OpenAI, Anthropic, Google)",
+    "Bring your own API key (OpenAI, Anthropic, Mistral)",
   ],
   aggregateRating: undefined,
 }
@@ -98,7 +98,7 @@ const faqJsonLd = {
       name: "How is Arbo different from Octopus.do or FlowMapp?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Arbo is AI-native: you generate your entire sitemap from a text prompt instead of dragging boxes manually. It also offers real-time collaboration, version history, and a generous free tier. Octopus.do starts at $29/mo, FlowMapp at $29/mo. Arbo's Pro will be 12 EUR/mo.",
+        text: "Arbo is AI-native: you generate your entire sitemap from a text prompt instead of dragging boxes manually. It also offers real-time collaboration, version history, and a generous free tier. Octopus.do starts at $16/mo, FlowMapp at $15/mo. Arbo's Pro will be 12 EUR/mo.",
       },
     },
     {

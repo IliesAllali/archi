@@ -39,6 +39,29 @@ export interface ZoningBlock {
   height: number
 }
 
+// ─── Wireframe annotations ──────────────────────────────────────────────────
+
+export type AnnotationTag = 'UX' | 'COPY' | 'SEO' | 'DEV' | 'DESIGN' | 'A11Y' | 'PERF' | 'TODO'
+
+export const ANNOTATION_TAG_CONFIG: Record<AnnotationTag, { label: string; color: string }> = {
+  UX:     { label: 'UX',      color: '#8B5CF6' },
+  COPY:   { label: 'Copy',    color: '#3B82F6' },
+  SEO:    { label: 'SEO',     color: '#10B981' },
+  DEV:    { label: 'Dev',     color: '#F59E0B' },
+  DESIGN: { label: 'Design',  color: '#EC4899' },
+  A11Y:   { label: 'A11y',    color: '#6366F1' },
+  PERF:   { label: 'Perf',    color: '#EF4444' },
+  TODO:   { label: 'Todo',    color: '#6B7280' },
+}
+
+export interface WireframeAnnotation {
+  id: string
+  section: string
+  tag: AnnotationTag
+  title: string
+  body: string
+}
+
 // ─── Node data (stored as JSON blob in SQLite `data` column) ─────────────────
 
 export interface NodeData {
@@ -57,6 +80,9 @@ export interface NodeData {
   zoningBlocks?: ZoningBlock[]
   zoningExpanded?: boolean
   zoningHtml?: string
+  /** What to show on the canvas: 'zoning' (block bricks), 'wireframe' (HTML preview), or undefined (hidden) */
+  zoningCanvasMode?: 'zoning' | 'wireframe'
+  annotations?: WireframeAnnotation[]
   /** @deprecated Kept for migration — use zoningBlocks */
   zoning?: ZoningType
   // Multi-parent: additional parent IDs (node appears under primary parent in layout,
@@ -76,7 +102,65 @@ export interface SiteNode extends NodeData {
   readOnly?: boolean       // Injected at render time for guest/viewer mode
 }
 
+// ─── Global sections (shared across wireframes) ─────────────────────────────
+
+export interface GlobalSection {
+  id: string
+  /** Slot: where this section appears. 'header'/'footer' are auto-injected. Custom slots are passed to the AI as reference. */
+  slot: 'header' | 'footer' | 'component'
+  /** Display name (e.g. "Header", "Footer", "Stepper", "Sidebar panier") */
+  name: string
+  /** The responsive HTML content for this section */
+  html: string
+}
+
 // ─── Project ─────────────────────────────────────────────────────────────────
+
+export type WireframeFidelity = 'lo-fi' | 'mid-fi' | 'hi-fi'
+
+export const WIREFRAME_FIDELITY_CONFIG: Record<WireframeFidelity, { label: string; description: string }> = {
+  'lo-fi':  { label: 'Lo-fi',  description: 'Gris uniquement, blocs simples, pas de details visuels' },
+  'mid-fi': { label: 'Mid-fi', description: 'Couleurs neutres, typographie realiste, composants detailles' },
+  'hi-fi':  { label: 'Hi-fi',  description: 'Proche du rendu final, couleurs, images placeholder realistes' },
+}
+
+export const WIREFRAME_FONT_PRESETS = [
+  'Inter',
+  'DM Sans',
+  'Plus Jakarta Sans',
+  'Poppins',
+  'Manrope',
+  'Space Grotesk',
+  'Outfit',
+  'Sora',
+  'Geist',
+  'Libre Franklin',
+  'IBM Plex Sans',
+  'Source Sans 3',
+  'Nunito Sans',
+  'Rubik',
+  'Work Sans',
+] as const
+
+export type ShareView = 'both' | 'sitemap' | 'wireframe'
+
+export interface WireframeSettings {
+  /** Whether guests (share links) can see wireframes — legacy, use shareView instead */
+  guestVisible: boolean
+  /** What guests can see: sitemap only, wireframe only, or both */
+  shareView: ShareView
+  /** Google Font family used in wireframes */
+  font: string
+  /** Wireframe fidelity level */
+  fidelity: WireframeFidelity
+}
+
+export const DEFAULT_WIREFRAME_SETTINGS: WireframeSettings = {
+  guestVisible: true,
+  shareView: 'both',
+  font: 'Inter',
+  fidelity: 'lo-fi',
+}
 
 export interface Project {
   id: string
@@ -89,6 +173,8 @@ export interface Project {
   password?: string       // Guest share link password — NOT stored on project anymore
   nodes: SiteNode[]
   ownerId?: string
+  globalSections?: GlobalSection[]
+  wireframeSettings?: WireframeSettings
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

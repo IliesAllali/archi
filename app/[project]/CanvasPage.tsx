@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import type { Project, SiteNode } from "@/lib/types";
+import { DEFAULT_WIREFRAME_SETTINGS } from "@/lib/types";
 import { useCanvasStore, setupAutoSave } from "@/store/canvas-store";
 import Canvas from "@/components/Tree/Canvas";
 import Logo from "@/components/Logo";
@@ -10,7 +11,7 @@ import Spotlight from "@/components/Spotlight";
 import ShareModal from "@/components/ShareModal";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import PresenceAvatars from "@/components/PresenceAvatars";
-import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, MessageCircle } from "lucide-react";
+import { Share2, ChevronLeft, Undo2, Redo2, Monitor, MoreHorizontal, Search, Maximize, History, Settings, MessageCircle, Loader2 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import ExportButton from "@/components/ExportButton";
 import VersionHistoryPanel from "@/components/VersionHistoryPanel";
@@ -18,6 +19,8 @@ import AiBar from "@/components/AiBar";
 import AiChatPanel from "@/components/AiChatPanel";
 import type { ChatMessage, AiAction } from "@/components/AiChatPanel";
 import CommentsPanel from "@/components/CommentsPanel";
+import WireframeView from "@/components/Wireframe/WireframeView";
+import { Layout, GitBranch } from "lucide-react";
 import { useCommentsStore } from "@/store/comments-store";
 import { usePresence } from "@/hooks/usePresence";
 import { usePresenceStore } from "@/hooks/usePresenceStore";
@@ -28,20 +31,18 @@ interface Props {
   readOnly?: boolean;
 }
 
-function CommentModeButton({ accent }: { accent: string }) {
-  const commentMode = useCommentsStore(s => s.commentMode)
-  const toggleCommentMode = useCommentsStore(s => s.toggleCommentMode)
+function CommentModeButton({ accent, onToggle, isActive }: { accent: string; onToggle: () => void; isActive: boolean }) {
   const unresolvedCount = useCommentsStore(s => s.comments.filter(c => !c.parentId && !c.resolved).length)
 
   return (
     <button
-      onClick={toggleCommentMode}
+      onClick={onToggle}
       className="relative flex items-center gap-1.5 p-1.5 rounded-md text-2xs font-medium transition-all duration-150 active:scale-95"
       style={{
-        background: commentMode ? `${accent}20` : "transparent",
-        color: commentMode ? accent : "var(--text-muted)",
+        background: isActive ? `${accent}20` : "transparent",
+        color: isActive ? accent : "var(--text-muted)",
       }}
-      title={commentMode ? "Quitter le mode commentaire (Esc)" : "Mode commentaire"}
+      title={isActive ? "Masquer les commentaires" : "Commentaires"}
     >
       <MessageCircle className="w-4 h-4" />
       {unresolvedCount > 0 && (
@@ -56,10 +57,28 @@ function CommentModeButton({ accent }: { accent: string }) {
   )
 }
 
+type ProjectTab = "sitemap" | "wireframe"
+
 export default function CanvasPage({ project, currentUser, readOnly = false }: Props) {
+  // Visibility for guests based on shareView setting
+  const wfSettings = project.wireframeSettings
+    ? { ...DEFAULT_WIREFRAME_SETTINGS, ...project.wireframeSettings }
+    : DEFAULT_WIREFRAME_SETTINGS
+  const shareView = wfSettings.shareView || (wfSettings.guestVisible ? 'both' : 'sitemap')
+  const wireframeHiddenForGuest = readOnly && (shareView === 'sitemap')
+  const sitemapHiddenForGuest = readOnly && (shareView === 'wireframe')
+
+  const shareViewInit = project.wireframeSettings?.shareView || (project.wireframeSettings?.guestVisible === false ? 'sitemap' : 'both')
+  const [activeTab, setActiveTab] = useState<ProjectTab>(readOnly && shareViewInit === "wireframe" ? "wireframe" : "sitemap");
+  const [wireframePageId, setWireframePageId] = useState<string | null>(null);
+  const [wireframeStreamHtml, setWireframeStreamHtml] = useState<string | null>(null);
+  const [wireframeStreamDone, setWireframeStreamDone] = useState(false);
+  const [wireframeGenerating, setWireframeGenerating] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [wireframeCommentsOpen, setWireframeCommentsOpen] = useState(false);
 
+  const [liveGlobalSections, setLiveGlobalSections] = useState(project.globalSections || []);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentsNodeId, setCommentsNodeId] = useState<string | null>(null);
   const [commentsNodeLabel, setCommentsNodeLabel] = useState<string | null>(null);
@@ -358,6 +377,45 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
             </span>
           )}
 
+          {/* Project tabs */}
+          <div
+            className="flex items-center rounded-lg p-0.5 ml-1.5 sm:ml-3"
+            style={{ background: "var(--bg-hover)" }}
+          >
+            {!sitemapHiddenForGuest && (
+              <button
+                onClick={() => setActiveTab("sitemap")}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  background: activeTab === "sitemap" ? "var(--elevated)" : "transparent",
+                  color: activeTab === "sitemap" ? "var(--accent)" : "var(--text-faint)",
+                  boxShadow: activeTab === "sitemap" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                <GitBranch className="w-3 h-3" />
+                <span className="hidden sm:inline">Sitemap</span>
+              </button>
+            )}
+            {!wireframeHiddenForGuest && (
+              <button
+                onClick={() => setActiveTab("wireframe")}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  background: activeTab === "wireframe" ? "var(--elevated)" : "transparent",
+                  color: activeTab === "wireframe" ? "var(--accent)" : "var(--text-faint)",
+                  boxShadow: activeTab === "wireframe" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                }}
+              >
+                {wireframeGenerating && activeTab !== "wireframe" ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Layout className="w-3 h-3" />
+                )}
+                <span className="hidden sm:inline">Wireframe</span>
+              </button>
+            )}
+          </div>
+
           {/* Undo/Redo (editors only) */}
           {!readOnly && (
             <div className="hidden sm:flex items-center gap-0.5 ml-2">
@@ -395,8 +453,20 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
 
           <ExportButton project={liveProject} />
 
-          {/* Comment mode toggle */}
-          <CommentModeButton accent={project.accent} />
+          {/* Comment mode toggle — switches behavior based on active tab */}
+          {(activeTab === "wireframe" || !readOnly) && (
+            <CommentModeButton
+              accent={project.accent}
+              isActive={activeTab === "wireframe" ? wireframeCommentsOpen : useCommentsStore.getState().commentMode}
+              onToggle={() => {
+                if (activeTab === "wireframe") {
+                  setWireframeCommentsOpen(v => !v)
+                } else {
+                  useCommentsStore.getState().toggleCommentMode()
+                }
+              }}
+            />
+          )}
 
           {/* More menu */}
           <div className="relative hidden sm:block" ref={menuRef}>
@@ -529,14 +599,28 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         </div>
       )}
 
-      {/* Canvas */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Content — both tabs always mounted, hidden via CSS to preserve state */}
+      <div className="flex-1 relative overflow-hidden" style={{ display: activeTab === "sitemap" && !sitemapHiddenForGuest ? "flex" : "none" }}>
         <Canvas
           project={liveProject}
           externalSelectedNode={selectedNode}
           onExternalSelectClear={() => selectNode(null)}
           readOnly={readOnly}
           currentUser={currentUser ? { id: currentUser.id, name: currentUser.name } : null}
+        />
+      </div>
+      <div className="flex-1 overflow-hidden" style={{ display: activeTab === "wireframe" && !wireframeHiddenForGuest ? "flex" : "none" }}>
+        <WireframeView
+          project={liveProject}
+          readOnly={readOnly}
+          currentUser={currentUser}
+          commentsOpen={wireframeCommentsOpen}
+          onCommentsOpenChange={setWireframeCommentsOpen}
+          onSelectedPageChange={setWireframePageId}
+          externalHtml={wireframeStreamHtml}
+          externalDone={wireframeStreamDone}
+          onGeneratingChange={setWireframeGenerating}
+          onGlobalSectionsChange={setLiveGlobalSections}
         />
       </div>
 
@@ -580,9 +664,47 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       {!isDemo && !readOnly && (
         <AiBar
           projectId={project.id}
+          projectName={project.name}
           chatMessages={aiChatMessages}
           onChatMessage={handleAiChatMessage}
           onOpenChat={() => setAiChatOpen(true)}
+          wireframeContext={activeTab === "wireframe" && wireframePageId ? (() => {
+            const page = nodes.find(n => n.id === wireframePageId);
+            if (!page) return null;
+            const gs = liveGlobalSections;
+            return {
+              pageId: page.id,
+              pageLabel: page.label,
+              pageType: page.type,
+              description: page.description || "",
+              blocks: (page.zoningBlocks || []).map(b => ({ label: b.label, skin: b.skin, height: b.height })),
+              currentHtml: page.zoningHtml,
+              hasGlobalHeader: gs.some(s => s.slot === "header"),
+              hasGlobalFooter: gs.some(s => s.slot === "footer"),
+              headerHtml: gs.find(s => s.slot === "header")?.html,
+              footerHtml: gs.find(s => s.slot === "footer")?.html,
+              onSaveGlobalHtml: (slot: "header" | "footer", _vp: string, html: string) => {
+                const updated = gs.map(s => s.slot === slot ? { ...s, html } : s);
+                const csrf = document.cookie.match(/arbo_csrf=([^;]+)/)?.[1];
+                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                if (csrf) headers["x-csrf-token"] = csrf;
+                fetch(`/api/projects/${project.id}`, {
+                  method: "PUT",
+                  headers,
+                  body: JSON.stringify({ globalSections: updated }),
+                });
+              },
+            };
+          })() : null}
+          onWireframeResult={activeTab === "wireframe" && wireframePageId ? (html, done) => {
+            setWireframeStreamHtml(html);
+            setWireframeStreamDone(done);
+            if (done) {
+              const updateNodeData = useCanvasStore.getState().updateNodeData;
+              updateNodeData(wireframePageId, { zoningHtml: html });
+              setTimeout(() => { setWireframeStreamHtml(null); setWireframeStreamDone(false); }, 100);
+            }
+          } : undefined}
         />
       )}
     </div>

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Link2, Lock, Check, Plus, Loader2, Trash2, Eye } from "lucide-react";
-import type { Project } from "@/lib/types";
+import { X, Link2, Lock, Check, Plus, Loader2, Trash2, Eye, GitBranch, Layout, Layers } from "lucide-react";
+import type { Project, ShareView } from "@/lib/types";
 import { Events } from "@/lib/posthog";
 
 interface ShareLink {
@@ -35,6 +35,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
   const [newPassword, setNewPassword] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [newShareView, setNewShareView] = useState<ShareView>("both");
 
   useEffect(() => {
     if (open) {
@@ -54,6 +55,19 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (csrf) headers["x-csrf-token"] = csrf;
 
+    // Save shareView to project wireframeSettings
+    await fetch(`/api/projects/${project.id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({
+        wireframeSettings: {
+          ...(project.wireframeSettings || {}),
+          shareView: newShareView,
+          guestVisible: newShareView !== "sitemap",
+        },
+      }),
+    });
+
     const res = await fetch(`/api/projects/${project.id}/share`, {
       method: "POST",
       headers,
@@ -67,6 +81,7 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
       const link = await res.json();
       setLinks((prev) => [link, ...prev]);
       setNewPassword("");
+      setNewShareView("both");
       setShowCreate(false);
       Events.shareLinkCreated(!!newPassword.trim(), false);
     }
@@ -147,6 +162,38 @@ export default function ShareModal({ project, open, onClose }: ShareModalProps) 
                 </button>
               ) : (
                 <div className="p-3 rounded-lg space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+                  {/* Share view selector */}
+                  <div>
+                    <label className="text-2xs block mb-1.5" style={{ color: "var(--text-muted)" }}>
+                      Contenu partagé
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {([
+                        { value: "both" as ShareView, label: "Tout", icon: Layers },
+                        { value: "sitemap" as ShareView, label: "Sitemap", icon: GitBranch },
+                        { value: "wireframe" as ShareView, label: "Wireframes", icon: Layout },
+                      ]).map(({ value, label, icon: Icon }) => {
+                        const active = newShareView === value
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => setNewShareView(value)}
+                            className="flex items-center justify-center gap-1.5 h-8 rounded-md text-2xs font-medium transition-all"
+                            style={{
+                              background: active ? `${project.accent}15` : "transparent",
+                              color: active ? project.accent : "var(--text-muted)",
+                              border: `1px solid ${active ? project.accent : "var(--line)"}`,
+                            }}
+                          >
+                            <Icon className="w-3 h-3" />
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Password */}
                   <div>
                     <label className="text-2xs block mb-1.5" style={{ color: "var(--text-muted)" }}>
                       Mot de passe (optionnel)

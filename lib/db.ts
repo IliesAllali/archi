@@ -119,8 +119,14 @@ function createDb(): Database.Database {
       CREATE INDEX IF NOT EXISTS idx_comments_node    ON comments(node_id);
     `)
 
-    // Add spatial comment fields if missing (auto-migration for existing DBs)
+    // Add annotation fields to comments (auto-migration for existing DBs)
     const commentCols = db.prepare("PRAGMA table_info(comments)").all() as { name: string }[]
+    if (!commentCols.some(c => c.name === "section")) {
+      db.exec(`ALTER TABLE comments ADD COLUMN section TEXT`)
+    }
+    if (!commentCols.some(c => c.name === "tag")) {
+      db.exec(`ALTER TABLE comments ADD COLUMN tag TEXT`)
+    }
     if (!commentCols.some(c => c.name === "offset_x")) {
       db.exec("ALTER TABLE comments ADD COLUMN offset_x REAL DEFAULT 0")
       db.exec("ALTER TABLE comments ADD COLUMN offset_y REAL DEFAULT 0")
@@ -145,6 +151,17 @@ function createDb(): Database.Database {
         SELECT id, 20, 0, ${now} FROM users
         WHERE id NOT IN (SELECT user_id FROM ai_credits)
       `)
+    }
+    // Add global_sections column to projects if missing (auto-migration)
+    const projectsExist = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='projects'").get()
+    if (projectsExist) {
+      const cols = db.prepare("PRAGMA table_info(projects)").all() as { name: string }[]
+      if (!cols.some(c => c.name === "global_sections")) {
+        db.exec("ALTER TABLE projects ADD COLUMN global_sections TEXT")
+      }
+      if (!cols.some(c => c.name === "wireframe_settings")) {
+        db.exec("ALTER TABLE projects ADD COLUMN wireframe_settings TEXT")
+      }
     }
   } catch {
     // Migrations may fail at build time (no full schema) — that's OK
@@ -297,6 +314,8 @@ export interface DbProject {
   version: string
   owner_id: string
   archived: number
+  global_sections: string | null // JSON: GlobalSection[]
+  wireframe_settings: string | null // JSON: WireframeSettings
   created_at: number
   updated_at: number
 }

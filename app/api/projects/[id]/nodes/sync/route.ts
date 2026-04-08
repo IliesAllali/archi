@@ -102,7 +102,7 @@ export async function PUT(
       const siblings = childrenMap.get(pid) ?? [];
       const position = siblings.indexOf(node.id);
 
-      const { id, children, position: _pos, ...dataFields } = node;
+      const { id, children, position: _pos, readOnly: _ro, _wfRealHeight: _wfh, ...dataFields } = node as SiteNode & { readOnly?: boolean; _wfRealHeight?: number };
       const sanitizedData = {
         ...dataFields,
         label: sanitizeText(dataFields.label) || "Sans titre",

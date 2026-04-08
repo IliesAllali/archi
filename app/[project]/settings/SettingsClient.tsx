@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles } from "lucide-react"
+import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles, PenTool } from "lucide-react"
 import Logo from "@/components/Logo"
 import GeneralTab from "./tabs/GeneralTab"
 import MembersTab from "./tabs/MembersTab"
@@ -11,6 +11,7 @@ import ShareTab from "./tabs/ShareTab"
 import TokensTab from "./tabs/TokensTab"
 import DangerTab from "./tabs/DangerTab"
 import AiConnectTab from "./tabs/AiConnectTab"
+import WireframeTab from "./tabs/WireframeTab"
 
 interface ProjectMeta {
   id: string
@@ -24,6 +25,7 @@ interface ProjectMeta {
 
 const TABS = [
   { id: "general", label: "Général", icon: Settings },
+  { id: "wireframe", label: "Wireframes", icon: PenTool },
   { id: "ai", label: "Connecter une IA", icon: Sparkles },
   { id: "members", label: "Membres", icon: Users },
   { id: "share", label: "Liens de partage", icon: Link2 },
@@ -102,7 +104,7 @@ export default function SettingsClient({
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Tab nav */}
         <div
           className="flex gap-1 mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0"
@@ -131,6 +133,9 @@ export default function SettingsClient({
         {/* Tab content */}
         {activeTab === "general" && (
           <GeneralTab project={project} onNameChange={setProjectName} />
+        )}
+        {activeTab === "wireframe" && (
+          <WireframeTab projectId={project.id} />
         )}
         {activeTab === "ai" && (
           <AiConnectTab projectId={project.id} />

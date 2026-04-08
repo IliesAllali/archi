@@ -1,9 +1,21 @@
 "use client";
 
 import { memo, useState, useRef, useEffect, useCallback } from "react";
+import { create } from "zustand";
 import { Handle, Position, type NodeProps } from "reactflow";
-import type { SiteNode, ZoningType, ZoningBlock } from "@/lib/types";
+import type { SiteNode, NodeData, ZoningType, ZoningBlock } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
+import { composeWireframe } from "@/lib/wireframe-compose";
+
+/* ─── Lightweight store for wireframe preview heights (no undo, no save) ─── */
+interface WfHeightStore {
+  heights: Record<string, number>;
+  setHeight: (nodeId: string, h: number) => void;
+}
+const useWfHeightStore = create<WfHeightStore>((set) => ({
+  heights: {},
+  setHeight: (nodeId, h) => set((s) => ({ heights: { ...s.heights, [nodeId]: h } })),
+}));
 import { usePresenceStore } from "@/hooks/usePresenceStore";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -118,10 +130,53 @@ function resolveExpandedSections(type: string, zoningExpanded?: boolean, zoningB
   return null;
 }
 
-export function getCardHeight(type: string, label = "", zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): number {
-  const resolved = resolveExpandedSections(type, zoningExpanded, zoningBlocks);
-  if (resolved?.blocks) return blocksHeight(resolved.blocks);
-  if (resolved?.sections) return sectionsHeight(resolved.sections);
+const WIREFRAME_SCALE = 0.13;
+const WIREFRAME_SRC_WIDTH = 1440;
+
+/** Estimate wireframe height from HTML length — real height arrives via postMessage shortly after */
+function estimateWireframeHeight(html: string): number {
+  // Rough heuristic: 1 char ≈ 0.04px at scale, with a floor and ceiling
+  const estimated = Math.round(html.length * 0.035);
+  return Math.max(150, Math.min(estimated, 600));
+}
+
+/** Injects a script that reports the real scrollHeight to the parent, retrying to ensure it fires */
+function withHeightReporter(html: string, nodeId: string): string {
+  const script = `<script>
+(function(){
+  var sent = false;
+  function report() {
+    var h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, document.body.offsetHeight);
+    if (h > 50) {
+      window.parent.postMessage({type:'arbo-node-wf-height',nodeId:'${nodeId}',height:h},'*');
+      sent = true;
+    }
+  }
+  report();
+  window.addEventListener('load', report);
+  // Retry a few times in case images/fonts shift layout
+  setTimeout(report, 100);
+  setTimeout(report, 500);
+  setTimeout(report, 1500);
+})();
+<\/script>`;
+  if (html.includes('</body>')) return html.replace('</body>', script + '</body>');
+  return html + script;
+}
+
+export function getCardHeight(type: string, label = "", zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[], zoningCanvasMode?: string, zoningHtml?: string, nodeId?: string): number {
+  // Wireframe mode: use measured height if available, otherwise estimate
+  if (zoningCanvasMode === "wireframe" && zoningHtml) {
+    const measured = nodeId ? useWfHeightStore.getState().heights[nodeId] : undefined;
+    const previewH = measured || estimateWireframeHeight(zoningHtml);
+    return TITLE_HEIGHT + previewH + CARD_PAD * 2 + 4;
+  }
+  // Zoning mode or legacy expanded
+  if (zoningCanvasMode === "zoning" || zoningExpanded) {
+    const resolved = resolveExpandedSections(type, true, zoningBlocks);
+    if (resolved?.blocks) return blocksHeight(resolved.blocks);
+    if (resolved?.sections) return sectionsHeight(resolved.sections);
+  }
   // Compact card: estimate line count from label length
   // font-size 11px in ~72px usable width ≈ ~9 chars per line
   const usablePx = CARD_WIDTH - 38;
@@ -615,10 +670,52 @@ function AddNodeButtons({ nodeId, isHome }: { nodeId: string; isHome: boolean })
 
 function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>) {
   const isHome = data.type === "home";
-  const resolved = resolveExpandedSections(data.type, data.zoningExpanded, data.zoningBlocks);
-  const showExpanded = !!resolved;
-  const cardH = getCardHeight(data.type, data.label, data.zoningExpanded, data.zoningBlocks);
-  const cardW = getCardWidth(data.type, data.zoningExpanded);
+  const canvasMode = data.zoningCanvasMode;
+  const globalSections = useCanvasStore((s) => s.globalSections);
+  const wireframeSettings = useCanvasStore((s) => s.wireframeSettings);
+  const showWireframePreview = canvasMode === "wireframe" && !!data.zoningHtml;
+  const showZoningBricks = canvasMode === "zoning" || (!canvasMode && data.zoningExpanded);
+  const resolved = showZoningBricks ? resolveExpandedSections(data.type, true, data.zoningBlocks) : null;
+  const showExpanded = showWireframePreview || !!resolved;
+
+  // Wireframe height: measured from iframe after load
+  const measuredH = useWfHeightStore((s) => s.heights[id]);
+  const setWfHeight = useWfHeightStore((s) => s.setHeight);
+  const wfIframeRef = useRef<HTMLIFrameElement>(null);
+
+  const composedHtml = showWireframePreview
+    ? composeWireframe(data.zoningHtml!, globalSections, wireframeSettings)
+    : "";
+
+  // Measure in two steps: first render at 1px height to get true scrollHeight, then resize
+  const handleIframeLoad = useCallback(() => {
+    const iframe = wfIframeRef.current;
+    if (!iframe) return;
+    try {
+      // Shrink iframe to force scrollHeight to reflect actual content
+      iframe.style.height = "1px";
+      const doc = iframe.contentDocument;
+      if (!doc) return;
+      // Force reflow
+      const h = doc.documentElement.scrollHeight;
+      if (h > 50) {
+        const scaled = Math.round(h * WIREFRAME_SCALE);
+        setWfHeight(id, scaled);
+      }
+      // Restore full height for display
+      const displayH = useWfHeightStore.getState().heights[id] || estimateWireframeHeight(composedHtml);
+      iframe.style.height = `${displayH / WIREFRAME_SCALE}px`;
+    } catch { /* ignore */ }
+  }, [id, setWfHeight, composedHtml]);
+
+  const wfPreviewH = showWireframePreview
+    ? (measuredH || estimateWireframeHeight(composedHtml))
+    : 0;
+
+  const cardH = showWireframePreview
+    ? TITLE_HEIGHT + wfPreviewH + CARD_PAD * 2 + 4
+    : getCardHeight(data.type, data.label, data.zoningExpanded, data.zoningBlocks, data.zoningCanvasMode, data.zoningHtml, id);
+  const cardW = getCardWidth(data.type, showExpanded);
   const groupColor = getGroupColor(data.group);
   const isUtility = data.priority === "utility";
   const [hovered, setHovered] = useState(false);
@@ -674,7 +771,7 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
 
       <div
         className={cn(
-          "rounded overflow-visible cursor-pointer group relative",
+          "rounded overflow-visible cursor-pointer group relative flex flex-col",
           "transition-all duration-200 ease-out",
           "hover:translate-y-[-1px]",
           dragging && "opacity-50",
@@ -693,7 +790,7 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Colored top strip */}
+        {/* Colored top strip — card is flex-col so title fills remaining height */}
         {showExpanded && <div style={{ height: 4, background: groupColor }} />}
         {!showExpanded &&
           (coloredStripBg ? (
@@ -706,7 +803,7 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
         <div
           className={cn("flex justify-between gap-1 px-[7px]", showExpanded ? "items-center" : "items-start")}
           style={{
-            ...(showExpanded ? { height: TITLE_HEIGHT } : { padding: "7px 7px" }),
+            ...(showExpanded ? { height: TITLE_HEIGHT } : { padding: "7px 7px", flex: 1 }),
             background: isHome && isAccentVar ? "var(--accent-muted)" : titleTint,
             borderBottom: isHome && isAccentVar ? "1px solid var(--accent-strong)" : "1px solid var(--card-title-border)",
           }}
@@ -743,8 +840,28 @@ function SiteNodeComponent({ data, selected, id, dragging }: NodeProps<SiteNode>
           )}
         </div>
 
-        {/* Section bricks — expanded wireframe (custom blocks or type-based) */}
-        {showExpanded && (
+        {/* Wireframe preview or section bricks */}
+        {showWireframePreview ? (
+          <div style={{ padding: CARD_PAD, height: wfPreviewH, overflow: "hidden", position: "relative" }}>
+            <iframe
+              ref={wfIframeRef}
+              srcDoc={composedHtml}
+              sandbox="allow-same-origin"
+              onLoad={handleIframeLoad}
+              className="border-0 pointer-events-none"
+              style={{
+                transform: `scale(${WIREFRAME_SCALE})`,
+                transformOrigin: "top left",
+                width: `${WIREFRAME_SRC_WIDTH}px`,
+                height: `${wfPreviewH / WIREFRAME_SCALE}px`,
+                position: "absolute",
+                top: CARD_PAD,
+                left: CARD_PAD,
+              }}
+              title="Wireframe"
+            />
+          </div>
+        ) : resolved && (
           <div className="flex flex-col" style={{ padding: CARD_PAD, gap: SECTION_GAP }}>
             {resolved!.blocks
               ? resolved!.blocks.map((block) => {

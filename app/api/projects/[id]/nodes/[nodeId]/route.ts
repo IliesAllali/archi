@@ -48,6 +48,8 @@ export async function PUT(
     ...(body.zoningBlocks !== undefined && { zoningBlocks: body.zoningBlocks }),
     ...(body.zoningExpanded !== undefined && { zoningExpanded: body.zoningExpanded }),
     ...(body.zoningHtml !== undefined && { zoningHtml: body.zoningHtml }),
+    ...(body.annotations !== undefined && { annotations: body.annotations }),
+    ...(body.zoningCanvasMode !== undefined && { zoningCanvasMode: body.zoningCanvasMode }),
     ...(body.cta !== undefined && { cta: sanitizeTextArray(body.cta) }),
     ...(body.tags !== undefined && { tags: sanitizeTextArray(body.tags) }),
   };

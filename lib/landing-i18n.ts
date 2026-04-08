@@ -48,7 +48,7 @@ const t = {
         subs: [
           { id: "1.1", title: "Text to sitemap", desc: "One sentence in, full page tree out. AI understands context, page types, and information architecture." },
           { id: "1.2", title: "Smart structure", desc: "Pages are organized logically with types, descriptions, and parent-child relationships. Ready for design handoff." },
-          { id: "1.3", title: "Bring your own key", desc: "Use included AI credits or plug your own API key. OpenAI, Anthropic, Mistral, or Google. Unlimited generation with BYOK." },
+          { id: "1.3", title: "Bring your own key", desc: "Use included AI credits or plug your own API key. OpenAI, Anthropic, or Mistral. Unlimited generation with BYOK." },
         ],
       },
       {
@@ -109,7 +109,7 @@ const t = {
         },
         {
           q: "What happens when I run out of AI credits?",
-          a: "You can plug your own API key (OpenAI, Anthropic, Mistral, or Google) and keep using AI generation with no limits. BYOK is free forever.",
+          a: "You can plug your own API key (OpenAI, Anthropic, or Mistral) and keep using AI generation with no limits. BYOK is free forever.",
         },
         {
           q: "Can my client view the sitemap without an account?",
@@ -117,7 +117,7 @@ const t = {
         },
         {
           q: "How is Arbo different from Octopus.do or FlowMapp?",
-          a: "AI generation. Other sitemap tools make you drag boxes manually. Arbo generates your entire website structure from a sentence and lets you edit it with natural language. Octopus.do starts at $29/month, FlowMapp at $29/month. Arbo is free to start.",
+          a: "AI generation. Other sitemap tools make you drag boxes manually. Arbo generates your entire website structure from a sentence and lets you edit it with natural language. Octopus.do starts at $16/month, FlowMapp at $15/month. Arbo is free to start.",
         },
         {
           q: "Can I use Arbo for client presentations?",
@@ -177,7 +177,7 @@ const t = {
         subs: [
           { id: "1.1", title: "Du texte au sitemap", desc: "Une phrase en entrée, un arbre complet en sortie. L'IA comprend le contexte, les types de pages et l'architecture d'information." },
           { id: "1.2", title: "Structure intelligente", desc: "Les pages sont organisées logiquement avec types, descriptions et relations parent-enfant. Prêt pour le handoff design." },
-          { id: "1.3", title: "Apporte ta propre clé", desc: "Utilise les crédits IA inclus ou branche ta propre clé API. OpenAI, Anthropic, Mistral ou Google. Génération illimitée en BYOK." },
+          { id: "1.3", title: "Apporte ta propre clé", desc: "Utilise les crédits IA inclus ou branche ta propre clé API. OpenAI, Anthropic ou Mistral. Génération illimitée en BYOK." },
         ],
       },
       {
@@ -238,7 +238,7 @@ const t = {
         },
         {
           q: "Et quand j'ai plus de crédits IA ?",
-          a: "Tu peux brancher ta propre clé API (OpenAI, Anthropic, Mistral ou Google) et continuer à utiliser la génération IA sans limite. Le BYOK est gratuit pour toujours.",
+          a: "Tu peux brancher ta propre clé API (OpenAI, Anthropic ou Mistral) et continuer à utiliser la génération IA sans limite. Le BYOK est gratuit pour toujours.",
         },
         {
           q: "Mon client peut voir le sitemap sans créer de compte ?",
@@ -246,7 +246,7 @@ const t = {
         },
         {
           q: "En quoi c'est différent d'Octopus.do ou FlowMapp ?",
-          a: "La génération IA. Les autres outils de sitemap te font glisser des boîtes à la main. Arbo génère toute l'arborescence à partir d'une phrase et te laisse l'éditer en langage naturel. Octopus.do démarre à 29$/mois, FlowMapp à 29$/mois. Arbo est gratuit pour commencer.",
+          a: "La génération IA. Les autres outils de sitemap te font glisser des boîtes à la main. Arbo génère toute l'arborescence à partir d'une phrase et te laisse l'éditer en langage naturel. Octopus.do démarre à 16$/mois, FlowMapp à 15$/mois. Arbo est gratuit pour commencer.",
         },
         {
           q: "Je peux utiliser Arbo pour des présentations client ?",

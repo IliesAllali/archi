@@ -405,6 +405,10 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                     expanded={node.zoningExpanded ?? false}
                     html={node.zoningHtml}
                     accent={project.accent}
+                    projectName={project.name}
+                    description={node.description || ""}
+                    annotations={node.annotations || []}
+                    canvasMode={node.zoningCanvasMode}
                     onChange={handleFieldChange}
                   />
                 </SectionAnimated>
