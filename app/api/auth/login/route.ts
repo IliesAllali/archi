@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as DbUser | undefined
 
-  if (!user || !compareSync(password, user.password_hash)) {
+  if (!user || !user.password_hash || !compareSync(password, user.password_hash)) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 

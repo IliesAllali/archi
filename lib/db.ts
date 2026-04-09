@@ -98,6 +98,11 @@ function createDb(): Database.Database {
       if (!cols.some(c => c.name === "avatar")) {
         db.exec("ALTER TABLE users ADD COLUMN avatar TEXT")
       }
+      // Google OAuth: add google_id column if missing
+      if (!cols.some(c => c.name === "google_id")) {
+        db.exec("ALTER TABLE users ADD COLUMN google_id TEXT")
+        db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
+      }
     }
 
     // Ensure comments table exists (auto-migration)
@@ -324,10 +329,11 @@ export interface DbUser {
   id: string
   email: string
   email_verified: number
-  password_hash: string
+  password_hash: string | null
   name: string
   color: string
   role_global: string
+  google_id: string | null
   created_at: number
   updated_at: number
 }
