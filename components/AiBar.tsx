@@ -2,8 +2,139 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem } from "lucide-react";
+import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem, Plus, Pencil, Trash, ArrowRight, MessageSquare, ChevronDown } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
+
+/* ── Inline response card ─────────────────────────────────────────────────── */
+
+interface InlineResponse {
+  id: string;
+  type: "edit" | "chat";
+  summary: string;
+  actions?: { type: string; label?: string }[];
+  timestamp: number;
+}
+
+const ACTION_ICONS: Record<string, typeof Plus> = { add: Plus, update: Pencil, delete: Trash, move: ArrowRight };
+const ACTION_COLORS: Record<string, { bg: string; text: string }> = {
+  add: { bg: "rgba(34,197,94,0.1)", text: "#22c55e" },
+  delete: { bg: "rgba(239,68,68,0.1)", text: "#ef4444" },
+  update: { bg: "var(--accent-muted)", text: "var(--accent)" },
+  move: { bg: "rgba(59,130,246,0.1)", text: "#3b82f6" },
+};
+
+function InlineResponseCard({ response, onDismiss }: { response: InlineResponse; onDismiss: () => void }) {
+  const [expanded, setExpanded] = useState(true);
+  const hasActions = response.actions && response.actions.length > 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.98 }}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="mx-3 sm:mx-4 mb-2 rounded-lg overflow-hidden"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-3 py-2 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+        style={{ borderBottom: expanded ? "1px solid var(--line)" : "none" }}
+      >
+        <div className="flex items-center gap-2">
+          {response.type === "edit" ? (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--success-bg, #10b98115)", color: "var(--success-text, #10b981)" }}>
+              <Check className="w-3 h-3" />
+              {response.actions?.length || 0} modif{(response.actions?.length || 0) > 1 ? "s" : ""}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}>
+              <MessageSquare className="w-3 h-3" />
+              Réponse
+            </div>
+          )}
+          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+            {new Date(response.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.15 }}>
+            <ChevronDown className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+          </motion.div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+            className="p-0.5 rounded transition-colors hover:bg-black/5"
+            style={{ color: "var(--text-faint)" }}
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden"
+          >
+            {/* Action pills */}
+            {hasActions && (
+              <div className="flex flex-wrap gap-1 px-3 pt-2.5">
+                {response.actions!.slice(0, 10).map((a, i) => {
+                  const Icon = ACTION_ICONS[a.type] || Pencil;
+                  const colors = ACTION_COLORS[a.type] || ACTION_COLORS.update;
+                  return (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: colors.bg, color: colors.text }}
+                    >
+                      <Icon className="w-2.5 h-2.5" />
+                      {a.label || "..."}
+                    </span>
+                  );
+                })}
+                {response.actions!.length > 10 && (
+                  <span className="text-[10px] px-1.5 py-0.5" style={{ color: "var(--text-faint)" }}>
+                    +{response.actions!.length - 10}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Summary text */}
+            {response.summary && (
+              <div className="px-3 py-2.5 ai-response-md">
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p className="text-xs leading-[1.6] mb-2 last:mb-0" style={{ color: "var(--text-primary)" }}>{children}</p>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    ul: ({ children }) => <ul className="list-disc pl-3.5 mb-2 space-y-0.5 text-xs" style={{ color: "var(--text-primary)" }}>{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-3.5 mb-2 space-y-0.5 text-xs" style={{ color: "var(--text-primary)" }}>{children}</ol>,
+                    li: ({ children }) => <li className="text-xs leading-[1.5]">{children}</li>,
+                    code: ({ children }) => <code className="text-[10px] px-1 py-0.5 rounded font-mono" style={{ background: "var(--surface-hover)", color: "var(--accent)" }}>{children}</code>,
+                  }}
+                >
+                  {response.summary}
+                </ReactMarkdown>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -58,9 +189,9 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
   const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
+  const [lastResponse, setLastResponse] = useState<InlineResponse | null>(null);
   const [speed, setSpeed] = useState<AiSpeed>("fast");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initProject = useCanvasStore((s) => s.initProject);
@@ -87,7 +218,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
     }
     if (open) {
       setError("");
-      setSuccess("");
+      setLastResponse(null);
       setSpeed(getStoredSpeed());
       if (!wireframeContext) setWireframeTarget("page");
     }
@@ -108,9 +239,9 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
     setAttachedFiles([]);
     setLoading(true);
     setError("");
-    setSuccess("");
     setStatusMsg("");
     setActionLog([]);
+    setLastResponse(null);
 
     // ─── Wireframe mode ───
     if (wireframeContext && onWireframeResult) {
@@ -188,9 +319,12 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
             if (wrapperMatch) clean = wrapperMatch[1].trim();
 
             wireframeContext.onSaveGlobalHtml!(globalSlot, "desktop", clean);
-            setSuccess(`${globalSlot === "header" ? "Header" : "Footer"} mis \u00e0 jour`);
+            setLastResponse({
+              id: `wf-${Date.now()}`, type: "edit",
+              summary: `${globalSlot === "header" ? "Header" : "Footer"} global mis \u00e0 jour`,
+              timestamp: Date.now(),
+            });
             setPrompt("");
-            setTimeout(() => setSuccess(""), 3000);
           }
         } catch {
           setError("Erreur r\u00e9seau");
@@ -268,9 +402,12 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
 
         if (fullHtml.trim()) {
           onWireframeResult(fullHtml.trim(), true);
-          setSuccess(wireframeContext.currentHtml ? "Wireframe mis \u00e0 jour" : "Wireframe g\u00e9n\u00e9r\u00e9");
+          setLastResponse({
+            id: `wf-${Date.now()}`, type: "edit",
+            summary: wireframeContext.currentHtml ? "Wireframe mis \u00e0 jour" : "Wireframe g\u00e9n\u00e9r\u00e9",
+            timestamp: Date.now(),
+          });
           setPrompt("");
-          setTimeout(() => setSuccess(""), 3000);
         }
       } catch {
         setError("Erreur r\u00e9seau");
@@ -360,7 +497,15 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     timestamp: now + 1,
                   };
                   onChatMessage(userMsg, aiMsg);
-                  onOpenChat();
+
+                  // Show inline response card
+                  setLastResponse({
+                    id: aiMsg.id,
+                    type: "chat",
+                    summary: data.summary || "",
+                    timestamp: now,
+                  });
+
                   setPrompt("");
                   setStatusMsg("");
                   Events.aiActionPerformed("chat", "built-in");
@@ -392,13 +537,19 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     applied: true,
                   };
                   onChatMessage(userMsg, aiMsg);
-                  onOpenChat();
 
-                  setSuccess(summary);
+                  // Show inline response card (not the side panel)
+                  setLastResponse({
+                    id: aiMsg.id,
+                    type: "edit",
+                    summary,
+                    actions: localActions,
+                    timestamp: now,
+                  });
+
                   setPrompt("");
                   setStatusMsg("");
                   Events.aiActionPerformed("edit_tree", "built-in");
-                  setTimeout(() => setSuccess(""), 2000);
                 }
               } else if (currentEvent === "error") {
                 setError(data.error);
@@ -547,24 +698,6 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               </div>
             )}
 
-            {/* Success message */}
-            <AnimatePresence mode="wait">
-              {success && (
-                <motion.div
-                  key="success"
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                  className="px-4 py-2.5 flex items-center gap-2"
-                  style={{ background: "var(--success-bg)" }}
-                >
-                  <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--success-text)" }} />
-                  <p className="text-2xs" style={{ color: "var(--success-text)" }}>{success}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Error message */}
             {error && (
               <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "var(--error-glow)" }}>
@@ -572,6 +705,18 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 <p className="text-2xs" style={{ color: "var(--error-text)" }}>{error}</p>
               </div>
             )}
+
+            {/* Inline response card */}
+            <AnimatePresence>
+              {lastResponse && !loading && (
+                <div className="pt-2">
+                  <InlineResponseCard
+                    response={lastResponse}
+                    onDismiss={() => setLastResponse(null)}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
 
             {/* Input area */}
             <div className="px-3 sm:px-4 py-2.5 sm:py-3">
