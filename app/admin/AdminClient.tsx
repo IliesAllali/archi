@@ -35,6 +35,19 @@ interface UserRow {
   createdAt: number;
 }
 
+interface ProjectRow {
+  id: string;
+  slug: string;
+  name: string;
+  client: string | null;
+  version: string;
+  owner_name: string | null;
+  owner_email: string | null;
+  node_count: number;
+  created_at: number;
+  updated_at: number;
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -72,6 +85,7 @@ function StatCard({
 export default function AdminClient() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,14 +93,17 @@ export default function AdminClient() {
       .split("; ")
       .find((c) => c.startsWith("arbo_csrf="))
       ?.split("=")[1];
+    const h = { "x-csrf-token": csrfToken || "" };
 
     Promise.all([
-      fetch("/api/admin/stats", { headers: { "x-csrf-token": csrfToken || "" } }).then((r) => r.json()),
-      fetch("/api/admin/users", { headers: { "x-csrf-token": csrfToken || "" } }).then((r) => r.json()),
+      fetch("/api/admin/stats", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/users", { headers: h }).then((r) => r.json()),
+      fetch("/api/admin/projects", { headers: h }).then((r) => r.json()),
     ])
-      .then(([s, u]) => {
+      .then(([s, u, p]) => {
         setStats(s);
         setUsers(Array.isArray(u) ? u : []);
+        setProjects(Array.isArray(p?.data) ? p.data : []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -202,6 +219,74 @@ export default function AdminClient() {
                         month: "short",
                         year: "numeric",
                       })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <div
+          className="rounded-xl overflow-hidden mt-6"
+          style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+        >
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+            <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              Tous les projets ({projects.length})
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--line)" }}>
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Projet</th>
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Owner</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Pages</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Version</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Modifié</th>
+                  <th className="text-center px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Lien</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((p) => (
+                  <tr key={p.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                    <td className="px-4 py-2.5">
+                      <div>
+                        <span className="font-medium" style={{ color: "var(--text-primary)" }}>
+                          {p.name}
+                        </span>
+                        {p.client && (
+                          <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded" style={{ background: "var(--bg-hover)", color: "var(--text-faint)" }}>
+                            {p.client}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
+                      {p.owner_name || p.owner_email || "system"}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>
+                      {p.node_count}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono" style={{ color: "var(--text-faint)" }}>
+                      {p.version}
+                    </td>
+                    <td className="px-4 py-2.5 text-right" style={{ color: "var(--text-faint)" }}>
+                      {new Date(p.updated_at).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </td>
+                    <td className="px-4 py-2.5 text-center">
+                      <Link
+                        href={`/${p.slug}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors hover:brightness-110"
+                        style={{ background: "var(--accent)", color: "#fff" }}
+                      >
+                        Ouvrir
+                      </Link>
                     </td>
                   </tr>
                 ))}
