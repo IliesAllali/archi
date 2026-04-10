@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Send, Trash2, User, Check, Loader2, Plus, Pencil, Trash, ArrowRight } from "lucide-react";
+import { Sparkles, X, Trash2, User, Check, Loader2, Plus, Pencil, Trash, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
 
@@ -201,9 +201,9 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
             </div>
             <div className="px-3 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
               {msg.applied ? (
-                <div className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "var(--accent)" }}>
-                  <Check className="w-3.5 h-3.5" />
-                  {msg.pendingActions.length} modification(s) appliquée(s)
+                <div className="flex items-center gap-2 text-[12px] font-medium rounded-md px-2.5 py-1.5" style={{ background: "var(--success-bg, #10b98115)", color: "var(--success-text, #10b981)" }}>
+                  <Check className="w-3.5 h-3.5 shrink-0" />
+                  <span>{msg.pendingActions.length} modification{msg.pendingActions.length > 1 ? "s" : ""} appliqu\u00e9e{msg.pendingActions.length > 1 ? "s" : ""}</span>
                 </div>
               ) : (
                 <button

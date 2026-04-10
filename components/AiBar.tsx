@@ -370,12 +370,35 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     const project = await projectRes.json();
                     initProject(project);
                   }
-                  const summary = data.summary || `${data.total} modification(s) appliquée(s)`;
+                  const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
+
+                  // Send to chat panel (persistent history)
+                  const now = Date.now();
+                  const userMsg: ChatMessage = {
+                    id: `u-${now}`,
+                    role: "user",
+                    content: currentPrompt,
+                    timestamp: now,
+                  };
+                  const aiMsg: ChatMessage = {
+                    id: `a-${now}`,
+                    role: "assistant",
+                    content: summary,
+                    timestamp: now + 1,
+                    pendingActions: localActions.map(a => ({
+                      action: a.type as "add" | "update" | "delete" | "move",
+                      label: a.label,
+                    })),
+                    applied: true,
+                  };
+                  onChatMessage(userMsg, aiMsg);
+                  onOpenChat();
+
                   setSuccess(summary);
                   setPrompt("");
                   setStatusMsg("");
                   Events.aiActionPerformed("edit_tree", "built-in");
-                  setTimeout(() => setSuccess(""), 4000);
+                  setTimeout(() => setSuccess(""), 2000);
                 }
               } else if (currentEvent === "error") {
                 setError(data.error);
