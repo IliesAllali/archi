@@ -146,10 +146,13 @@ export async function POST(req: NextRequest) {
           if (data.description) node.description = data.description;
           if (data.cta?.length) node.cta = data.cta;
           if (data.tags?.length) node.tags = data.tags;
+          if (data.group) node.group = data.group;
+          if (data.notes) node.notes = data.notes;
           if (data.zoningBlocks?.length) {
             node.zoningBlocks = data.zoningBlocks;
             node.zoningExpanded = !!data.zoningExpanded;
           }
+          if (data.entryPoints?.length) node.entryPoints = data.entryPoints;
           return node;
         });
 
@@ -164,6 +167,12 @@ export async function POST(req: NextRequest) {
           attachments
         );
         const aiLabel = getProviderLabel(useCredits ? "anthropic" : provider);
+
+        // Log AI response for debugging
+        console.log(`[AI Edit] project=${projectId} type=${result.type} actions=${result.actions.length} summary="${result.summary?.slice(0, 100)}"`);
+        if (result.actions.length > 0) {
+          console.log(`[AI Edit] Actions:`, result.actions.map(a => `${a.action}${a.node_id ? `(${a.node_id})` : `(${a.temp_id})`} ${a.label || ""}`).join(", "));
+        }
 
         // Chat mode: AI answered a question instead of making modifications
         if (result.type === "chat") {
@@ -229,6 +238,8 @@ export async function POST(req: NextRequest) {
               const raw = action as unknown as Record<string, unknown>;
               if (raw.cta) nodeData.cta = raw.cta;
               if (raw.tags) nodeData.tags = raw.tags;
+              if (raw.group) nodeData.group = raw.group;
+              if (raw.notes) nodeData.notes = raw.notes;
               if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
               if (raw.zoningBlocks) {
                 nodeData.zoningBlocks = raw.zoningBlocks;
@@ -250,6 +261,9 @@ export async function POST(req: NextRequest) {
               const existing = db
                 .prepare("SELECT * FROM nodes WHERE id = ? AND project_id = ? AND archived = 0")
                 .get(action.node_id, projectId) as DbNode | undefined;
+              if (!existing) {
+                console.warn(`[AI Edit] Update skipped: node ${action.node_id} not found in project ${projectId}`);
+              }
 
               if (existing) {
                 const data = JSON.parse(existing.data);
@@ -261,6 +275,8 @@ export async function POST(req: NextRequest) {
                 if (raw.rationale !== undefined) data.rationale = raw.rationale;
                 if (raw.cta !== undefined) data.cta = raw.cta;
                 if (raw.tags !== undefined) data.tags = raw.tags;
+                if (raw.group !== undefined) data.group = raw.group;
+                if (raw.notes !== undefined) data.notes = raw.notes;
                 if (raw.entryPoints !== undefined) data.entryPoints = raw.entryPoints;
                 if (raw.zoningBlocks !== undefined) {
                   data.zoningBlocks = raw.zoningBlocks;

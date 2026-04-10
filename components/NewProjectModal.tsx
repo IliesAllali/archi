@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, Zap, Gem, Plus, Globe, Upload, Link2, List, Check, AlertCircle } from "lucide-react"
 import AiInput, { type AttachedFile } from "./AiInput"
+import { AiThinkingBlock, AiProgressBar, AiCompletionBurst } from "./ai"
 import { Events } from "@/lib/posthog"
 import {
   getStoredProvider,
@@ -362,10 +363,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
               </h3>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md transition-colors"
+                className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
                 style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -377,10 +376,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 <div className="space-y-2 pt-1">
                   <button
                     onClick={() => setMode("ai")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--accent)]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "var(--accent)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--line)"}
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -401,10 +398,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
                   <button
                     onClick={() => setMode("manual")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--line-strong)]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "var(--line-strong)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--line)"}
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -425,10 +420,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
                   <button
                     onClick={() => setMode("import")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--line-strong)]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = "var(--line-strong)"}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = "var(--line)"}
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -456,44 +449,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     <div className="flex flex-col items-center py-6 gap-4">
                       {/* Thinking animation */}
                       {aiActions.length === 0 && (
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="relative w-12 h-12 flex items-center justify-center">
-                            <motion.div
-                              className="absolute inset-0 rounded-full"
-                              style={{ border: "2px solid var(--accent)", opacity: 0.2 }}
-                              animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0, 0.2] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                            />
-                            <motion.div
-                              className="absolute inset-1 rounded-full"
-                              style={{ border: "2px solid var(--accent)", opacity: 0.3 }}
-                              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
-                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                            />
-                            <Sparkles className="w-5 h-5" style={{ color: "var(--accent)" }} />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-[3px]">
-                              {[0, 1, 2].map((i) => (
-                                <motion.span
-                                  key={i}
-                                  className="w-[5px] h-[5px] rounded-full"
-                                  style={{ background: "var(--accent)" }}
-                                  animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
-                                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-                                />
-                              ))}
-                            </div>
-                            <motion.p
-                              className="text-xs font-medium"
-                              style={{ color: "var(--text-secondary)" }}
-                              animate={{ opacity: [0.5, 1, 0.5] }}
-                              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                            >
-                              {aiStatus || "L'IA analyse ton brief..."}
-                            </motion.p>
-                          </div>
-                        </div>
+                        <AiThinkingBlock variant="centered" icon={Sparkles} status={aiStatus || "L\u2019IA analyse ton brief\u2026"} />
                       )}
 
                       {/* Pages appearing live */}
@@ -509,24 +465,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
                               </p>
                             )}
                           </div>
-                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
-                            {aiActions[aiActions.length - 1]?.total > 0 ? (
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ background: "var(--accent)" }}
-                                initial={{ width: "0%" }}
-                                animate={{ width: `${(aiActions[aiActions.length - 1]?.index / aiActions[aiActions.length - 1]?.total) * 100}%` }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                              />
-                            ) : (
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ background: "var(--accent)", width: "40%" }}
-                                animate={{ x: ["-40%", "250%"] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                              />
-                            )}
-                          </div>
+                          <AiProgressBar
+                            progress={aiActions[aiActions.length - 1]?.total > 0
+                              ? (aiActions[aiActions.length - 1]?.index / aiActions[aiActions.length - 1]?.total) * 100
+                              : undefined}
+                          />
 
                           <div ref={actionsListRef} className="flex flex-col gap-1 max-h-[160px] overflow-y-auto mt-2 pr-1">
                             <AnimatePresence>
@@ -605,9 +548,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
                               onClick={() => { setSpeedState(s); storeSpeed(s) }}
                               className="h-8 px-3 rounded-lg text-2xs font-medium transition-all duration-150 flex items-center gap-1.5"
                               style={{
-                                background: speed === s ? (s === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)") : "var(--surface)",
-                                color: speed === s ? (s === "fast" ? "#f59e0b" : "var(--accent)") : "var(--text-faint)",
-                                border: `1px solid ${speed === s ? (s === "fast" ? "rgba(245,158,11,0.3)" : "var(--accent-strong)") : "var(--line)"}`,
+                                background: speed === s ? (s === "fast" ? "var(--warning-bg)" : "var(--accent-muted)") : "var(--surface)",
+                                color: speed === s ? (s === "fast" ? "var(--warning-text)" : "var(--accent)") : "var(--text-faint)",
+                                border: `1px solid ${speed === s ? (s === "fast" ? "var(--warning-text)" : "var(--accent-strong)") : "var(--line)"}`,
                               }}
                             >
                               {s === "fast" ? <><Zap className="w-3 h-3" /> Rapide</> : <><Gem className="w-3 h-3" /> Qualit&eacute;</>}
@@ -634,7 +577,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         <button
                           onClick={handleAiGenerate}
                           disabled={loading || !aiPrompt.trim()}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{ background: "var(--accent)", color: "#fff" }}
                         >
                           {loading ? (
@@ -709,7 +652,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                     <button
                       onClick={handleManualCreate}
                       disabled={loading || !name.trim()}
-                      className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
                     >
                       {loading ? (
@@ -733,82 +676,22 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                       className="flex flex-col items-center py-8 gap-4"
                     >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 0.4, delay: 0.1, type: "spring", stiffness: 200 }}
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ background: "var(--accent-muted)" }}
-                      >
-                        <Check className="w-6 h-6" style={{ color: "var(--accent)" }} />
-                      </motion.div>
-                      <div className="text-center">
-                        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                          {importResult?.nodesCreated} pages import{"\u00e9"}es
-                        </p>
-                        <p className="text-2xs mt-1" style={{ color: "var(--text-muted)" }}>
-                          {importResult?.urlsFound} URLs d{"\u00e9"}tect{"\u00e9"}es sur le site
-                        </p>
-                      </div>
+                      <AiCompletionBurst
+                        count={importResult?.nodesCreated}
+                        label={`${importResult?.urlsFound} URLs d\u00e9tect\u00e9es sur le site`}
+                      />
                     </motion.div>
 
                   ) : importStatus === "loading" ? (
                     <div className="flex flex-col items-center py-8 gap-4">
-                      {/* Pulsing globe animation */}
-                      <div className="relative w-12 h-12 flex items-center justify-center">
-                        <motion.div
-                          className="absolute inset-0 rounded-full"
-                          style={{ border: "2px solid var(--accent)", opacity: 0.2 }}
-                          animate={{ scale: [1, 1.4, 1], opacity: [0.2, 0, 0.2] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        />
-                        <motion.div
-                          className="absolute inset-1 rounded-full"
-                          style={{ border: "2px solid var(--accent)", opacity: 0.3 }}
-                          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                        />
-                        <Globe className="w-5 h-5" style={{ color: "var(--accent)" }} />
-                      </div>
-
-                      {/* Animated status text */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-[3px]">
-                          {[0, 1, 2].map((i) => (
-                            <motion.span
-                              key={i}
-                              className="w-[5px] h-[5px] rounded-full"
-                              style={{ background: "var(--accent)" }}
-                              animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
-                              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-                            />
-                          ))}
-                        </div>
-                        <motion.p
-                          className="text-xs font-medium"
-                          style={{ color: "var(--text-secondary)" }}
-                          animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                        >
-                          {importMode === "crawl" ? "Exploration du site..." : importMode === "sitemap" ? "Analyse du sitemap..." : "Import des URLs..."}
-                        </motion.p>
-                      </div>
-
-                      {/* Indeterminate progress bar */}
-                      <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: "var(--surface-hover)" }}>
-                        <motion.div
-                          className="h-full rounded-full"
-                          style={{ background: "var(--accent)", width: "30%" }}
-                          animate={{
-                            x: ["-100%", "0%", "250%", "400%"],
-                            opacity: [0, 1, 1, 0],
-                          }}
-                          transition={{ duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1], times: [0, 0.15, 0.85, 1] }}
-                        />
-                      </div>
-
+                      <AiThinkingBlock
+                        variant="centered"
+                        icon={Globe}
+                        status={importMode === "crawl" ? "Exploration du site\u2026" : importMode === "sitemap" ? "Analyse du sitemap\u2026" : "Import des URLs\u2026"}
+                      />
+                      <AiProgressBar />
                       <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                        {importMode === "crawl" ? "Recherche du sitemap, puis crawl des liens internes" : "Un instant..."}
+                        {importMode === "crawl" ? "Recherche du sitemap, puis crawl des liens internes" : "Un instant\u2026"}
                       </p>
                     </div>
 
@@ -818,8 +701,8 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       animate={{ opacity: 1, y: 0 }}
                       className="flex flex-col items-center py-6 gap-3 text-center"
                     >
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.1)" }}>
-                        <AlertCircle className="w-5 h-5" style={{ color: "#f59e0b" }} />
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--warning-bg)" }}>
+                        <AlertCircle className="w-5 h-5" style={{ color: "var(--warning-text)" }} />
                       </div>
                       <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
                         Ce site est une app JavaScript (SPA)
@@ -830,7 +713,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                       <div className="flex gap-2 pt-2">
                         <button
                           onClick={() => { setImportMode("sitemap"); setImportStatus("idle") }}
-                          className="px-3 h-8 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                          className="px-3 h-8 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
                           style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-primary)" }}
                         >
                           <Upload className="w-3 h-3 inline mr-1.5" />
@@ -838,7 +721,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         </button>
                         <button
                           onClick={() => { setImportMode("urls"); setImportStatus("idle") }}
-                          className="px-3 h-8 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                          className="px-3 h-8 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
                           style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-primary)" }}
                         >
                           <List className="w-3 h-3 inline mr-1.5" />
@@ -1001,7 +884,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         <button
                           onClick={handleImport}
                           disabled={loading || (importMode === "crawl" ? !importUrl.trim() : importMode === "sitemap" ? !importXml.trim() : !importUrls.trim())}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-2xs font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
                         >
                           {loading ? (

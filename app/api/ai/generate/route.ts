@@ -193,6 +193,8 @@ export async function POST(req: NextRequest) {
             const raw = node as unknown as Record<string, unknown>;
             if (raw.cta) nodeData.cta = raw.cta;
             if (raw.tags) nodeData.tags = raw.tags;
+            if (raw.group) nodeData.group = raw.group;
+            if (raw.notes) nodeData.notes = raw.notes;
             if (raw.entryPoints) nodeData.entryPoints = raw.entryPoints;
             if (raw.zoningBlocks) {
               nodeData.zoningBlocks = raw.zoningBlocks;

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem, Plus, Pencil, Trash, ArrowRight, MessageSquare, ChevronDown } from "lucide-react";
+import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem, MessageSquare, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
+import { AiActionPill, AiThinkingBlock, compactMarkdownComponents, type AiActionType } from "./ai";
 
 /* ── Inline response card ─────────────────────────────────────────────────── */
 
@@ -16,14 +17,6 @@ interface InlineResponse {
   timestamp: number;
 }
 
-const ACTION_ICONS: Record<string, typeof Plus> = { add: Plus, update: Pencil, delete: Trash, move: ArrowRight };
-const ACTION_COLORS: Record<string, { bg: string; text: string }> = {
-  add: { bg: "rgba(34,197,94,0.1)", text: "#22c55e" },
-  delete: { bg: "rgba(239,68,68,0.1)", text: "#ef4444" },
-  update: { bg: "var(--accent-muted)", text: "var(--accent)" },
-  move: { bg: "rgba(59,130,246,0.1)", text: "#3b82f6" },
-};
-
 function InlineResponseCard({ response, onDismiss }: { response: InlineResponse; onDismiss: () => void }) {
   const [expanded, setExpanded] = useState(true);
   const hasActions = response.actions && response.actions.length > 0;
@@ -34,11 +27,11 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.98 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className="mx-3 sm:mx-4 mb-2 rounded-lg overflow-hidden"
+      className={`mx-3 sm:mx-4 mb-2 rounded-lg overflow-hidden ${response.type === "edit" ? "ai-success-glow" : ""}`}
       style={{
         background: "var(--surface)",
         border: "1px solid var(--line)",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+        boxShadow: "var(--shadow-float)",
       }}
     >
       {/* Header */}
@@ -49,7 +42,7 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
       >
         <div className="flex items-center gap-2">
           {response.type === "edit" ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--success-bg, #10b98115)", color: "var(--success-text, #10b981)" }}>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--success-bg)", color: "var(--success-text)" }}>
               <Check className="w-3 h-3" />
               {response.actions?.length || 0} modif{(response.actions?.length || 0) > 1 ? "s" : ""}
             </div>
@@ -90,20 +83,9 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
             {/* Action pills */}
             {hasActions && (
               <div className="flex flex-wrap gap-1 px-3 pt-2.5">
-                {response.actions!.slice(0, 10).map((a, i) => {
-                  const Icon = ACTION_ICONS[a.type] || Pencil;
-                  const colors = ACTION_COLORS[a.type] || ACTION_COLORS.update;
-                  return (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-                      style={{ background: colors.bg, color: colors.text }}
-                    >
-                      <Icon className="w-2.5 h-2.5" />
-                      {a.label || "..."}
-                    </span>
-                  );
-                })}
+                {response.actions!.slice(0, 10).map((a, i) => (
+                  <AiActionPill key={i} type={a.type as AiActionType} label={a.label} index={i} />
+                ))}
                 {response.actions!.length > 10 && (
                   <span className="text-[10px] px-1.5 py-0.5" style={{ color: "var(--text-faint)" }}>
                     +{response.actions!.length - 10}
@@ -116,14 +98,7 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
             {response.summary && (
               <div className="px-3 py-2.5 ai-response-md">
                 <ReactMarkdown
-                  components={{
-                    p: ({ children }) => <p className="text-xs leading-[1.6] mb-2 last:mb-0" style={{ color: "var(--text-primary)" }}>{children}</p>,
-                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                    ul: ({ children }) => <ul className="list-disc pl-3.5 mb-2 space-y-0.5 text-xs" style={{ color: "var(--text-primary)" }}>{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-3.5 mb-2 space-y-0.5 text-xs" style={{ color: "var(--text-primary)" }}>{children}</ol>,
-                    li: ({ children }) => <li className="text-xs leading-[1.5]">{children}</li>,
-                    code: ({ children }) => <code className="text-[10px] px-1 py-0.5 rounded font-mono" style={{ background: "var(--surface-hover)", color: "var(--accent)" }}>{children}</code>,
-                  }}
+                  components={compactMarkdownComponents}
                 >
                   {response.summary}
                 </ReactMarkdown>
@@ -198,12 +173,15 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
   // Target for wireframe mode: "page" (default), "header", or "footer"
   type WireframeTarget = "page" | "header" | "footer";
   const [wireframeTarget, setWireframeTarget] = useState<WireframeTarget>("page");
+  /** True when toggle was triggered by keyboard — skips animation for instant feel */
+  const keyboardToggle = useRef(false);
 
-  // Toggle with Ctrl+I
+  // Toggle with Ctrl+I — instant, no animation (used dozens of times/day)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "i") {
         e.preventDefault();
+        keyboardToggle.current = true;
         setOpen((prev) => !prev);
       }
     };
@@ -575,14 +553,12 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium shadow-lg transition-all duration-150 hover:scale-105 hover:shadow-xl active:scale-95"
+          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium transition-all duration-150 hover:scale-[1.02] active:scale-[0.97]"
           style={{
             background: "var(--accent)",
             color: "#fff",
-            boxShadow: "0 4px 24px var(--accent-strong)",
+            boxShadow: "var(--shadow-float)",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 32px var(--accent-strong)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 24px var(--accent-strong)"; }}
         >
           <Sparkles className="w-3.5 h-3.5" />
           Assistant IA
@@ -596,15 +572,16 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: keyboardToggle.current ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, y: keyboardToggle.current ? 0 : 20 }}
+            transition={{ duration: keyboardToggle.current ? 0 : 0.15, ease: [0.16, 1, 0.3, 1] }}
+            onAnimationComplete={() => { keyboardToggle.current = false; }}
             className="fixed bottom-3 sm:bottom-5 left-0 right-0 mx-auto z-30 w-[calc(100%-24px)] sm:w-[560px] max-w-[560px] rounded-xl overflow-hidden"
             style={{
               background: "var(--elevated)",
               border: "1px solid var(--line-strong)",
-              boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+              boxShadow: "var(--shadow-panel)",
             }}
           >
             {/* Header */}
@@ -619,10 +596,10 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 {/* Speed toggle */}
                 <button
                   onClick={() => { const next = speed === "fast" ? "quality" : "fast"; setSpeed(next); storeSpeed(next); }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-90"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-[0.97]"
                   style={{
-                    color: speed === "fast" ? "#f59e0b" : "var(--accent)",
-                    background: speed === "fast" ? "rgba(245,158,11,0.1)" : "var(--accent-muted)",
+                    color: speed === "fast" ? "var(--warning-text)" : "var(--accent)",
+                    background: speed === "fast" ? "var(--warning-bg)" : "var(--accent-muted)",
                   }}
                   title={speed === "fast" ? "Mode rapide (1 crédit)" : "Mode qualité (3 crédits)"}
                 >
@@ -654,26 +631,8 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
 
             {/* Live status during AI processing */}
             {loading && (
-              <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
-                <div className="flex gap-[3px]">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="w-[5px] h-[5px] rounded-full"
-                      style={{ background: "var(--accent)" }}
-                      animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
-                      transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-                    />
-                  ))}
-                </div>
-                <motion.p
-                  className="text-2xs font-medium truncate"
-                  style={{ color: "var(--text-secondary)" }}
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  {statusMsg || "Réflexion en cours..."}
-                </motion.p>
+              <div className="px-4 py-2.5" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
+                <AiThinkingBlock variant="inline" status={statusMsg} />
               </div>
             )}
 
@@ -681,19 +640,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
             {loading && actionLog.length > 0 && (
               <div className="px-4 py-1.5 flex flex-wrap gap-1" style={{ borderBottom: "1px solid var(--line)", background: "var(--surface)" }}>
                 {actionLog.map((a, i) => (
-                  <motion.span
-                    key={i}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: i * 0.03, ease: [0.16, 1, 0.3, 1] }}
-                    className="text-2xs px-1.5 py-0.5 rounded-full"
-                    style={{
-                      background: a.type === "add" ? "rgba(34,197,94,0.1)" : a.type === "delete" ? "rgba(239,68,68,0.1)" : "var(--accent-muted)",
-                      color: a.type === "add" ? "#22c55e" : a.type === "delete" ? "#ef4444" : "var(--accent)",
-                    }}
-                  >
-                    {a.type === "add" ? "+" : a.type === "delete" ? "-" : "\u270F"} {a.label || "..."}
-                  </motion.span>
+                  <AiActionPill key={i} type={a.type as AiActionType} label={a.label} index={i} size="sm" />
                 ))}
               </div>
             )}
@@ -758,7 +705,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                   <button
                     onClick={send}
                     disabled={loading || !prompt.trim()}
-                    className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     style={{ background: "var(--accent)", color: "#fff" }}
                   >
                     {loading ? (

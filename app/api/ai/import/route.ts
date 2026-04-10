@@ -74,6 +74,8 @@ export async function POST(req: NextRequest) {
           };
           if (action.cta) nodeData.cta = action.cta;
           if (action.tags) nodeData.tags = action.tags;
+          if ((action as Record<string, unknown>).group) nodeData.group = (action as Record<string, unknown>).group;
+          if ((action as Record<string, unknown>).notes) nodeData.notes = (action as Record<string, unknown>).notes;
           if (action.entryPoints) nodeData.entryPoints = action.entryPoints;
           if (action.zoningBlocks) {
             nodeData.zoningBlocks = action.zoningBlocks;

@@ -98,116 +98,69 @@ export function buildUserContent(
 
 // ─── System prompts ──────────────────────────────────────────────────────────
 
-const GENERATE_SYSTEM_FAST = `Tu es un architecte UX/UI. Génère une arborescence de site web.
+const GENERATE_SYSTEM_FAST = `Architecte UX/IA. G\u00e9n\u00e8re une arborescence de site web.
 
-L'utilisateur peut joindre des fichiers (PDF brief, screenshots, moodboards). Utilise-les comme contexte mais réponds TOUJOURS en JSON valide. Ne décris jamais les fichiers, utilise-les silencieusement.
+8-15 pages, 3 niveaux max. Premi\u00e8re page: Accueil (home, parent_temp_id:null). Inclure: Accueil, Contact, Mentions l\u00e9gales, 404.
 
-Règles :
-- 8 à 15 pages max
-- Première page : "Accueil" (type: "home", parent_temp_id: null)
-- Hiérarchie : 3 niveaux max. Types : home, listing, detail, form, landing, search, hub, error, legal
-- Priority : primary, secondary, utility
-- Inclus toujours : Accueil, Contact, Mentions légales, 404
-- description : 1 phrase courte. PAS de zoningBlocks, PAS de entryPoints, PAS de rationale.
-- Sois ULTRA CONCIS.
+Types: home, listing, detail, form, landing, search, hub, error, legal
+Priority: primary, secondary, utility
+Group (couleur cluster): blue, green, orange, purple, red, pink, yellow, gray, ""
 
-Champs : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" par défaut — assigne la même couleur aux pages d'un même cluster thématique), description, cta[] (1 bouton), tags[] (1-2 mots)
+Champs: temp_id, parent_temp_id, label, type, priority, group, description (1 phrase), cta[] (1 bouton), tags[] (1-2 mots)
+PAS de zoningBlocks, PAS de entryPoints, PAS de rationale.
 
-JSON valide uniquement, sans markdown :
-{"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","description":"Page d'accueil.","cta":["Découvrir"],"tags":["SEO"]},{"temp_id":"about","parent_temp_id":"home","label":"À propos","type":"detail","priority":"secondary","description":"Présentation.","cta":["Contact"],"tags":["branding"]}]}`;
+Fichiers joints = contexte silencieux.
 
-const GENERATE_SYSTEM_QUALITY = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
+JSON uniquement: {"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","group":"blue","description":"Page d'accueil.","cta":["D\u00e9couvrir"],"tags":["SEO"]}]}`;
 
-Génère une arborescence complète et professionnelle.
+const GENERATE_SYSTEM_QUALITY = `Architecte UX/IA expert. G\u00e9n\u00e8re une arborescence compl\u00e8te et professionnelle.
 
-L'utilisateur peut joindre des fichiers (PDF brief, screenshots, moodboards). Utilise-les comme contexte mais réponds TOUJOURS en JSON valide. Ne décris jamais les fichiers, utilise-les silencieusement.
+10-25 pages, 3 niveaux max. Premi\u00e8re page: Accueil (home, primary, parent_temp_id:null). Inclure: Accueil, Contact, Mentions l\u00e9gales, 404.
 
-Règles :
-- 10 à 25 pages selon la complexité
-- Première page : "Accueil" (type: "home", priority: "primary", parent_temp_id: null)
-- Hiérarchie : sections principales → sous-pages → pages détail (3 niveaux max)
-- Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priority : primary (parcours clé), secondary (contenu), utility (légal/404)
-- Inclus toujours : Accueil, Contact, Mentions légales, 404
-- description : 2-3 phrases. rationale : pourquoi la page existe. cta : 1-2 boutons. tags : 2-3 mots.
+Types: home, listing, detail, form, landing, quiz, search, hub, error, legal
+Priority: primary (parcours cl\u00e9), secondary (contenu), utility (l\u00e9gal/404)
+Group (couleur cluster): blue, green, orange, purple, red, pink, yellow, gray, ""
 
-Champs de base (toutes les pages) : temp_id, parent_temp_id, label, type, priority, group (couleur cluster : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" par défaut — assigne la même couleur aux pages d'un même cluster thématique), description, rationale, cta[], tags[]
+Champs base: temp_id, parent_temp_id, label, type, priority, group, description (2-3 phrases), rationale, cta[], tags[]
 
-Champs avancés (UNIQUEMENT home et landing) :
-- entryPoints[{type,label}] — types : google, direct, social, email, ads, qrcode
-- zoningBlocks[{id,label,skin,height}] — skins : nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, footer. Heights en % totalisant ~100.
-- zoningExpanded: true
+Champs avanc\u00e9s (home+landing UNIQUEMENT):
+- entryPoints[{type,label}] types: google,direct,social,email,ads,qrcode
+- zoningBlocks[{id,label,skin,height}] skins: nav,hero,breadcrumb,titre,contenu,sidebar,cards,grille,filtres,cta,double-cta,form,submit,arguments,social-proof,image,footer. Heights % ~100 total.
+- zoningExpanded:true
 
-JSON valide uniquement, sans markdown :
-{"nodes":[{"temp_id":"home","parent_temp_id":null,"label":"Accueil","type":"home","priority":"primary","description":"Page d'accueil principale.","rationale":"Point d'entrée principal","cta":["Découvrir"],"tags":["SEO","conversion"],"entryPoints":[{"type":"google","label":"Google"}],"zoningBlocks":[{"id":"z1","label":"Nav","skin":"nav","height":8},{"id":"z2","label":"Hero","skin":"hero","height":25},{"id":"z3","label":"Cards","skin":"cards","height":30},{"id":"z4","label":"CTA","skin":"cta","height":12},{"id":"z5","label":"Footer","skin":"footer","height":8}],"zoningExpanded":true},{"temp_id":"about","parent_temp_id":"home","label":"À propos","type":"detail","priority":"secondary","description":"Présentation de l'entreprise.","rationale":"Crédibilité et confiance","cta":["Contact"],"tags":["branding"]}]}`;
+Fichiers joints = contexte silencieux.
 
-const EDIT_SYSTEM = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
+JSON uniquement: {"nodes":[...]}`;
 
-L'utilisateur te donne l'arborescence actuelle de son site (avec les IDs réels) et te demande une modification.
+const EDIT_SYSTEM = `Architecte UX/IA. Tu modifies une arborescence de site web.
 
-Tu dois répondre avec une liste d'actions à effectuer sur l'arbre.
+SCOPE : touche UNIQUEMENT ce qui est demand\u00e9. Minimum d'actions possible.
 
-CONCEPT CLÉ — Pages vs Sections :
-- Une PAGE = un noeud dans l'arborescence (une URL distincte du site). Ex: "Accueil", "Tarifs", "Blog", "Contact".
-- Une SECTION = un bloc à l'intérieur d'une page (zoningBlocks). Ex: "Hero", "Features", "Témoignages", "CTA".
-- Quand l'utilisateur demande d'ajouter des "sections" à une page existante, utilise "update" avec zoningBlocks. NE CRÉE PAS de nouvelles pages.
-- Quand l'utilisateur demande d'ajouter des "pages", utilise "add".
+PAGE = noeud (URL distincte). SECTION = bloc interne (zoningBlocks).
+Ajouter des "sections" \u00e0 une page = update avec zoningBlocks. PAS de nouvelles pages.
 
-RÈGLE DE SCOPE — Touche uniquement ce qui est demandé :
-- Si l'utilisateur demande une modification sur UNE page spécifique, ne modifie QUE cette page. Ne touche pas aux autres.
-- Si l'utilisateur demande d'ajouter une section à la page d'accueil, fais un "update" sur la homepage avec les zoningBlocks mis à jour. Ne crée pas de nouvelles pages.
-- Ne reformule pas les descriptions ou labels des pages non concernées par la demande.
-- Sois minimal et précis : le moins d'actions possible pour satisfaire la demande.
+Actions : add, update, delete, move, link
+- add : temp_id, parent_id|parent_temp_id, label, type, priority + champs optionnels
+- update : node_id + champs \u00e0 modifier uniquement
+- delete : node_id
+- move : node_id, parent_id (nouveau)
+- link : node_id, parent_id (parent secondaire, multi-parent)
 
-Actions possibles :
-- "add" : ajouter une NOUVELLE PAGE au site. TOUJOURS rattacher à un parent existant.
-- "update" : modifier une page existante (node_id + champs à modifier). Utilise ceci pour ajouter/modifier des sections (zoningBlocks), changer un label, une description, etc.
-- "delete" : supprimer une page (node_id)
-- "move" : déplacer une page (node_id + nouveau parent_id)
-- "link" : relier une page à un parent ADDITIONNEL (multi-parent). La page garde son parent principal mais un lien visuel est tracé depuis le parent secondaire. Utilise ceci quand une page est accessible depuis plusieurs endroits du site (ex: page "Contact" accessible depuis "Accueil" ET "Services"). Champs : node_id + parent_id (le parent secondaire à ajouter).
+Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
+Priorit\u00e9s : primary, secondary, utility
+Group (couleur cluster) : blue, green, orange, purple, red, pink, yellow, gray, "" (d\u00e9faut)
 
-Règles :
-- CHAQUE page ajoutée DOIT avoir un parent_id valide (un ID existant dans l'arbre fourni) ou un parent_temp_id (si son parent est aussi un "add" dans la même réponse).
-- Types de pages : home, listing, detail, form, landing, quiz, search, hub, error, legal
-- Priorités : primary (pages clés), secondary (contenu), utility (légal, 404)
+Champs optionnels : description, rationale, cta[], tags[], group, notes, entryPoints[{type,label}] (home/landing uniquement, types: google|direct|social|email|ads|qrcode)
 
-Champs disponibles pour "add" et "update" :
-- label (string) : nom de la page
-- type (string) : type de page
-- priority (string) : primary/secondary/utility
-- group (string) : couleur de cluster pour regrouper visuellement les pages. Valeurs : "blue", "green", "orange", "purple", "red", "pink", "yellow", "gray", ou "" (couleur accent par défaut). Assigne la même couleur aux pages d'un même cluster thématique.
-- description (string) : description du contenu (2-3 phrases)
-- rationale (string) : pourquoi cette page existe
-- cta (string[]) : textes des boutons d'action
-- tags (string[]) : catégorisation
-- entryPoints ({type, label}[]) : sources de trafic EXTERNES uniquement. Types: google, direct, social, email, ads, qrcode. UNIQUEMENT sur home et landing.
-- zoningBlocks ({id, label, skin, height}[]) : les SECTIONS INTERNES de la page (wireframe layout). Skins: nav, hero, breadcrumb, titre, contenu, sidebar, cards, grille, filtres, cta, double-cta, form, submit, arguments, social-proof, image, question, reponses, progression, nav-quiz, search-bar, resultats, pagination, footer, dots. Les heights en % doivent totaliser ~100.
-- zoningExpanded (boolean) : si true, le wireframe est affiché directement dans le canvas. Utilise true pour rendre le wireframe visible sur les pages clés (home, landing). Utilise false pour cacher le wireframe d'une page. Omets le champ pour ne pas changer la visibilité actuelle.
+zoningBlocks[{id,label,skin,height}] : skins = nav,hero,breadcrumb,titre,contenu,sidebar,cards,grille,filtres,cta,double-cta,form,submit,arguments,social-proof,image,question,reponses,progression,nav-quiz,search-bar,resultats,pagination,footer,dots. Heights en % (~100 total).
+zoningExpanded: true|false (visibilit\u00e9 wireframe sur le canvas)
 
-Exemples de zoningBlocks (sections d'une page) :
-- Homepage type : nav(8) → hero(22) → social-proof(8) → cards(22) → arguments(15) → cta(10) → footer(7)
-- Landing type : nav(8) → hero(25) → arguments(20) → social-proof(12) → form(20) → footer(7)
-- Listing type : nav(8) → breadcrumb(5) → filtres(10) → grille(55) → pagination(8) → footer(8)
+Question (pas de modif) \u2192 type:"chat", actions:[], summary: r\u00e9ponse compl\u00e8te.
 
-Si l'utilisateur pose une QUESTION (avis, analyse, conseil, suggestion) au lieu de demander une modification concrète :
-- Réponds avec "type": "chat" et "actions": []
-- Mets ta réponse complète dans "summary" (texte riche, détaillé, utile)
-- Tu peux analyser l'arborescence, donner ton avis UX, suggérer des améliorations, etc.
+Fichiers joints = contexte silencieux. Ne les d\u00e9cris jamais.
 
-IMPORTANT : L'utilisateur peut joindre des images ou PDFs comme contexte (brief client, screenshots, moodboards). Utilise-les pour mieux comprendre la demande, mais ta réponse doit TOUJOURS être du JSON valide. Ne décris jamais les fichiers joints, ne commente pas leur contenu. Utilise-les silencieusement pour informer tes actions.
-
-Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans texte avant ou après :
-{
-  "type": "edit" ou "chat",
-  "actions": [
-    { "action": "update", "node_id": "REAL_ID", "zoningBlocks": [{"id": "z1", "label": "Nav", "skin": "nav", "height": 8}, ...], "zoningExpanded": true },
-    { "action": "add", "temp_id": "faq", "parent_id": "REAL_ID", "label": "FAQ", "type": "detail", "priority": "secondary", "description": "..." },
-    { "action": "delete", "node_id": "REAL_ID" },
-    { "action": "move", "node_id": "REAL_ID", "parent_id": "NEW_PARENT_ID" },
-    { "action": "link", "node_id": "REAL_ID", "parent_id": "SECONDARY_PARENT_ID" }
-  ],
-  "summary": "Courte explication de ce qui a été fait (ou réponse complète si type chat)"
-}`;
+R\u00e9ponds JSON uniquement, sans markdown :
+{"type":"edit","actions":[...],"summary":"..."}`;
 
 // ─── Unified LLM call ───────────────────────────────────────────────────────
 
@@ -220,7 +173,7 @@ async function callLLM(
   onChunk?: (chunk: string) => void
 ): Promise<string> {
   const model = getModel(provider, speed);
-  const maxTokens = speed === "quality" ? 16384 : 4096;
+  const maxTokens = speed === "quality" ? 8192 : 2048;
 
   if (provider === "anthropic") {
     const client = new Anthropic({ apiKey });
@@ -408,8 +361,26 @@ export async function editSitemap(
   onChunk?: (chunk: string) => void,
   attachments?: AttachmentInput[]
 ): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
-  const treeContext = JSON.stringify(currentTree, null, 2);
-  const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
+  // Compact tree: no pretty-print, skip default values to minimize tokens
+  const compactTree = currentTree.map(n => {
+    const c: Record<string, unknown> = { id: n.id, label: (n as Record<string, unknown>).label, parent_id: n.parent_id, children: n.children };
+    const raw = n as Record<string, unknown>;
+    if (raw.type && raw.type !== "detail") c.type = raw.type;
+    if (raw.priority && raw.priority !== "secondary") c.priority = raw.priority;
+    if (raw.group) c.group = raw.group;
+    if (raw.description) c.description = raw.description;
+    if (raw.tags && (raw.tags as string[]).length > 0) c.tags = raw.tags;
+    if (raw.cta && (raw.cta as string[]).length > 0) c.cta = raw.cta;
+    if (raw.notes) c.notes = raw.notes;
+    if (raw.zoningBlocks && (raw.zoningBlocks as unknown[]).length > 0) {
+      c.zoningBlocks = raw.zoningBlocks;
+      if (raw.zoningExpanded) c.zoningExpanded = true;
+    }
+    if (raw.entryPoints && (raw.entryPoints as unknown[]).length > 0) c.entryPoints = raw.entryPoints;
+    return c;
+  });
+  const treeContext = JSON.stringify(compactTree);
+  const userMessage = `Arbre:\n${treeContext}\n\n${prompt}`;
 
   // Build messages array: prior conversation (summarized) + current request
   // Only keep user messages from history — assistant responses were free-text chat

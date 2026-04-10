@@ -60,14 +60,14 @@ export default function AiCreditsBadge({ className = "", onByokActive }: Props) 
       className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-medium ${className}`}
       style={{
         background: isEmpty
-          ? "rgba(239,68,68,0.1)"
+          ? "var(--error-glow)"
           : isLow
-          ? "rgba(234,179,8,0.1)"
+          ? "var(--warning-bg)"
           : "var(--accent-muted)",
         color: isEmpty
-          ? "#ef4444"
+          ? "var(--error-text)"
           : isLow
-          ? "#eab308"
+          ? "var(--warning-text)"
           : "var(--accent)",
       }}
       title={`${remaining}/${total} crédits IA restants`}
@@ -77,12 +77,12 @@ export default function AiCreditsBadge({ className = "", onByokActive }: Props) 
       {/* Mini progress bar */}
       <div
         className="w-8 h-1 rounded-full overflow-hidden"
-        style={{ background: "rgba(128,128,128,0.15)" }}
+        style={{ background: "var(--surface-hover)" }}
       >
         <motion.div
           className="h-full rounded-full"
           style={{
-            background: isEmpty ? "#ef4444" : isLow ? "#eab308" : "var(--accent)",
+            background: isEmpty ? "var(--error-text)" : isLow ? "var(--warning-text)" : "var(--accent)",
           }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}

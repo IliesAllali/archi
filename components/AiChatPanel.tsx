@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Trash2, User, Check, Loader2, Plus, Pencil, Trash, ArrowRight } from "lucide-react";
+import { Sparkles, X, Trash2, User, Check, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
+import { AiThinkingBlock, fullMarkdownComponents, ACTION_ICONS, ACTION_LABELS, type AiActionType } from "./ai";
 
 export interface AiAction {
   action: "add" | "update" | "delete" | "move";
@@ -39,7 +40,7 @@ interface Props {
   onApplyActions?: (messageId: string) => void;
 }
 
-/* ── Thinking indicator (Claude-style) ─────────────────────────────────────── */
+/* ── Thinking indicator — uses shared AiThinkingBlock with avatar ─────────── */
 
 function ThinkingIndicator() {
   return (
@@ -55,40 +56,14 @@ function ThinkingIndicator() {
       >
         <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
       </div>
-      <div className="pt-1.5 flex items-center gap-2">
-        <div className="flex gap-[3px]">
-          {[0, 1, 2].map((i) => (
-            <motion.span
-              key={i}
-              className="w-[5px] h-[5px] rounded-full"
-              style={{ background: "var(--accent)" }}
-              animate={{ opacity: [0.3, 1, 0.3], scale: [0.85, 1.15, 0.85] }}
-              transition={{
-                duration: 1.2,
-                repeat: Infinity,
-                delay: i * 0.2,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </div>
-        <motion.span
-          className="text-xs"
-          style={{ color: "var(--text-muted)" }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        >
-          R&eacute;flexion en cours...
-        </motion.span>
+      <div className="pt-1.5">
+        <AiThinkingBlock variant="inline" />
       </div>
     </motion.div>
   );
 }
 
-/* ── Action icon helper ────────────────────────────────────────────────────── */
-
-const ACTION_ICONS: Record<string, typeof Plus> = { add: Plus, update: Pencil, delete: Trash, move: ArrowRight };
-const ACTION_LABELS: Record<string, string> = { add: "Ajouter", update: "Modifier", delete: "Supprimer", move: "Déplacer" };
+/* ── Action icon/label helpers now imported from ./ai ──────────────────────── */
 
 /* ── Message bubble ────────────────────────────────────────────────────────── */
 
@@ -131,42 +106,7 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
         ) : (
           <div className="ai-chat-md">
             <ReactMarkdown
-              components={{
-                p: ({ children }) => (
-                  <p className="text-[13px] leading-[1.7] mb-3 last:mb-0" style={{ color: "var(--text-primary)" }}>
-                    {children}
-                  </p>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-semibold" style={{ color: "var(--text-primary)" }}>{children}</strong>
-                ),
-                em: ({ children }) => <em style={{ color: "var(--text-secondary)" }}>{children}</em>,
-                ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1.5" style={{ color: "var(--text-primary)" }}>{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1.5" style={{ color: "var(--text-primary)" }}>{children}</ol>,
-                li: ({ children }) => (
-                  <li className="text-[13px] leading-[1.6]" style={{ color: "var(--text-primary)" }}>{children}</li>
-                ),
-                h1: ({ children }) => <h3 className="text-sm font-bold mb-2 mt-3 first:mt-0" style={{ color: "var(--text-primary)" }}>{children}</h3>,
-                h2: ({ children }) => <h3 className="text-[13px] font-bold mb-2 mt-3 first:mt-0" style={{ color: "var(--text-primary)" }}>{children}</h3>,
-                h3: ({ children }) => <h3 className="text-[13px] font-semibold mb-1.5 mt-2.5 first:mt-0" style={{ color: "var(--text-primary)" }}>{children}</h3>,
-                code: ({ children }) => (
-                  <code
-                    className="text-2xs px-1.5 py-0.5 rounded font-mono"
-                    style={{ background: "var(--surface-hover)", color: "var(--accent)" }}
-                  >
-                    {children}
-                  </code>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote
-                    className="pl-3.5 my-3 text-[13px]"
-                    style={{ borderLeft: "3px solid var(--accent)", color: "var(--text-muted)" }}
-                  >
-                    {children}
-                  </blockquote>
-                ),
-                hr: () => <hr className="my-3" style={{ borderColor: "var(--line)" }} />,
-              }}
+              components={fullMarkdownComponents}
             >
               {msg.content}
             </ReactMarkdown>
@@ -180,12 +120,12 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
           >
             <div className="px-3 py-2 space-y-1.5">
               {msg.pendingActions.slice(0, 8).map((action, i) => {
-                const Icon = ACTION_ICONS[action.action] || Pencil;
+                const Icon = ACTION_ICONS[action.action as AiActionType] || ACTION_ICONS.update;
                 return (
                   <div key={i} className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-secondary)" }}>
                     <Icon className="w-3 h-3 shrink-0" style={{ color: "var(--accent)" }} />
                     <span className="font-medium" style={{ color: "var(--text-muted)" }}>
-                      {ACTION_LABELS[action.action] || action.action}
+                      {ACTION_LABELS[action.action as AiActionType] || action.action}
                     </span>
                     {action.label && (
                       <span className="truncate">{action.label}</span>
@@ -201,7 +141,7 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
             </div>
             <div className="px-3 py-2.5" style={{ borderTop: "1px solid var(--line)" }}>
               {msg.applied ? (
-                <div className="flex items-center gap-2 text-[12px] font-medium rounded-md px-2.5 py-1.5" style={{ background: "var(--success-bg, #10b98115)", color: "var(--success-text, #10b981)" }}>
+                <div className="flex items-center gap-2 text-[12px] font-medium rounded-md px-2.5 py-1.5" style={{ background: "var(--success-bg)", color: "var(--success-text)" }}>
                   <Check className="w-3.5 h-3.5 shrink-0" />
                   <span>{msg.pendingActions.length} modification{msg.pendingActions.length > 1 ? "s" : ""} appliqu\u00e9e{msg.pendingActions.length > 1 ? "s" : ""}</span>
                 </div>
@@ -295,7 +235,7 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
             style={{
               background: "var(--elevated)",
               borderLeft: "1px solid var(--line-strong)",
-              boxShadow: "-12px 0 48px rgba(0,0,0,0.12)",
+              boxShadow: "var(--shadow-panel)",
             }}
             data-panel
           >
@@ -371,12 +311,12 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
                 placeholder="Pose une question..."
                 rows={2}
                 disabled={loading}
-                sendKey="ctrl+enter"
+                sendKey="enter"
                 onEscape={onClose}
                 textareaRef={inputRef}
               />
               <p className="text-2xs mt-2 px-1" style={{ color: "var(--text-faint)" }}>
-                Ctrl+Enter pour envoyer
+                Enter pour envoyer, Shift+Enter pour retour ligne
               </p>
             </div>
           </motion.div>
