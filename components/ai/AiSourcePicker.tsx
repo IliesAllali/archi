@@ -27,8 +27,6 @@ export default function AiSourcePicker({ className = "" }: Props) {
   const [byokKey, setByokKey] = useState("")
   const [byokActive, setByokActive] = useState(false)
   const [open, setOpen] = useState(false)
-  const [popoverPos, setPopoverPos] = useState<{ top: number; right: number } | null>(null)
-  const ref = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
 
@@ -44,27 +42,26 @@ export default function AiSourcePicker({ className = "" }: Props) {
       .catch(() => {})
   }, [])
 
-  // Close on outside click
+  // Close on outside click or Escape
   useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    const onClick = (e: MouseEvent) => {
       const t = e.target as Node
-      if (btnRef.current?.contains(t)) return
-      if (popoverRef.current?.contains(t)) return
+      if (btnRef.current?.contains(t) || popoverRef.current?.contains(t)) return
       setOpen(false)
     }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
+    document.addEventListener("mousedown", onClick)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("mousedown", onClick)
+      document.removeEventListener("keydown", onKey)
+    }
   }, [open])
 
   const selectSource = useCallback((source: "credits" | "byok") => {
-    if (source === "credits") {
-      setByokEnabled(false)
-      setByokActive(false)
-    } else {
-      setByokEnabled(true)
-      setByokActive(true)
-    }
+    setByokEnabled(source === "byok")
+    setByokActive(source === "byok")
     setOpen(false)
   }, [])
 
@@ -77,12 +74,10 @@ export default function AiSourcePicker({ className = "" }: Props) {
   const isLow = remaining <= 3 && remaining > 0
   const isEmpty = remaining <= 0
 
-  // Masquer la clé : "sk-ant-•••4f2"
   const maskedKey = byokKey.length > 6
     ? byokKey.slice(0, 6) + "\u2022\u2022\u2022" + byokKey.slice(-3)
     : byokKey ? "\u2022\u2022\u2022" : ""
 
-  // Badge couleur selon la source active
   const badgeBg = byokActive
     ? "var(--surface)"
     : isEmpty ? "var(--error-glow)" : isLow ? "var(--warning-bg)" : "var(--accent-muted)"
@@ -90,21 +85,23 @@ export default function AiSourcePicker({ className = "" }: Props) {
     ? "var(--text-muted)"
     : isEmpty ? "var(--error-text)" : isLow ? "var(--warning-text)" : "var(--accent)"
 
+  // Compute popover position from button rect
+  const getPos = () => {
+    if (!btnRef.current) return { bottom: 0, right: 0 }
+    const r = btnRef.current.getBoundingClientRect()
+    return {
+      bottom: window.innerHeight - r.top + 6,
+      right: window.innerWidth - r.right,
+    }
+  }
+
   return (
-    <div ref={ref} className={`relative ${className}`}>
-      {/* Badge trigger */}
+    <div className={`relative ${className}`}>
       <button
         ref={btnRef}
-        onClick={() => {
-          if (!open && btnRef.current) {
-            const rect = btnRef.current.getBoundingClientRect()
-            setPopoverPos({ top: rect.top - 8, right: window.innerWidth - rect.right })
-          }
-          setOpen(v => !v)
-        }}
+        onClick={() => setOpen(v => !v)}
         className="flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-[0.97]"
         style={{ background: badgeBg, color: badgeColor }}
-        title={byokActive ? `Cl\u00e9 ${providerConfig.label}` : `${remaining}/${total} cr\u00e9dits`}
       >
         {byokActive ? (
           <>
@@ -128,21 +125,18 @@ export default function AiSourcePicker({ className = "" }: Props) {
         )}
       </button>
 
-      {/* Popover — portaled to body to escape overflow:hidden */}
       {typeof document !== "undefined" && createPortal(
         <AnimatePresence>
-          {open && popoverPos && (
+          {open && (
             <motion.div
               ref={popoverRef}
-              initial={{ opacity: 0, scale: 0.95, y: 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 4 }}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
               className="fixed w-[260px] rounded-xl overflow-hidden"
               style={{
-                top: popoverPos.top,
-                right: popoverPos.right,
-                transform: "translateY(-100%)",
+                ...getPos(),
                 zIndex: 9999,
                 background: "var(--elevated)",
                 border: "1px solid var(--line-strong)",
@@ -150,131 +144,109 @@ export default function AiSourcePicker({ className = "" }: Props) {
                 transformOrigin: "bottom right",
               }}
             >
-            {/* Option 1: Credits */}
-            <button
-              onClick={() => selectSource("credits")}
-              className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-all duration-100"
-              style={{
-                background: !byokActive ? "var(--accent-muted)" : "transparent",
-                borderBottom: "1px solid var(--line)",
-              }}
-            >
-              {/* Radio dot */}
-              <div
-                className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
-                style={{
-                  borderColor: !byokActive ? "var(--accent)" : "var(--line-strong)",
-                }}
-              >
-                {!byokActive && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: "var(--accent)" }}
-                  />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3" style={{ color: "var(--accent)" }} />
-                  <span className="text-2xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                    Cr\u00e9dits Arbo
-                  </span>
-                  <span className="text-2xs" style={{ color: isEmpty ? "var(--error-text)" : "var(--text-faint)" }}>
-                    {remaining}/{total}
-                  </span>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: "var(--surface-hover)" }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${pct}%`,
-                      background: isEmpty ? "var(--error-text)" : isLow ? "var(--warning-text)" : "var(--accent)",
-                    }}
-                  />
-                </div>
-              </div>
-            </button>
-
-            {/* Option 2: BYOK */}
-            {hasKey ? (
+              {/* Credits */}
               <button
-                onClick={() => selectSource("byok")}
-                className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-all duration-100"
+                onClick={() => selectSource("credits")}
+                className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors"
                 style={{
-                  background: byokActive ? "var(--accent-muted)" : "transparent",
+                  background: !byokActive ? "var(--accent-muted)" : "transparent",
                   borderBottom: "1px solid var(--line)",
                 }}
               >
-                <div
-                  className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
-                  style={{
-                    borderColor: byokActive ? "var(--accent)" : "var(--line-strong)",
-                  }}
-                >
-                  {byokActive && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: "var(--accent)" }}
-                    />
-                  )}
-                </div>
+                <RadioDot active={!byokActive} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <Key className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                    <Sparkles className="w-3 h-3" style={{ color: "var(--accent)" }} />
                     <span className="text-2xs font-semibold" style={{ color: "var(--text-primary)" }}>
-                      {providerConfig.label.split(" (")[0]}
+                      Cr&eacute;dits Arbo
+                    </span>
+                    <span className="text-2xs" style={{ color: isEmpty ? "var(--error-text)" : "var(--text-faint)" }}>
+                      {remaining}/{total}
                     </span>
                   </div>
-                  <p className="text-2xs mt-0.5 font-mono truncate" style={{ color: "var(--text-faint)" }}>
-                    {maskedKey}
-                  </p>
+                  <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: "var(--surface-hover)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        background: isEmpty ? "var(--error-text)" : isLow ? "var(--warning-text)" : "var(--accent)",
+                      }}
+                    />
+                  </div>
                 </div>
               </button>
-            ) : (
+
+              {/* BYOK key */}
+              {hasKey ? (
+                <button
+                  onClick={() => selectSource("byok")}
+                  className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors"
+                  style={{
+                    background: byokActive ? "var(--accent-muted)" : "transparent",
+                    borderBottom: "1px solid var(--line)",
+                  }}
+                >
+                  <RadioDot active={byokActive} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Key className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                      <span className="text-2xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                        {providerConfig.label.split(" (")[0]}
+                      </span>
+                    </div>
+                    <p className="text-2xs mt-0.5 font-mono truncate" style={{ color: "var(--text-faint)" }}>
+                      {maskedKey}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <a
+                  href="/account"
+                  className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[var(--surface-hover)]"
+                  style={{ borderBottom: "1px solid var(--line)" }}
+                >
+                  <RadioDot active={false} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Key className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                      <span className="text-2xs font-medium" style={{ color: "var(--text-muted)" }}>
+                        Ajouter une cl&eacute; API
+                      </span>
+                    </div>
+                    <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                      Anthropic, OpenAI, Mistral
+                    </p>
+                  </div>
+                  <ChevronRight className="w-3 h-3 shrink-0" style={{ color: "var(--text-faint)" }} />
+                </a>
+              )}
+
+              {/* Settings */}
               <a
                 href="/account"
-                className="w-full flex items-center gap-3 px-3.5 py-3 text-left transition-all duration-100"
-                style={{ borderBottom: "1px solid var(--line)" }}
+                className="flex items-center gap-2 px-3.5 py-2.5 transition-colors hover:bg-[var(--surface-hover)]"
+                style={{ color: "var(--text-faint)" }}
               >
-                <div
-                  className="w-4 h-4 rounded-full border-2 shrink-0"
-                  style={{ borderColor: "var(--line-strong)" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <Key className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
-                    <span className="text-2xs font-medium" style={{ color: "var(--text-muted)" }}>
-                      Ajouter une cl\u00e9 API
-                    </span>
-                  </div>
-                  <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                    Anthropic, OpenAI, Mistral
-                  </p>
-                </div>
-                <ChevronRight className="w-3 h-3 shrink-0" style={{ color: "var(--text-faint)" }} />
+                <Settings className="w-3 h-3" />
+                <span className="text-2xs">G&eacute;rer dans Param&egrave;tres</span>
               </a>
-            )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </div>
+  )
+}
 
-            {/* Footer: Settings link */}
-            <a
-              href="/account"
-              className="flex items-center gap-2 px-3.5 py-2.5 transition-all duration-100"
-              style={{ color: "var(--text-faint)" }}
-              onMouseEnter={e => e.currentTarget.style.color = "var(--text-muted)"}
-              onMouseLeave={e => e.currentTarget.style.color = "var(--text-faint)"}
-            >
-              <Settings className="w-3 h-3" />
-              <span className="text-2xs">G\u00e9rer dans Param\u00e8tres</span>
-            </a>
-          </motion.div>
-        )}
-      </AnimatePresence>,
-      document.body
+function RadioDot({ active }: { active: boolean }) {
+  return (
+    <div
+      className="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+      style={{ borderColor: active ? "var(--accent)" : "var(--line-strong)" }}
+    >
+      {active && (
+        <div className="w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} />
       )}
     </div>
   )
