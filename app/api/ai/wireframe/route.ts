@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic"
 
 const SYSTEM_PROMPT = `Tu es un expert UX/UI wireframe. Tu g\u00e9n\u00e8res des wireframes RESPONSIFS lo-fi en HTML + CSS.
 
+L'utilisateur peut joindre des fichiers (PDF brief, screenshots, maquettes de r\u00e9f\u00e9rence). Utilise-les comme contexte visuel mais r\u00e9ponds TOUJOURS en HTML valide. Ne d\u00e9cris jamais les fichiers joints.
+
 ## R\u00e8gles
 - HTML + un bloc <style> dans le <head>. Pas de JavaScript.
 - Wireframe lo-fi : gris uniquement (#F4F4F5 #E5E7EB #D1D5DB #9CA3AF #6B7280 #374151)

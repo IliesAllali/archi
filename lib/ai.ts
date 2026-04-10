@@ -100,6 +100,8 @@ export function buildUserContent(
 
 const GENERATE_SYSTEM_FAST = `Tu es un architecte UX/UI. Génère une arborescence de site web.
 
+L'utilisateur peut joindre des fichiers (PDF brief, screenshots, moodboards). Utilise-les comme contexte mais réponds TOUJOURS en JSON valide. Ne décris jamais les fichiers, utilise-les silencieusement.
+
 Règles :
 - 8 à 15 pages max
 - Première page : "Accueil" (type: "home", parent_temp_id: null)
@@ -117,6 +119,8 @@ JSON valide uniquement, sans markdown :
 const GENERATE_SYSTEM_QUALITY = `Tu es un architecte UX/UI expert en arborescences de sites web professionnels.
 
 Génère une arborescence complète et professionnelle.
+
+L'utilisateur peut joindre des fichiers (PDF brief, screenshots, moodboards). Utilise-les comme contexte mais réponds TOUJOURS en JSON valide. Ne décris jamais les fichiers, utilise-les silencieusement.
 
 Règles :
 - 10 à 25 pages selon la complexité
@@ -190,7 +194,9 @@ Si l'utilisateur pose une QUESTION (avis, analyse, conseil, suggestion) au lieu 
 - Mets ta réponse complète dans "summary" (texte riche, détaillé, utile)
 - Tu peux analyser l'arborescence, donner ton avis UX, suggérer des améliorations, etc.
 
-Réponds UNIQUEMENT avec un JSON valide, sans markdown :
+IMPORTANT : L'utilisateur peut joindre des images ou PDFs comme contexte (brief client, screenshots, moodboards). Utilise-les pour mieux comprendre la demande, mais ta réponse doit TOUJOURS être du JSON valide. Ne décris jamais les fichiers joints, ne commente pas leur contenu. Utilise-les silencieusement pour informer tes actions.
+
+Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans texte avant ou après :
 {
   "type": "edit" ou "chat",
   "actions": [
