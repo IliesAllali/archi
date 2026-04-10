@@ -169,6 +169,26 @@ export default function AiInput({
     if (e.key === "Escape" && onEscape) onEscape()
   }, [sendKey, disabled, handleSend, onEscape])
 
+  // ─── Paste ────────────────────────────────────────────────────────────────
+
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const pastedFiles: File[] = []
+    for (const item of Array.from(items)) {
+      if (item.kind === "file") {
+        const file = item.getAsFile()
+        if (file) pastedFiles.push(file)
+      }
+    }
+
+    if (pastedFiles.length > 0) {
+      e.preventDefault()
+      processFiles(pastedFiles)
+    }
+  }, [processFiles])
+
   // ─── Styles ───────────────────────────────────────────────────────────────
 
   const rounding = compact ? "rounded-lg" : "rounded-xl"
@@ -203,54 +223,6 @@ export default function AiInput({
         )}
       </AnimatePresence>
 
-      {/* File chips */}
-      <AnimatePresence>
-        {files.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex flex-wrap gap-1.5 mb-2"
-          >
-            {files.map(f => (
-              <motion.div
-                key={f.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-lg text-[11px]"
-                style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-              >
-                {f.type.startsWith("image/") ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={f.dataUrl}
-                    alt={f.name}
-                    className="w-6 h-6 rounded object-cover shrink-0"
-                  />
-                ) : (
-                  <FileText className="w-4 h-4 shrink-0" style={{ color: "var(--accent)" }} />
-                )}
-                <span
-                  className="max-w-[100px] truncate"
-                  style={{ color: "var(--text-primary)" }}
-                  title={`${f.name} (${formatSize(f.size)})`}
-                >
-                  {f.name}
-                </span>
-                <button
-                  onClick={() => removeFile(f.id)}
-                  className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-black/10"
-                  style={{ color: "var(--text-faint)" }}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Error */}
       <AnimatePresence>
         {error && (
@@ -266,50 +238,99 @@ export default function AiInput({
         )}
       </AnimatePresence>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPT_STRING}
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) processFiles(e.target.files)
+          e.target.value = ""
+        }}
+      />
+
       {/* Input row */}
-      <div className="flex gap-2">
-        {/* Paperclip button */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={disabled}
-          className={`self-end ${btnPad} ${rounding} transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0`}
-          style={{ color: "var(--text-faint)" }}
-          title="Joindre un fichier (image, PDF)"
-        >
-          <Paperclip className="w-4 h-4" />
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPT_STRING}
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files) processFiles(e.target.files)
-            e.target.value = "" // allow re-selecting same file
-          }}
-        />
-
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef || internalRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={rows}
-          disabled={disabled}
-          className={`flex-1 ${pad} ${rounding} ${textSize} focus:outline-none transition-all resize-none disabled:opacity-50`}
+      <div className="flex gap-2 items-end">
+        {/* Textarea wrapper with paperclip inside */}
+        <div
+          className={`flex-1 flex flex-col ${rounding} transition-all`}
           style={{
             background: "var(--surface)",
-            color: "var(--text-primary)",
             border: "1px solid var(--line)",
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)" }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
-          onKeyDown={handleKeyDown}
-        />
+        >
+          {/* File chips inside field */}
+          <AnimatePresence>
+            {files.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-wrap gap-1.5 px-2.5 pt-2"
+              >
+                {files.map(f => (
+                  <motion.div
+                    key={f.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex items-center gap-1.5 pl-1 pr-1.5 py-0.5 rounded-md text-[11px]"
+                    style={{ background: "var(--bg-hover, var(--canvas-bg))", border: "1px solid var(--line)" }}
+                  >
+                    {f.type.startsWith("image/") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={f.dataUrl} alt={f.name} className="w-6 h-6 rounded object-cover shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 shrink-0" style={{ color: "var(--accent)" }} />
+                    )}
+                    <span className="max-w-[100px] truncate" style={{ color: "var(--text-primary)" }} title={`${f.name} (${formatSize(f.size)})`}>
+                      {f.name}
+                    </span>
+                    <button onClick={() => removeFile(f.id)} className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-black/10" style={{ color: "var(--text-faint)" }}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <textarea
+            ref={textareaRef || internalRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            rows={rows}
+            disabled={disabled}
+            className={`w-full ${pad} ${textSize} focus:outline-none transition-all resize-none disabled:opacity-50 bg-transparent`}
+            onFocus={(e) => {
+              const wrapper = e.currentTarget.parentElement
+              if (wrapper) wrapper.style.borderColor = "var(--accent)"
+            }}
+            onBlur={(e) => {
+              const wrapper = e.currentTarget.parentElement
+              if (wrapper) wrapper.style.borderColor = "var(--line)"
+            }}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+          />
+
+          {/* Bottom bar: paperclip inside field */}
+          <div className="flex items-center px-2 pb-1.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={disabled}
+              className="p-1 rounded transition-all hover:bg-black/5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ color: "var(--text-faint)" }}
+              title="Joindre un fichier ou coller (Ctrl+V)"
+            >
+              <Paperclip className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
 
         {/* Send button */}
         {renderSendButton
@@ -318,7 +339,7 @@ export default function AiInput({
             <button
               onClick={handleSend}
               disabled={disabled || (!value.trim() && files.length === 0)}
-              className={`self-end ${btnPad} ${rounding} transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0`}
+              className={`${btnPad} ${rounding} transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0`}
               style={{ background: "var(--accent)", color: "#fff" }}
             >
               <Send className="w-4 h-4" />
