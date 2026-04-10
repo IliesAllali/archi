@@ -189,20 +189,11 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
     setAiChatLoading(true);
 
     try {
-      const { getStoredApiKey, getStoredProvider, getStoredSpeed } = await import("@/lib/ai-providers");
+      const { getStoredApiKey, getStoredProvider, getStoredSpeed, isByokEnabled } = await import("@/lib/ai-providers");
       const provider = getStoredProvider();
-      const apiKey = getStoredApiKey(provider);
+      const byokKey = isByokEnabled() ? getStoredApiKey(provider) : "";
+      const apiKey = byokKey || "arbo_credits";
       const speed = getStoredSpeed();
-      if (!apiKey) {
-        const errMsg: ChatMessage = {
-          id: `e-${Date.now()}`, role: "assistant",
-          content: "\u26a0\ufe0f Aucune cl\u00e9 API configur\u00e9e. Va dans Param\u00e8tres > IA pour ajouter ta cl\u00e9 ou utilise les cr\u00e9dits Arbo.",
-          timestamp: Date.now(),
-        };
-        setAiChatMessages(prev => [...prev, errMsg]);
-        setAiChatLoading(false);
-        return;
-      }
 
       const csrf = document.cookie.match(/arbo_csrf=([^;]+)/)?.[1];
       const headers: Record<string, string> = { "Content-Type": "application/json" };

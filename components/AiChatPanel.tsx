@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Trash2, User, Check, Loader2 } from "lucide-react";
+import { Sparkles, X, Trash2, Check, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
 import { AiThinkingBlock, fullMarkdownComponents, ACTION_ICONS, ACTION_LABELS, type AiActionType } from "./ai";
@@ -78,25 +78,21 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
       className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}
     >
       {/* Avatar */}
-      <div
-        className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-        style={{
-          background: isUser ? "var(--surface-hover)" : "var(--accent-muted)",
-        }}
-      >
-        {isUser ? (
-          <User className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
-        ) : (
+      {!isUser && (
+        <div
+          className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center mt-0.5"
+          style={{ background: "var(--accent-muted)" }}
+        >
           <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Bubble */}
       <div
-        className={`flex-1 min-w-0 rounded-xl px-4 py-3 ${isUser ? "ml-6" : "mr-2"}`}
+        className={`flex-1 min-w-0 rounded-xl px-4 py-3 ${isUser ? "ml-10" : "mr-6"}`}
         style={{
-          background: isUser ? "var(--surface-hover)" : "var(--surface)",
-          border: isUser ? "none" : "1px solid var(--line)",
+          background: isUser ? "var(--accent-muted)" : "var(--surface)",
+          border: isUser ? "1px solid var(--accent-strong)" : "1px solid var(--line)",
         }}
       >
         {isUser ? (

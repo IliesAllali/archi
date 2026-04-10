@@ -175,8 +175,12 @@ export async function POST(req: NextRequest) {
         }
 
         // Chat mode: AI answered a question instead of making modifications
-        if (result.type === "chat") {
+        // Also treat edit with 0 actions as chat (AI described instead of acting)
+        if (result.type === "chat" || result.actions.length === 0) {
           if (useCredits) deductCredits(payload.sub, speed);
+          if (result.type !== "chat" && result.actions.length === 0) {
+            console.warn(`[AI Edit] AI returned type=edit with 0 actions — treating as chat. Summary: "${result.summary?.slice(0, 150)}"`);
+          }
           send("done", { summary: result.summary, total: 0, type: "chat" });
           controller.close();
           return;
