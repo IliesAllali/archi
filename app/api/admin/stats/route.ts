@@ -38,6 +38,19 @@ export async function GET() {
     db.prepare("SELECT COUNT(*) as c FROM project_share_links").get() as { c: number }
   ).c
 
+  const aiCredits = db.prepare("SELECT COALESCE(SUM(credits_total),0) as total, COALESCE(SUM(credits_used),0) as used FROM ai_credits").get() as { total: number; used: number }
+
+  const totalSnapshots = (db.prepare("SELECT COUNT(*) as c FROM version_snapshots").get() as { c: number }).c
+
+  const lastSignup = db.prepare("SELECT name, email, created_at FROM users ORDER BY created_at DESC LIMIT 1").get() as { name: string; email: string; created_at: number } | undefined
+
+  const recentAiActions = db.prepare(`
+    SELECT a.action, a.created_at, p.name as project_name
+    FROM ai_audit_log a
+    LEFT JOIN projects p ON p.id = a.project_id
+    ORDER BY a.created_at DESC LIMIT 5
+  `).all() as { action: string; created_at: number; project_name: string | null }[]
+
   return NextResponse.json({
     totalUsers,
     totalProjects,
@@ -47,5 +60,10 @@ export async function GET() {
     aiActions7d,
     activeTokens,
     shareLinks,
+    aiCreditsTotal: aiCredits.total,
+    aiCreditsUsed: aiCredits.used,
+    totalSnapshots,
+    lastSignup: lastSignup || null,
+    recentAiActions,
   })
 }

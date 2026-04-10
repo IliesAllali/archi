@@ -22,6 +22,11 @@ interface Stats {
   aiActions7d: number;
   activeTokens: number;
   shareLinks: number;
+  aiCreditsTotal: number;
+  aiCreditsUsed: number;
+  totalSnapshots: number;
+  lastSignup: { name: string; email: string; created_at: number } | null;
+  recentAiActions: { action: string; created_at: number; project_name: string | null }[];
 }
 
 interface UserRow {
@@ -32,6 +37,10 @@ interface UserRow {
   color: string;
   role: string;
   projectCount: number;
+  nodeCount: number;
+  creditsUsed: number;
+  creditsTotal: number;
+  lastActive: number;
   createdAt: number;
 }
 
@@ -144,16 +153,52 @@ export default function AdminClient() {
 
         {/* Stats Grid */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} color="#F76B15" />
-            <StatCard icon={FolderKanban} label="Projets" value={stats.totalProjects} color="#8B5CF6" />
-            <StatCard icon={GitBranch} label="Pages" value={stats.totalNodes} color="#10B981" />
-            <StatCard icon={Activity} label="Actifs (30j)" value={stats.activeUsers30d} color="#F59E0B" />
-            <StatCard icon={BarChart3} label="Projets (7j)" value={stats.projectsCreated7d} color="#EC4899" />
-            <StatCard icon={Bot} label="Actions IA (7j)" value={stats.aiActions7d} color="#06B6D4" />
-            <StatCard icon={Bot} label="Tokens actifs" value={stats.activeTokens} color="#EF4444" />
-            <StatCard icon={Share2} label="Liens partage" value={stats.shareLinks} color="#8B5CF6" />
-          </div>
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} color="#F76B15" />
+              <StatCard icon={FolderKanban} label="Projets" value={stats.totalProjects} color="#8B5CF6" />
+              <StatCard icon={GitBranch} label="Pages" value={stats.totalNodes} color="#10B981" />
+              <StatCard icon={Activity} label="Actifs (30j)" value={stats.activeUsers30d} color="#F59E0B" />
+              <StatCard icon={BarChart3} label="Projets (7j)" value={stats.projectsCreated7d} color="#EC4899" />
+              <StatCard icon={Bot} label="Actions IA (7j)" value={stats.aiActions7d} color="#06B6D4" />
+              <StatCard icon={Bot} label="Crédits IA" value={`${stats.aiCreditsUsed}/${stats.aiCreditsTotal}`} color="#EF4444" />
+              <StatCard icon={Share2} label="Liens partage" value={stats.shareLinks} color="#8B5CF6" />
+            </div>
+
+            {/* Recent activity row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+              {/* Last signup */}
+              {stats.lastSignup && (
+                <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Dernière inscription</p>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{stats.lastSignup.name}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    {stats.lastSignup.email} — {new Date(stats.lastSignup.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+              )}
+
+              {/* Recent AI actions */}
+              {stats.recentAiActions.length > 0 && (
+                <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wider mb-1.5" style={{ color: "var(--text-faint)" }}>Dernières actions IA</p>
+                  <div className="space-y-1">
+                    {stats.recentAiActions.map((a, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span style={{ color: "var(--text-primary)" }}>
+                          <span className="font-mono text-[10px] px-1 py-0.5 rounded mr-1" style={{ background: "var(--bg-hover)" }}>{a.action}</span>
+                          {a.project_name || "?"}
+                        </span>
+                        <span style={{ color: "var(--text-faint)" }}>
+                          {new Date(a.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Users Table */}
@@ -174,6 +219,9 @@ export default function AdminClient() {
                   <th className="text-left px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Email</th>
                   <th className="text-left px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Role</th>
                   <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Projets</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Pages</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Crédits IA</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Actif</th>
                   <th className="text-right px-4 py-2 font-medium" style={{ color: "var(--text-muted)" }}>Inscrit</th>
                 </tr>
               </thead>
@@ -222,6 +270,15 @@ export default function AdminClient() {
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>
                       {user.projectCount}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: "var(--text-muted)" }}>
+                      {user.nodeCount}
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums" style={{ color: user.creditsUsed >= user.creditsTotal ? "var(--error, #ef4444)" : "var(--text-muted)" }}>
+                      {user.creditsUsed}/{user.creditsTotal}
+                    </td>
+                    <td className="px-4 py-2.5 text-right" style={{ color: "var(--text-faint)" }}>
+                      {new Date(user.lastActive).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                     </td>
                     <td className="px-4 py-2.5 text-right" style={{ color: "var(--text-faint)" }}>
                       {new Date(user.createdAt).toLocaleDateString("fr-FR", {
