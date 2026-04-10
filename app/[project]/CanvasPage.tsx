@@ -193,7 +193,16 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       const provider = getStoredProvider();
       const apiKey = getStoredApiKey(provider);
       const speed = getStoredSpeed();
-      if (!apiKey) { setAiChatLoading(false); return; }
+      if (!apiKey) {
+        const errMsg: ChatMessage = {
+          id: `e-${Date.now()}`, role: "assistant",
+          content: "\u26a0\ufe0f Aucune cl\u00e9 API configur\u00e9e. Va dans Param\u00e8tres > IA pour ajouter ta cl\u00e9 ou utilise les cr\u00e9dits Arbo.",
+          timestamp: Date.now(),
+        };
+        setAiChatMessages(prev => [...prev, errMsg]);
+        setAiChatLoading(false);
+        return;
+      }
 
       const csrf = document.cookie.match(/arbo_csrf=([^;]+)/)?.[1];
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -288,7 +297,27 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
           }
         }
       }
-    } catch { /* ignore */ } finally {
+
+      // If stream ended without any AI response, show fallback
+      setAiChatMessages(prev => {
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg && lastMsg.role === "user") {
+          return [...prev, {
+            id: `e-${Date.now()}`, role: "assistant" as const,
+            content: "\u26a0\ufe0f L'IA n'a pas r\u00e9pondu. R\u00e9essaie ou reformule ta demande.",
+            timestamp: Date.now(),
+          }];
+        }
+        return prev;
+      });
+    } catch (err) {
+      const errMsg: ChatMessage = {
+        id: `e-${Date.now()}`, role: "assistant",
+        content: `\u26a0\ufe0f ${err instanceof Error ? err.message : "Erreur de connexion. V\u00e9rifie ta connexion internet."}`,
+        timestamp: Date.now(),
+      };
+      setAiChatMessages(prev => [...prev, errMsg]);
+    } finally {
       setAiChatLoading(false);
     }
   }, [aiChatMessages, project.id]);
