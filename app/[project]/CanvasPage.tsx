@@ -84,8 +84,22 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
   const [commentsNodeLabel, setCommentsNodeLabel] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
-  const [aiChatMessages, setAiChatMessages] = useState<ChatMessage[]>([]);
+  const [aiChatMessages, setAiChatMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = sessionStorage.getItem(`arbo-chat-${project.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [aiChatLoading, setAiChatLoading] = useState(false);
+
+  // Persist chat to sessionStorage
+  useEffect(() => {
+    if (aiChatMessages.length > 0) {
+      try { sessionStorage.setItem(`arbo-chat-${project.id}`, JSON.stringify(aiChatMessages)); }
+      catch { /* quota exceeded */ }
+    }
+  }, [aiChatMessages, project.id]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const initProject = useCanvasStore((s) => s.initProject);
@@ -660,7 +674,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
         onClose={() => setAiChatOpen(false)}
         messages={aiChatMessages}
         onSend={handleAiChatFromSidebar}
-        onClear={() => setAiChatMessages([])}
+        onClear={() => { setAiChatMessages([]); try { sessionStorage.removeItem(`arbo-chat-${project.id}`); } catch {} }}
         loading={aiChatLoading}
         onApplyActions={handleApplyActions}
       />
