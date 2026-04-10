@@ -69,6 +69,20 @@ export function getAllProjects(): Project[] {
   })
 }
 
+export function getProjectsForUser(userId: string): Project[] {
+  const rows = db.prepare(`
+    SELECT DISTINCT p.* FROM projects p
+    LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
+    WHERE p.archived = 0 AND (p.owner_id = ? OR pm.user_id IS NOT NULL)
+    ORDER BY p.updated_at DESC
+  `).all(userId, userId) as DbProject[]
+
+  return rows.map((proj) => {
+    const nodes = getActiveNodes(proj.id)
+    return dbProjectToProject(proj, nodes)
+  })
+}
+
 export function getProject(idOrSlug: string): Project | null {
   const proj = db
     .prepare('SELECT * FROM projects WHERE (id = ? OR slug = ?) AND archived = 0')

@@ -1,4 +1,5 @@
-import { getAllProjects, getDemoProject } from "@/lib/project-loader";
+import { getAllProjects, getDemoProject, getProjectsForUser } from "@/lib/project-loader";
+import { getSession } from "@/lib/auth";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -7,9 +8,14 @@ import UserMenu from "@/components/UserMenu";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const allProjects = getAllProjects();
+export default async function HomePage() {
+  const session = await getSession();
   const demo = getDemoProject();
+
+  const allProjects = session
+    ? getProjectsForUser(session.sub)
+    : [];
+
   const projects = allProjects.filter((p) => demo ? p.id !== demo.id : true);
 
   return (
