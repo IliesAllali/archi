@@ -301,49 +301,79 @@ async function callLLM(
 }
 
 function parseJSON(text: string): unknown {
+  // Strategy: try multiple extraction methods, from most to least precise
+
+  const attempts: string[] = []
+
   // 1. Try to extract JSON from markdown code blocks
-  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
-  let cleaned = codeBlockMatch ? codeBlockMatch[1].trim() : text.trim();
+  const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/)
+  if (codeBlockMatch) attempts.push(codeBlockMatch[1].trim())
 
-  // 2. Strip leading/trailing non-JSON text (find first { and last })
-  const firstBrace = cleaned.indexOf("{");
-  const lastBrace = cleaned.lastIndexOf("}");
+  // 2. Extract from first { to last }
+  const firstBrace = text.indexOf("{")
+  const lastBrace = text.lastIndexOf("}")
   if (firstBrace !== -1 && lastBrace > firstBrace) {
-    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+    attempts.push(text.slice(firstBrace, lastBrace + 1))
   }
 
-  // 3. Try direct parse
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    // 4. Try to repair truncated JSON by closing open structures
-    let repaired = cleaned;
-    // Count open brackets/braces
-    let openBraces = 0, openBrackets = 0;
-    let inString = false, escape = false;
-    for (const ch of repaired) {
-      if (escape) { escape = false; continue; }
-      if (ch === "\\") { escape = true; continue; }
-      if (ch === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (ch === "{") openBraces++;
-      else if (ch === "}") openBraces--;
-      else if (ch === "[") openBrackets++;
-      else if (ch === "]") openBrackets--;
+  // 3. Raw text as-is
+  attempts.push(text.trim())
+
+  for (const candidate of attempts) {
+    // Direct parse
+    try {
+      return JSON.parse(candidate)
+    } catch { /* try repair */ }
+
+    // Repair truncated JSON
+    try {
+      let repaired = candidate
+      // Strip any trailing text after the main JSON (e.g. "} Voici mes suggestions...")
+      const balanced = findBalancedEnd(repaired)
+      if (balanced) repaired = balanced
+
+      let openBraces = 0, openBrackets = 0
+      let inString = false, escape = false
+      for (const ch of repaired) {
+        if (escape) { escape = false; continue }
+        if (ch === "\\") { escape = true; continue }
+        if (ch === '"') { inString = !inString; continue }
+        if (inString) continue
+        if (ch === "{") openBraces++
+        else if (ch === "}") openBraces--
+        else if (ch === "[") openBrackets++
+        else if (ch === "]") openBrackets--
+      }
+      if (inString) repaired += '"'
+      repaired = repaired.replace(/,\s*$/, "")
+      for (let i = 0; i < openBrackets; i++) repaired += "]"
+      for (let i = 0; i < openBraces; i++) repaired += "}"
+
+      return JSON.parse(repaired)
+    } catch { /* next attempt */ }
+  }
+
+  // 4. Last resort: if text contains no JSON but looks like a chat response,
+  //    return a chat-type response so the caller doesn't crash
+  return { type: "chat", actions: [], summary: text.trim() }
+}
+
+/** Find the end of a balanced JSON object starting from index 0 */
+function findBalancedEnd(text: string): string | null {
+  let depth = 0, inString = false, escape = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === "\\") { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === "{" || ch === "[") depth++
+    else if (ch === "}" || ch === "]") {
+      depth--
+      if (depth === 0) return text.slice(0, i + 1)
     }
-
-    // If we're inside a string, close it
-    if (inString) repaired += '"';
-
-    // Remove trailing comma before closing
-    repaired = repaired.replace(/,\s*$/, "");
-
-    // Close open brackets and braces
-    for (let i = 0; i < openBrackets; i++) repaired += "]";
-    for (let i = 0; i < openBraces; i++) repaired += "}";
-
-    return JSON.parse(repaired);
   }
+  return null // not balanced
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
