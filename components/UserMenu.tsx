@@ -53,8 +53,8 @@ export default function UserMenu() {
   return (
     <div ref={ref} className="relative">
       {user.avatar ? (
-        <button onClick={() => setOpen(!open)} className="transition-transform hover:scale-105" title={user.name}>
-          <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover" />
+        <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center transition-transform hover:scale-105" title={user.name}>
+          <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover block" />
         </button>
       ) : (
         <button
