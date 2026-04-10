@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Key, ChevronRight, Settings } from "lucide-react"
 import {
@@ -26,7 +27,10 @@ export default function AiSourcePicker({ className = "" }: Props) {
   const [byokKey, setByokKey] = useState("")
   const [byokActive, setByokActive] = useState(false)
   const [open, setOpen] = useState(false)
+  const [popoverPos, setPopoverPos] = useState<{ top: number; right: number } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const provider = getStoredProvider()
@@ -44,7 +48,10 @@ export default function AiSourcePicker({ className = "" }: Props) {
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (btnRef.current?.contains(t)) return
+      if (popoverRef.current?.contains(t)) return
+      setOpen(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
@@ -87,7 +94,14 @@ export default function AiSourcePicker({ className = "" }: Props) {
     <div ref={ref} className={`relative ${className}`}>
       {/* Badge trigger */}
       <button
-        onClick={() => setOpen(v => !v)}
+        ref={btnRef}
+        onClick={() => {
+          if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect()
+            setPopoverPos({ top: rect.top - 8, right: window.innerWidth - rect.right })
+          }
+          setOpen(v => !v)
+        }}
         className="flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-[0.97]"
         style={{ background: badgeBg, color: badgeColor }}
         title={byokActive ? `Cl\u00e9 ${providerConfig.label}` : `${remaining}/${total} cr\u00e9dits`}
@@ -114,22 +128,28 @@ export default function AiSourcePicker({ className = "" }: Props) {
         )}
       </button>
 
-      {/* Popover */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 4 }}
-            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute bottom-full right-0 mb-2 w-[260px] rounded-xl overflow-hidden z-50"
-            style={{
-              background: "var(--elevated)",
-              border: "1px solid var(--line-strong)",
-              boxShadow: "var(--shadow-panel)",
-              transformOrigin: "bottom right",
-            }}
-          >
+      {/* Popover — portaled to body to escape overflow:hidden */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {open && popoverPos && (
+            <motion.div
+              ref={popoverRef}
+              initial={{ opacity: 0, scale: 0.95, y: 4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 4 }}
+              transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed w-[260px] rounded-xl overflow-hidden"
+              style={{
+                top: popoverPos.top,
+                right: popoverPos.right,
+                transform: "translateY(-100%)",
+                zIndex: 9999,
+                background: "var(--elevated)",
+                border: "1px solid var(--line-strong)",
+                boxShadow: "var(--shadow-panel)",
+                transformOrigin: "bottom right",
+              }}
+            >
             {/* Option 1: Credits */}
             <button
               onClick={() => selectSource("credits")}
@@ -253,7 +273,9 @@ export default function AiSourcePicker({ className = "" }: Props) {
             </a>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </div>
   )
 }
