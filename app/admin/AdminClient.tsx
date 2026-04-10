@@ -41,6 +41,7 @@ interface ProjectRow {
   name: string;
   client: string | null;
   version: string;
+  owner_id: string;
   owner_name: string | null;
   owner_email: string | null;
   node_count: number;
@@ -87,6 +88,7 @@ export default function AdminClient() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterOwner, setFilterOwner] = useState<string | null>(null);
 
   useEffect(() => {
     const csrfToken = document.cookie
@@ -177,7 +179,15 @@ export default function AdminClient() {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <tr
+                    key={user.id}
+                    onClick={() => setFilterOwner(filterOwner === user.id ? null : user.id)}
+                    className="cursor-pointer transition-colors"
+                    style={{
+                      borderBottom: "1px solid var(--line)",
+                      background: filterOwner === user.id ? "var(--accent-muted, var(--bg-hover))" : undefined,
+                    }}
+                  >
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         <div
@@ -232,10 +242,21 @@ export default function AdminClient() {
           className="rounded-xl overflow-hidden mt-6"
           style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
         >
-          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--line)" }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--line)" }}>
             <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Tous les projets ({projects.length})
+              {filterOwner
+                ? `Projets de ${users.find(u => u.id === filterOwner)?.name || "?"} (${projects.filter(p => p.owner_id === filterOwner).length})`
+                : `Tous les projets (${projects.length})`}
             </h2>
+            {filterOwner && (
+              <button
+                onClick={() => setFilterOwner(null)}
+                className="text-[10px] px-2 py-1 rounded font-medium transition-colors hover:brightness-110"
+                style={{ background: "var(--bg-hover)", color: "var(--text-muted)" }}
+              >
+                Voir tous
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -250,7 +271,7 @@ export default function AdminClient() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((p) => (
+                {projects.filter(p => !filterOwner || p.owner_id === filterOwner).map((p) => (
                   <tr key={p.id} style={{ borderBottom: "1px solid var(--line)" }}>
                     <td className="px-4 py-2.5">
                       <div>
