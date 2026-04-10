@@ -168,7 +168,7 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
     setAiChatMessages(prev => [...prev, userMsg, aiMsg]);
   }, []);
 
-  const handleAiChatFromSidebar = useCallback(async (message: string) => {
+  const handleAiChatFromSidebar = useCallback(async (message: string, attachments?: { id: string; name: string; type: string; base64: string; dataUrl: string; size: number }[]) => {
     const now = Date.now();
     const userMsg: ChatMessage = { id: `u-${now}`, role: "user", content: message, timestamp: now };
     setAiChatMessages(prev => [...prev, userMsg]);
@@ -190,7 +190,10 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
       const res = await fetch("/api/ai/edit", {
         method: "POST",
         headers,
-        body: JSON.stringify({ prompt: message, apiKey, projectId: project.id, provider, speed, history, propose: true }),
+        body: JSON.stringify({
+          prompt: message, apiKey, projectId: project.id, provider, speed, history, propose: true,
+          attachments: attachments?.map(f => ({ name: f.name, type: f.type, base64: f.base64 })),
+        }),
       });
 
       const contentType = res.headers.get("content-type") || "";

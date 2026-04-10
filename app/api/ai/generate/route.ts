@@ -25,8 +25,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectName, clientName, provider: rawProvider, speed: rawSpeed } = body as {
+  const { prompt, apiKey, projectName, clientName, provider: rawProvider, speed: rawSpeed, attachments } = body as {
     prompt?: string; apiKey?: string; projectName?: string; clientName?: string; provider?: string; speed?: string;
+    attachments?: { name: string; type: string; base64: string }[];
   };
   const provider: AiProvider = VALID_PROVIDERS.includes(rawProvider as AiProvider)
     ? (rawProvider as AiProvider) : "anthropic";
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
           }
         };
 
-        const result = await generateSitemap(resolvedApiKey, prompt, useCredits ? "anthropic" : provider, speed, onChunk);
+        const result = await generateSitemap(resolvedApiKey, prompt, useCredits ? "anthropic" : provider, speed, onChunk, attachments);
 
         // Phase 2: creating project
         send("status", { phase: "creating", message: `${result.nodes.length} pages g\u00e9n\u00e9r\u00e9es, cr\u00e9ation du projet...` });

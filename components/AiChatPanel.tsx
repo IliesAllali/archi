@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Send, Trash2, User, Check, Loader2, Plus, Pencil, Trash, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import AiInput, { type AttachedFile } from "./AiInput";
 
 export interface AiAction {
   action: "add" | "update" | "delete" | "move";
@@ -32,7 +33,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   messages: ChatMessage[];
-  onSend: (message: string) => void;
+  onSend: (message: string, attachments?: AttachedFile[]) => void;
   onClear: () => void;
   loading: boolean;
   onApplyActions?: (messageId: string) => void;
@@ -262,11 +263,12 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
     }
   }, [open]);
 
-  const handleSend = useCallback(() => {
-    if (!input.trim() || loading) return;
-    onSend(input.trim());
+  const handleSend = useCallback((text: string, files: AttachedFile[]) => {
+    if (!text && files.length === 0) return;
+    if (loading) return;
+    onSend(text, files.length > 0 ? files : undefined);
     setInput("");
-  }, [input, loading, onSend]);
+  }, [loading, onSend]);
 
   return (
     <AnimatePresence>
@@ -362,39 +364,17 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
 
             {/* Input */}
             <div className="shrink-0 px-4 py-4" style={{ borderTop: "1px solid var(--line)" }}>
-              <div className="flex gap-2.5">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Pose une question..."
-                  rows={2}
-                  disabled={loading}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl text-[13px] focus:outline-none transition-all resize-none disabled:opacity-50"
-                  style={{
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    border: "1px solid var(--line)",
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !loading) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                    if (e.key === "Escape") onClose();
-                  }}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={loading || !input.trim()}
-                  className="self-end p-2.5 rounded-xl transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  style={{ background: "var(--accent)", color: "#fff" }}
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
+              <AiInput
+                value={input}
+                onChange={setInput}
+                onSend={handleSend}
+                placeholder="Pose une question..."
+                rows={2}
+                disabled={loading}
+                sendKey="ctrl+enter"
+                onEscape={onClose}
+                textareaRef={inputRef}
+              />
               <p className="text-2xs mt-2 px-1" style={{ color: "var(--text-faint)" }}>
                 Ctrl+Enter pour envoyer
               </p>

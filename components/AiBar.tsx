@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem } from "lucide-react";
+import AiInput, { type AttachedFile } from "./AiInput";
 import { useCanvasStore } from "@/store/canvas-store";
 import { Events } from "@/lib/posthog";
 import {
@@ -54,6 +55,7 @@ interface Props {
 export default function AiBar({ projectId, projectName, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult }: Props) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -91,14 +93,19 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
     }
   }, [open]);
 
-  const handleSubmit = useCallback(async () => {
-    if (!prompt.trim()) return;
+  const handleSubmit = useCallback(async (filesOverride?: AttachedFile[]) => {
+    if (!prompt.trim() && !(filesOverride || attachedFiles).length) return;
 
     const provider = getStoredProvider();
     const byokKey = isByokEnabled() ? getStoredApiKey(provider) : "";
     const apiKey = byokKey || "arbo_credits";
 
     const currentPrompt = prompt.trim();
+    const files = filesOverride || attachedFiles;
+    const currentAttachments = files.length > 0
+      ? files.map(f => ({ name: f.name, type: f.type, base64: f.base64 }))
+      : undefined;
+    setAttachedFiles([]);
     setLoading(true);
     setError("");
     setSuccess("");
@@ -143,6 +150,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               editPrompt: currentPrompt,
               fidelity: wfFidelity,
               font: wfFont,
+              attachments: currentAttachments,
             }),
           });
 
@@ -218,6 +226,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
             } : {
               editPrompt: currentPrompt,
             }),
+            attachments: currentAttachments,
           }),
         });
 
@@ -291,6 +300,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           provider: byokKey ? provider : "anthropic",
           speed,
           history,
+          attachments: currentAttachments,
         }),
       });
 
@@ -381,7 +391,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, projectId, projectName, speed, initProject, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult]);
+  }, [prompt, attachedFiles, projectId, projectName, speed, initProject, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult]);
 
   return (
     <>
@@ -561,56 +571,45 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                   ))}
                 </div>
               )}
-              <div className="flex gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={wireframeContext
-                    ? wireframeTarget === "header" ? "Modifie le Header global..."
-                    : wireframeTarget === "footer" ? "Modifie le Footer global..."
-                    : `Wireframe "${wireframeContext.pageLabel}" \u2014 d\u00e9cris les modifications...`
-                    : "Modifie l'arbo ou pose une question..."}
-                  rows={1}
-                  disabled={loading}
-                  className="flex-1 px-2.5 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none disabled:opacity-50"
-                  style={{
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    border: "1px solid var(--line)",
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)"; }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey && !loading) {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                    if (e.key === "Escape") setOpen(false);
-                  }}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading || !prompt.trim()}
-                  className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  style={{ background: "var(--accent)", color: "#fff" }}
-                >
-                  {loading ? (
-                    <div className="w-4 h-4 flex items-center justify-center gap-[2px]">
-                      {[0, 1, 2].map((i) => (
-                        <motion.span
-                          key={i}
-                          className="w-[3px] h-[3px] rounded-full bg-white"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
+              <AiInput
+                value={prompt}
+                onChange={setPrompt}
+                onSend={(_text, files) => handleSubmit(files)}
+                placeholder={wireframeContext
+                  ? wireframeTarget === "header" ? "Modifie le Header global..."
+                  : wireframeTarget === "footer" ? "Modifie le Footer global..."
+                  : `Wireframe "${wireframeContext.pageLabel}" \u2014 d\u00e9cris les modifications...`
+                  : "Modifie l'arbo ou pose une question..."}
+                rows={1}
+                disabled={loading}
+                compact
+                sendKey="enter"
+                onEscape={() => setOpen(false)}
+                textareaRef={inputRef}
+                renderSendButton={(send) => (
+                  <button
+                    onClick={send}
+                    disabled={loading || !prompt.trim()}
+                    className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 flex items-center justify-center gap-[2px]">
+                        {[0, 1, 2].map((i) => (
+                          <motion.span
+                            key={i}
+                            className="w-[3px] h-[3px] rounded-full bg-white"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+              />
               <div className="hidden sm:flex items-center justify-between mt-2">
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
                   Enter pour envoyer, Shift+Enter pour retour ligne

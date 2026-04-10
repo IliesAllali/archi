@@ -51,6 +51,51 @@ export function getProviderLabel(provider: AiProvider): string {
   return PROVIDER_LABELS[provider] || provider;
 }
 
+// ─── Multimodal helpers ─────────────────────────────────────────────────────
+
+export interface AttachmentInput {
+  name: string
+  type: string   // MIME type
+  base64: string // raw base64, no data: prefix
+}
+
+type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+
+export type ContentBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; source: { type: "base64"; media_type: ImageMediaType; data: string } }
+  | { type: "document"; source: { type: "base64"; media_type: "application/pdf"; data: string } }
+
+/**
+ * Build a Claude message content array from text + optional attachments.
+ * Returns a plain string if no attachments (backwards-compatible).
+ */
+export function buildUserContent(
+  text: string,
+  attachments?: AttachmentInput[]
+): string | ContentBlock[] {
+  if (!attachments || attachments.length === 0) return text
+
+  const blocks: ContentBlock[] = []
+
+  for (const att of attachments) {
+    if (att.type === "application/pdf") {
+      blocks.push({
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: att.base64 },
+      })
+    } else if (att.type.startsWith("image/")) {
+      blocks.push({
+        type: "image",
+        source: { type: "base64", media_type: att.type as ImageMediaType, data: att.base64 },
+      })
+    }
+  }
+
+  blocks.push({ type: "text", text })
+  return blocks
+}
+
 // ─── System prompts ──────────────────────────────────────────────────────────
 
 const GENERATE_SYSTEM_FAST = `Tu es un architecte UX/UI. Génère une arborescence de site web.
@@ -164,7 +209,7 @@ async function callLLM(
   provider: AiProvider,
   apiKey: string,
   system: string,
-  messages: { role: "user" | "assistant"; content: string }[],
+  messages: { role: "user" | "assistant"; content: string | ContentBlock[] }[],
   speed: AiSpeed = "fast",
   onChunk?: (chunk: string) => void
 ): Promise<string> {
@@ -208,6 +253,14 @@ async function callLLM(
 
   const client = new OpenAI(config);
 
+  // OpenAI/Mistral don't support our ContentBlock[] — extract text only
+  const textMessages = messages.map(m => ({
+    role: m.role,
+    content: typeof m.content === "string"
+      ? m.content
+      : m.content.filter(b => b.type === "text").map(b => (b as { type: "text"; text: string }).text).join("\n"),
+  }));
+
   if (onChunk) {
     const stream = await client.chat.completions.create({
       model,
@@ -215,7 +268,7 @@ async function callLLM(
       stream: true,
       messages: [
         { role: "system", content: system },
-        ...messages,
+        ...textMessages,
       ],
     });
     let full = "";
@@ -234,7 +287,7 @@ async function callLLM(
     max_tokens: maxTokens,
     messages: [
       { role: "system", content: system },
-      ...messages,
+      ...textMessages,
     ],
   });
 
@@ -294,10 +347,12 @@ export async function generateSitemap(
   prompt: string,
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast",
-  onChunk?: (chunk: string) => void
+  onChunk?: (chunk: string) => void,
+  attachments?: AttachmentInput[]
 ): Promise<{ nodes: AiNode[] }> {
   const system = speed === "quality" ? GENERATE_SYSTEM_QUALITY : GENERATE_SYSTEM_FAST;
-  const text = await callLLM(provider, apiKey, system, [{ role: "user", content: prompt }], speed, onChunk);
+  const content = buildUserContent(prompt, attachments);
+  const text = await callLLM(provider, apiKey, system, [{ role: "user", content }], speed, onChunk);
   const parsed = parseJSON(text) as { nodes?: AiNode[] };
 
   if (!parsed.nodes || !Array.isArray(parsed.nodes)) {
@@ -314,7 +369,8 @@ export async function editSitemap(
   provider: AiProvider = "anthropic",
   speed: AiSpeed = "fast",
   conversationHistory?: { role: "user" | "assistant"; content: string }[],
-  onChunk?: (chunk: string) => void
+  onChunk?: (chunk: string) => void,
+  attachments?: AttachmentInput[]
 ): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
   const treeContext = JSON.stringify(currentTree, null, 2);
   const userMessage = `Voici l'arborescence actuelle :\n\n${treeContext}\n\nDemande : ${prompt}`;
@@ -335,9 +391,9 @@ export async function editSitemap(
       }
     }
   }
-  const messages: { role: "user" | "assistant"; content: string }[] = [
+  const messages: { role: "user" | "assistant"; content: string | ContentBlock[] }[] = [
     ...priorMessages,
-    { role: "user", content: userMessage },
+    { role: "user", content: buildUserContent(userMessage, attachments) },
   ];
 
   const text = await callLLM(provider, apiKey, EDIT_SYSTEM, messages, speed, onChunk);

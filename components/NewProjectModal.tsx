@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, Zap, Gem, Plus, Globe, Upload, Link2, List, Check, AlertCircle } from "lucide-react"
+import AiInput, { type AttachedFile } from "./AiInput"
 import { Events } from "@/lib/posthog"
 import {
   getStoredProvider,
@@ -39,6 +40,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
   // AI mode state
   const [aiPrompt, setAiPrompt] = useState("")
+  const [aiAttachments, setAiAttachments] = useState<AttachedFile[]>([])
   const [aiProjectName, setAiProjectName] = useState("")
   const [speed, setSpeedState] = useState<AiSpeed>("fast")
   const [aiStep, setAiStep] = useState<"prompt" | "generating">("prompt")
@@ -159,6 +161,9 @@ export default function NewProjectModal({ open, onClose }: Props) {
           projectName: aiProjectName.trim() || undefined,
           provider: byokKey ? provider : "anthropic",
           speed,
+          attachments: aiAttachments.length > 0
+            ? aiAttachments.map(f => ({ name: f.name, type: f.type, base64: f.base64 }))
+            : undefined,
         }),
       })
 
@@ -573,22 +578,20 @@ export default function NewProjectModal({ open, onClose }: Props) {
                         />
                       </div>
 
-                      {/* Prompt */}
+                      {/* Prompt + file attachments */}
                       <div>
                         <label className="text-2xs font-medium block mb-1" style={{ color: "var(--text-muted)" }}>
                           D&eacute;cris ton site
                         </label>
-                        <textarea
-                          ref={promptRef}
+                        <AiInput
                           value={aiPrompt}
-                          onChange={(e) => { setAiPrompt(e.target.value); if (error) setError("") }}
+                          onChange={(v) => { setAiPrompt(v); if (error) setError("") }}
+                          onSend={(_text, files) => { setAiAttachments(files); handleAiGenerate() }}
                           placeholder="Ex : Site e-commerce de sneakers vintage avec blog, espace membre, programme de fid&eacute;lit&eacute; et click & collect"
                           rows={3}
-                          className="w-full px-3 py-2 rounded-lg text-xs focus:outline-none transition-all resize-none"
-                          style={inputStyle}
-                          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.boxShadow = "0 0 0 3px var(--accent-muted)" }}
-                          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.boxShadow = "none" }}
-                          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAiGenerate() }}
+                          sendKey="ctrl+enter"
+                          showSendButton={false}
+                          textareaRef={promptRef}
                         />
                       </div>
 

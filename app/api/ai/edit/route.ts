@@ -25,10 +25,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory, propose: rawPropose } = body as {
+  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory, propose: rawPropose, attachments } = body as {
     prompt?: string; apiKey?: string; projectId?: string; provider?: string; speed?: string;
     history?: { role: string; content: string }[];
     propose?: boolean;
+    attachments?: { name: string; type: string; base64: string }[];
   };
   const proposeOnly = rawPropose === true;
   const conversationHistory = Array.isArray(rawHistory)
@@ -159,7 +160,8 @@ export async function POST(req: NextRequest) {
           useCredits ? "anthropic" : provider,
           speed,
           conversationHistory,
-          onChunk
+          onChunk,
+          attachments
         );
         const aiLabel = getProviderLabel(useCredits ? "anthropic" : provider);
 

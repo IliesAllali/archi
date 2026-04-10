@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import { checkAiRateLimit } from "@/lib/ai-rate-limit"
 import { checkCredits, deductCredits, getServerAiKey } from "@/lib/ai-credits"
 import type { AiSpeed } from "@/lib/ai"
+import { buildUserContent } from "@/lib/ai"
 
 export const dynamic = "force-dynamic"
 
@@ -123,6 +124,7 @@ export async function POST(req: NextRequest) {
 
   const fidelity = (body as { fidelity?: string }).fidelity || "lo-fi"
   const font = (body as { font?: string }).font || "Inter"
+  const attachments = (body as { attachments?: { name: string; type: string; base64: string }[] }).attachments
 
   const hasGlobalHeader = body.hasGlobalHeader === true
   const hasGlobalFooter = body.hasGlobalFooter === true
@@ -298,7 +300,7 @@ Et applique font-family: "${font}", sans-serif au body.`
             model: "claude-sonnet-4-20250514",
             max_tokens: 4000,
             system: systemPrompt,
-            messages: [{ role: "user", content: userPrompt }],
+            messages: [{ role: "user" as const, content: buildUserContent(userPrompt, attachments) }],
           })
 
           const rawText = response.content[0].type === "text" ? response.content[0].text : ""
@@ -346,7 +348,7 @@ Et applique font-family: "${font}", sans-serif au body.`
             model: "claude-sonnet-4-20250514",
             max_tokens: 8000,
             system: systemPrompt,
-            messages: [{ role: "user", content: userPrompt }],
+            messages: [{ role: "user" as const, content: buildUserContent(userPrompt, attachments) }],
             stream: true,
           })
 
