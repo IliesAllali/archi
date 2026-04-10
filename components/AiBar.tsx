@@ -121,7 +121,7 @@ import {
 } from "@/lib/ai-providers";
 import type { AiSpeed } from "@/lib/ai-providers";
 import type { ChatMessage } from "./AiChatPanel";
-import AiCreditsBadge from "./AiCreditsBadge";
+import { AiSourcePicker } from "./ai";
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -607,7 +607,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                   {speed === "fast" ? "Rapide" : "Qualité"}
                 </button>
                 {/* Credits badge */}
-                <AiCreditsBadge />
+                <AiSourcePicker />
                 {/* Chat history button */}
                 {chatMessages.length > 0 && (
                   <button
