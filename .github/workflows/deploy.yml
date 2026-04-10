@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,18 +28,29 @@ jobs:
             echo "→ Pull latest code"
             git pull origin main
 
-            echo "→ Build image"
-            docker compose build
+            echo "→ Build new image"
+            docker compose build 2>&1 | tail -5
 
-            echo "→ Stop & remove old container"
-            docker compose down --remove-orphans || true
-            docker rm -f arbo-tool 2>/dev/null || true
-
-            echo "→ Start new container"
+            echo "→ Swap container (minimal downtime)"
+            docker stop arbo-tool 2>/dev/null || true
+            docker rm arbo-tool 2>/dev/null || true
             docker compose up -d
 
             echo "→ Wait for healthy container"
-            sleep 5
-            docker ps --format '{{.Names}} {{.Status}}' | grep arbo
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost:3002/ > /dev/null 2>&1; then
+                echo "✅ Healthy after ${i}x5s"
+                break
+              fi
+              if [ "$i" = "12" ]; then
+                echo "❌ Container not healthy after 60s"
+                docker logs arbo-tool --tail 20
+                exit 1
+              fi
+              sleep 5
+            done
+
+            echo "→ Cleanup old images"
+            docker image prune -f > /dev/null 2>&1 || true
 
             echo "✅ Deploy done — $(git log -1 --format='%h %s')"
