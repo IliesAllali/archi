@@ -22,7 +22,8 @@ export default function SaveStatusBadge() {
     <>
       <span className="relative w-3 h-3 shrink-0">
         <Cloud
-          className="w-3 h-3 absolute inset-0 transition-opacity duration-200"
+          key={saveStatus}
+          className={`w-3 h-3 absolute inset-0 transition-opacity duration-200 ${saveStatus === "saved" ? "animate-pop" : ""}`}
           style={{ opacity: config.icon === "cloud" ? 1 : 0 }}
         />
         <Loader2
@@ -42,7 +43,7 @@ export default function SaveStatusBadge() {
         />
       </span>
       <span
-        className={`transition-all duration-200 ${saveStatus === "saved" || saveStatus === "unsaved" ? "hidden sm:inline" : ""}`}
+        className={`transition-opacity duration-200 ${saveStatus === "saved" || saveStatus === "unsaved" ? "hidden sm:inline" : ""}`}
       >
         {config.label}
       </span>

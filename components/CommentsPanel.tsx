@@ -116,7 +116,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                 </span>
               )}
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]" style={{ color: "var(--text-faint)" }}>
+            <button onClick={onClose} className="p-1.5 rounded-md transition-[background-color,transform] duration-150 ease-out hover:bg-[var(--surface-hover)] active:scale-[0.93]" style={{ color: "var(--text-faint)" }}>
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -141,7 +141,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                 return (
                   <div
                     key={comment.id}
-                    className="rounded-lg p-3 transition-all cursor-pointer"
+                    className="rounded-lg p-3 transition-[background-color,border-color,opacity] duration-150 cursor-pointer"
                     style={{
                       background: isHighlighted ? "var(--accent-muted)" : comment.resolved ? "transparent" : "var(--elevated)",
                       border: `1px solid ${isHighlighted ? "var(--accent)" : comment.resolved ? "var(--line)" : "var(--line-strong)"}`,
@@ -227,7 +227,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                       }
                     }}
                     disabled={guestName.trim().length < 2}
-                    className="px-3 h-8 rounded-lg text-xs font-medium transition-all disabled:opacity-40 hover:brightness-110"
+                    className="px-3 h-8 rounded-lg text-xs font-medium transition-[transform,filter] duration-150 ease-out disabled:opacity-40 hover:brightness-110 active:scale-[0.97]"
                     style={{ background: "var(--accent)", color: "#fff" }}
                   >
                     OK
@@ -257,7 +257,7 @@ export default function CommentsPanel({ projectId, nodeId, nodeLabel, open, onCl
                   <button
                     onClick={handleSubmit}
                     disabled={sending || !content.trim()}
-                    className="self-end p-2.5 rounded-lg transition-all disabled:opacity-40 shrink-0 hover:brightness-110"
+                    className="self-end p-2.5 rounded-lg transition-[transform,filter] duration-150 ease-out disabled:opacity-40 shrink-0 hover:brightness-110 active:scale-[0.93]"
                     style={{ background: "var(--accent)", color: "#fff" }}
                   >
                     {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

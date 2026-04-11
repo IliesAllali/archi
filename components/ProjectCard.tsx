@@ -17,7 +17,7 @@ export default function ProjectCard({ project, index }: { project: Project; inde
       style={{ opacity: 0, animationDelay: `${60 + index * 50}ms` }}
     >
       <div
-        className="flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-150 hover:translate-x-1 active:scale-[0.99]"
+        className="flex items-center justify-between px-4 py-3 rounded-lg transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out hover:translate-x-1 active:scale-[0.98]"
         style={{
           background: "var(--surface)",
           border: "1px solid var(--line)",
@@ -25,10 +25,12 @@ export default function ProjectCard({ project, index }: { project: Project; inde
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = "var(--line-strong)";
           e.currentTarget.style.background = "var(--surface-hover)";
+          e.currentTarget.style.boxShadow = `0 2px 12px ${project.accent}18`;
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.borderColor = "var(--line)";
           e.currentTarget.style.background = "var(--surface)";
+          e.currentTarget.style.boxShadow = "none";
         }}
       >
         <div className="flex items-center gap-3 min-w-0">
@@ -62,7 +64,7 @@ export default function ProjectCard({ project, index }: { project: Project; inde
             {project.nodes.length}p
           </span>
           <span
-            className="text-xs opacity-0 group-hover:opacity-100 transition-all duration-150 translate-x-0 group-hover:translate-x-1"
+            className="text-xs opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-200 ease-out -translate-x-1 group-hover:translate-x-0"
             style={{ color: "var(--text-faint)" }}
           >
             →

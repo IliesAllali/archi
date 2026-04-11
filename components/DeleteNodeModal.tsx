@@ -74,7 +74,7 @@ export default function DeleteNodeModal({ node, onClose, onDelete }: Props) {
             <div className="px-5 pb-3 flex flex-col gap-2">
               <button
                 onClick={() => onDelete("cascade")}
-                className="flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
+                className="flex items-center gap-3 p-3 rounded-lg text-left transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.97]"
                 style={{
                   background: "rgba(239,68,68,0.08)",
                   border: "1px solid rgba(239,68,68,0.2)",
@@ -93,7 +93,7 @@ export default function DeleteNodeModal({ node, onClose, onDelete }: Props) {
 
               <button
                 onClick={() => onDelete("reparent")}
-                className="flex items-center gap-3 p-3 rounded-lg text-left transition-all duration-150 hover:brightness-110 active:scale-[0.97]"
+                className="flex items-center gap-3 p-3 rounded-lg text-left transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.97]"
                 style={{
                   background: "var(--surface)",
                   border: "1px solid var(--line)",
@@ -115,7 +115,7 @@ export default function DeleteNodeModal({ node, onClose, onDelete }: Props) {
             <div className="px-5 pb-5 pt-1">
               <button
                 onClick={onClose}
-                className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-150 hover:bg-[var(--surface-hover)] active:scale-95"
+                className="w-full py-2 rounded-lg text-sm font-medium transition-[transform,background-color] duration-150 ease-out hover:bg-[var(--surface-hover)] active:scale-[0.97]"
                 style={{
                   color: "var(--text-muted)",
                   background: "transparent",

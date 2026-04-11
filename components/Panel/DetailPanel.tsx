@@ -98,7 +98,7 @@ function ColorDot({ group, onChange }: { group?: string; onChange: (g: string) =
                 <button
                   key={c.value || "__default"}
                   onClick={() => { onChange(c.value); setOpen(false); }}
-                  className="w-6 h-6 rounded-md flex items-center justify-center transition-all hover:scale-110"
+                  className="w-6 h-6 rounded-md flex items-center justify-center transition-transform duration-150 ease-out hover:scale-110"
                   style={{
                     background: `${resolvedColor}18`,
                     border: isActive ? `2px solid ${resolvedColor}` : "2px solid transparent",
@@ -314,7 +314,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.1, type: "spring", damping: 15 }}
                     className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
@@ -363,7 +363,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                 <div className="flex items-center gap-0.5">
                   <button
                     onClick={onClose}
-                    className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-all duration-100 hover:rotate-90"
+                    className="p-1.5 rounded-md hover:bg-bg-hover active:bg-bg-active transition-[background-color,transform] duration-150 ease-out hover:rotate-90 active:scale-[0.93]"
                   >
                     <X className="w-4 h-4 text-label-muted" />
                   </button>
@@ -585,7 +585,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                       className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed transition-all duration-150 hover:border-red-400/40 hover:bg-red-500/5 group"
                       style={{ borderColor: "var(--line)" }}
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-label-faint group-hover:text-red-500 transition-colors" />
+                      <Trash2 className="w-3.5 h-3.5 text-label-faint group-hover:text-red-500 transition-colors group-hover:animate-[wiggle_400ms_ease-out]" />
                       <span className="text-xs text-label-faint group-hover:text-red-500 transition-colors">
                         Supprimer cette page
                       </span>
@@ -631,7 +631,7 @@ function SectionAnimated({
         <h3 className="text-2xs font-medium text-label-muted uppercase tracking-wider flex-1 text-left">{title}</h3>
         <motion.span
           animate={{ rotate: collapsed ? -90 : 0 }}
-          transition={{ duration: 0.15 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
           className="text-label-faint text-xs"
         >
           &#9662;

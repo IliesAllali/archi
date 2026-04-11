@@ -48,7 +48,7 @@ export default async function HomePage() {
           <div className="animate-fade-in-up space-y-8">
             <div className="text-center py-16">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5"
+                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5 animate-float"
                 style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
               >
                 <Logo size={20} />

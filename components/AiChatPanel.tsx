@@ -145,7 +145,7 @@ function MessageBubble({ msg, onApply }: { msg: ChatMessage; onApply?: (id: stri
                 <button
                   onClick={() => onApply?.(msg.id)}
                   disabled={msg.applying}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.97] disabled:opacity-60"
                   style={{ background: "var(--accent)", color: "#fff" }}
                 >
                   {msg.applying ? (
@@ -258,7 +258,7 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
                 {messages.length > 0 && (
                   <button
                     onClick={onClear}
-                    className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+                    className="p-1.5 rounded-md transition-[background-color,transform] duration-150 ease-out hover:bg-[var(--surface-hover)] active:scale-[0.93]"
                     style={{ color: "var(--text-faint)" }}
                     title="Effacer la conversation"
                   >
@@ -267,7 +267,7 @@ export default function AiChatPanel({ open, onClose, messages, onSend, onClear, 
                 )}
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+                  className="p-1.5 rounded-md transition-[background-color,transform] duration-150 ease-out hover:bg-[var(--surface-hover)] active:scale-[0.93]"
                   style={{ color: "var(--text-faint)" }}
                 >
                   <X className="w-4 h-4" />

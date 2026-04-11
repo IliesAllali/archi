@@ -56,7 +56,7 @@ export default function ShortcutsOverlay() {
       {/* Trigger button */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-7 h-7 rounded-md flex items-center justify-center transition-all duration-100 hover:scale-105 active:scale-90"
+        className="w-7 h-7 rounded-md flex items-center justify-center transition-transform duration-150 ease-out hover:scale-105 active:scale-[0.93]"
         style={{
           background: "var(--controls-bg)",
           border: "1px solid var(--line)",

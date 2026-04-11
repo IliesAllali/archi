@@ -11,8 +11,8 @@ export default function ThemeToggle() {
       onClick={toggle}
       className="
         w-8 h-8 rounded-lg flex items-center justify-center
-        transition-all duration-200
-        hover:scale-110 hover:shadow-theme-glow active:scale-90
+        transition-transform duration-200 ease-out
+        hover:scale-110 hover:shadow-theme-glow active:scale-[0.96]
       "
       style={{
         background: "var(--controls-bg)",

@@ -363,7 +363,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
               </h3>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+                className="p-1.5 rounded-md transition-[background-color,transform] duration-150 ease-out hover:bg-[var(--surface-hover)] active:scale-[0.93]"
                 style={{ color: "var(--text-muted)" }}
               >
                 <X className="w-4 h-4" />
@@ -376,11 +376,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 <div className="space-y-2 pt-1">
                   <button
                     onClick={() => setMode("ai")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--accent)]"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-[transform,border-color,box-shadow] duration-150 ease-out group hover:border-[var(--accent)] hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
                   >
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:rotate-3"
                       style={{ background: "var(--accent)", color: "#fff" }}
                     >
                       <Sparkles className="w-3.5 h-3.5" />
@@ -398,11 +398,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
                   <button
                     onClick={() => setMode("manual")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--line-strong)]"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-[transform,border-color,box-shadow] duration-150 ease-out group hover:border-[var(--line-strong)] hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
                   >
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
                       style={{ background: "var(--elevated)", border: "1px solid var(--line-strong)", color: "var(--text-muted)" }}
                     >
                       <FileText className="w-3.5 h-3.5" />
@@ -420,11 +420,11 @@ export default function NewProjectModal({ open, onClose }: Props) {
 
                   <button
                     onClick={() => setMode("import")}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-all duration-150 group hover:border-[var(--line-strong)]"
+                    className="w-full flex items-center gap-3 p-3.5 rounded-lg text-left transition-[transform,border-color,box-shadow] duration-150 ease-out group hover:border-[var(--line-strong)] hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98]"
                     style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
                   >
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110"
                       style={{ background: "var(--elevated)", border: "1px solid var(--line-strong)", color: "var(--text-muted)" }}
                     >
                       <Globe className="w-3.5 h-3.5" />

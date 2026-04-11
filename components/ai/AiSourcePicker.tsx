@@ -100,7 +100,7 @@ export default function AiSourcePicker({ className = "" }: Props) {
       <button
         ref={btnRef}
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-[0.97]"
+        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-medium transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]"
         style={{ background: badgeBg, color: badgeColor }}
       >
         {byokActive ? (

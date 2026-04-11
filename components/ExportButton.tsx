@@ -203,7 +203,7 @@ export default function ExportButton({ project }: ExportButtonProps) {
         <button
           onClick={hasWireframes ? () => setShowMenu(v => !v) : handleExport}
           disabled={isLoading}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-all duration-150 disabled:cursor-wait active:scale-95"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-[transform,color,background-color] duration-150 ease-out disabled:cursor-wait active:scale-[0.97]"
           style={{
             color: isDone ? "var(--success-text)" : isError ? "var(--error-text)" : "var(--text-muted)",
             background: isDone ? "var(--success-bg)" : isError ? "var(--error-glow)" : "transparent",
@@ -225,7 +225,7 @@ export default function ExportButton({ project }: ExportButtonProps) {
           <span className="relative w-3.5 h-3.5 shrink-0">
             <FileDown className="w-3.5 h-3.5 absolute inset-0 transition-opacity duration-200" style={{ opacity: !isLoading && !isDone ? 1 : 0 }} />
             <Loader2 className="w-3.5 h-3.5 absolute inset-0 animate-spin transition-opacity duration-200" style={{ opacity: isLoading ? 1 : 0 }} />
-            <Check className="w-3.5 h-3.5 absolute inset-0 transition-all duration-300" style={{ opacity: isDone ? 1 : 0, transform: isDone ? "scale(1)" : "scale(0.5)" }} />
+            <Check className="w-3.5 h-3.5 absolute inset-0 transition-[opacity,transform] duration-300" style={{ opacity: isDone ? 1 : 0, transform: isDone ? "scale(1)" : "scale(0.9)" }} />
           </span>
           <span className="transition-opacity duration-200">{STATE_LABEL[state]}</span>
         </button>

@@ -53,13 +53,13 @@ export default function UserMenu() {
   return (
     <div ref={ref} className="relative">
       {user.avatar ? (
-        <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center transition-transform hover:scale-105" title={user.name}>
+        <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center transition-transform duration-150 ease-out hover:scale-105 active:scale-[0.93]" title={user.name}>
           <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover block" />
         </button>
       ) : (
         <button
           onClick={() => setOpen(!open)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-transform hover:scale-105"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-transform duration-150 ease-out hover:scale-105 active:scale-[0.93]"
           style={{ background: user.color, color: "#fff" }}
           title={user.name}
         >
@@ -106,7 +106,7 @@ export default function UserMenu() {
           <div className="py-1">
             <button
               onClick={() => { setOpen(false); router.push("/account") }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color] duration-150 ease-in-out active:scale-95 origin-center"
+              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] origin-center"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -116,7 +116,7 @@ export default function UserMenu() {
             </button>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color] duration-150 ease-in-out active:scale-95 origin-center"
+              className="w-full flex items-center gap-2 px-3 py-2 text-2xs text-left transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] origin-center"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}

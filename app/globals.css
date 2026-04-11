@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Animation tokens ─── */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-ui: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 125ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+}
+
 /* ─── Theme system ─── */
 :root {
   --accent: #F76B15;
@@ -193,11 +204,14 @@ html, body {
   width: 28px !important;
   height: 28px !important;
   padding: 6px !important;
-  transition: background 0.1s, fill 0.1s !important;
+  transition: background 0.15s ease-out, fill 0.15s ease-out !important;
 }
 .react-flow__controls-button:hover {
   background: var(--controls-hover) !important;
   fill: var(--controls-fill-hover) !important;
+}
+.react-flow__controls-button:active {
+  transform: scale(0.93);
 }
 .react-flow__controls-button:last-child {
   border-bottom: none !important;
@@ -235,9 +249,8 @@ html {
   color-scheme: dark;
 }
 html.theme-transition,
-html.theme-transition *,
-html.theme-transition *::before,
-html.theme-transition *::after {
+html.theme-transition > body,
+html.theme-transition [data-theme-surface] {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease, fill 0.2s ease, stroke 0.2s ease !important;
 }
 
@@ -306,12 +319,12 @@ html.theme-transition *::after {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── UserMenu dropdown slide-down ─── */
+/* ─── UserMenu dropdown slide-down (CSS transition-ready) ─── */
 @keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.animate-dropdown-in { animation: dropdown-in 150ms ease-out forwards; }
+.animate-dropdown-in { animation: dropdown-in 150ms var(--ease-ui) forwards; }
 
 /* ─── Stagger delay utility ─── */
 .stagger-1 { animation-delay: 30ms; }
@@ -332,23 +345,31 @@ html.theme-transition *::after {
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
+  transform: translateX(-50%) translateY(4px) scale(0.97);
+  transform-origin: bottom center;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 11px;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--duration-fast) ease-out, transform var(--duration-fast) ease-out;
   background: var(--elevated);
   color: var(--text-secondary);
   border: 1px solid var(--line);
   box-shadow: 0 2px 6px rgba(0,0,0,0.10);
   z-index: 100;
 }
-[data-tooltip]:hover::after {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+@media (hover: hover) and (pointer: fine) {
+  [data-tooltip]:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  /* Skip delay + animation on subsequent tooltips */
+  [data-tooltip-group]:hover ~ [data-tooltip-group]:hover::after,
+  [data-tooltip-instant]:hover::after {
+    transition-duration: 0ms;
+  }
 }
 
 /* ─── Custom scrollbar for detail panel ─── */
@@ -364,11 +385,11 @@ html.theme-transition *::after {
 
 /* ─── Node entrance animation ─── */
 @keyframes node-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 .react-flow__node {
-  animation: node-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: node-enter 0.4s var(--ease-ui) forwards;
   opacity: 0;
 }
 
@@ -396,7 +417,8 @@ html.theme-transition *::after {
 
 /* ─── Smooth layout transitions after drag-drop ─── */
 .react-flow__node {
-  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: transform 0.35s var(--ease-in-out-strong);
+  will-change: transform;
 }
 .react-flow__node.dragging,
 .react-flow__node.draggable:active {
@@ -407,6 +429,51 @@ html.theme-transition *::after {
 .glass {
   backdrop-filter: blur(12px) saturate(1.8);
   -webkit-backdrop-filter: blur(12px) saturate(1.8);
+}
+
+/* ─── Delight: floating idle animation ─── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* ─── Delight: scale pop for success confirmations ─── */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 300ms var(--ease-ui) forwards; }
+
+/* ─── Delight: subtle glow pulse on hover (used with --glow-color) ─── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--glow-color, var(--accent-muted)); }
+  50% { box-shadow: 0 0 12px 2px var(--glow-color, var(--accent-muted)); }
+}
+
+/* ─── Delight: breathing idle for AI toggle ─── */
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 2px 12px rgba(247,107,21,0.15); }
+  50% { box-shadow: 0 2px 20px rgba(247,107,21,0.35); }
+}
+.animate-breathe { animation: breathe 2.5s ease-in-out infinite; }
+
+/* ─── Delight: wiggle for delete hover ─── */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+/* ─── Delight: Add node buttons pulse on first hover ─── */
+.add-node-btn:hover > div {
+  animation: pop 250ms var(--ease-ui);
+}
+
+/* ─── Delight: node card hover micro-lift (hardware accelerated) ─── */
+.react-flow__node:hover {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.06));
 }
 
 /* ─── AI system animations (CSS off-thread, no React reconciliation) ─── */
@@ -542,6 +609,10 @@ html.theme-transition *::after {
     opacity: 1;
   }
   .ai-credits-tick { animation: none; }
+  .animate-float { animation: none; }
+  .animate-breathe { animation: none; }
+  .animate-pop { animation: none; }
+  .add-node-btn:hover > div { animation: none; }
 }
 
 /* ─── Mobile responsive ─── */

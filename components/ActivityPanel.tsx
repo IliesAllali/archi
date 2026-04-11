@@ -185,7 +185,7 @@ export default function ActivityPanel({ projectId, open, onClose }: Props) {
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md hover:bg-bg-hover transition-colors"
+                className="p-1.5 rounded-md hover:bg-bg-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.93]"
                 style={{ color: "var(--text-muted)" }}
               >
                 <X className="w-4 h-4" />

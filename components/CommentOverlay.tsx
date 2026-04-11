@@ -33,8 +33,8 @@ function findNearestNode(
 
 const OVERLAY_STYLES = `
 @keyframes pinDrop {
-  0% { transform: rotate(-45deg) scale(0) translateY(-8px); opacity: 0; }
-  50% { transform: rotate(-45deg) scale(1.15) translateY(0); opacity: 1; }
+  0% { transform: rotate(-45deg) scale(0.85) translateY(-8px); opacity: 0; }
+  50% { transform: rotate(-45deg) scale(1.1) translateY(0); opacity: 1; }
   70% { transform: rotate(-45deg) scale(0.95); }
   100% { transform: rotate(-45deg) scale(1); }
 }

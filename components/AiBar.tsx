@@ -553,7 +553,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium transition-all duration-150 hover:scale-[1.02] active:scale-[0.97]"
+          className="fixed bottom-4 sm:bottom-5 left-0 right-0 mx-auto z-30 w-fit flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-medium transition-transform duration-150 ease-out hover:scale-[1.02] active:scale-[0.97] animate-breathe hover:animate-none"
           style={{
             background: "var(--accent)",
             color: "#fff",
@@ -596,7 +596,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 {/* Speed toggle */}
                 <button
                   onClick={() => { const next = speed === "fast" ? "quality" : "fast"; setSpeed(next); storeSpeed(next); }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150 active:scale-[0.97]"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-[transform,background-color] duration-150 ease-out active:scale-[0.97]"
                   style={{
                     color: speed === "fast" ? "var(--warning-text)" : "var(--accent)",
                     background: speed === "fast" ? "var(--warning-bg)" : "var(--accent-muted)",
@@ -612,7 +612,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 {chatMessages.length > 0 && (
                   <button
                     onClick={onOpenChat}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-all duration-150"
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors duration-150"
                     style={{ color: "var(--text-muted)", background: "var(--surface)" }}
                     title="Ouvrir le chat"
                   >
@@ -675,7 +675,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     <button
                       key={t}
                       onClick={() => setWireframeTarget(t as "page" | "header" | "footer")}
-                      className="px-2 py-0.5 rounded text-[10px] font-medium transition-all"
+                      className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors duration-150"
                       style={{
                         background: wireframeTarget === t ? "var(--accent)" : "var(--bg-hover)",
                         color: wireframeTarget === t ? "#fff" : "var(--text-faint)",
@@ -705,7 +705,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                   <button
                     onClick={send}
                     disabled={loading || !prompt.trim()}
-                    className="self-end p-2 rounded-lg transition-all duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    className="self-end p-2 rounded-lg transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                     style={{ background: "var(--accent)", color: "#fff" }}
                   >
                     {loading ? (

@@ -255,7 +255,7 @@ export default function AiInput({
       <div className="flex gap-2 items-end">
         {/* Textarea wrapper with paperclip inside */}
         <div
-          className={`flex-1 flex flex-col ${rounding} transition-all`}
+          className={`flex-1 flex flex-col ${rounding} transition-[border-color] duration-150 ease-out`}
           style={{
             background: "var(--surface)",
             border: "1px solid var(--line)",
@@ -304,7 +304,7 @@ export default function AiInput({
             placeholder={placeholder}
             rows={rows}
             disabled={disabled}
-            className={`w-full ${pad} ${textSize} focus:outline-none transition-all resize-none disabled:opacity-50 bg-transparent`}
+            className={`w-full ${pad} ${textSize} focus:outline-none transition-opacity resize-none disabled:opacity-50 bg-transparent`}
             onFocus={(e) => {
               const wrapper = e.currentTarget.parentElement
               if (wrapper) wrapper.style.borderColor = "var(--accent)"
@@ -323,7 +323,7 @@ export default function AiInput({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled}
-              className="p-1 rounded transition-all hover:bg-black/5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="p-1 rounded transition-[transform,background-color] duration-125 ease-out hover:bg-black/5 active:scale-[0.93] disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ color: "var(--text-faint)" }}
               title="Joindre un fichier ou coller (Ctrl+V)"
             >
@@ -339,7 +339,7 @@ export default function AiInput({
             <button
               onClick={handleSend}
               disabled={disabled || (!value.trim() && files.length === 0)}
-              className={`${btnPad} ${rounding} transition-all duration-150 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0`}
+              className={`${btnPad} ${rounding} transition-[transform,filter] duration-150 ease-out hover:brightness-110 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0`}
               style={{ background: "var(--accent)", color: "#fff" }}
             >
               <Send className="w-4 h-4" />
