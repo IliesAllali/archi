@@ -8,7 +8,10 @@ import next from 'next'
 import { Server } from 'socket.io'
 
 const dev = process.env.NODE_ENV !== 'production'
-const hostname = process.env.HOSTNAME || '0.0.0.0'
+// Use ARBO_HOST instead of HOSTNAME to avoid collision with Docker's auto-injected HOSTNAME=<container_id>
+// Docker sets HOSTNAME to the container ID, which binds the server to the Docker bridge IP
+// instead of 0.0.0.0, breaking localhost-based health checks.
+const hostname = process.env.ARBO_HOST || '0.0.0.0'
 const port = parseInt(process.env.PORT || '3000', 10)
 
 const app = next({ dev, hostname, port })

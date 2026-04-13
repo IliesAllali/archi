@@ -1,0 +1,11 @@
+# False positives — intentional patterns
+
+# OpenAPI spec route: CORS wildcard is intentional (public spec for GPT Actions)
+app/api/v1/openapi.json/route.ts
+
+# Landing page: dangerouslySetInnerHTML used only for JSON-LD structured data
+# (hardcoded static objects, not user input — standard Next.js SEO pattern)
+app/landing/page.tsx
+
+# db.ts: template literal in SQL seed uses Date.now() (server timestamp, not user input)
+lib/db.ts
