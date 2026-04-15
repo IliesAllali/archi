@@ -52,7 +52,7 @@ export async function getProjectAccess(
       return { level: 'owner', userId: session.sub }
     }
 
-    // Check membership
+    // Check direct project membership
     const member = db
       .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
       .get(realId, session.sub) as { role: string } | undefined
@@ -62,6 +62,17 @@ export async function getProjectAccess(
         : member.role === 'editor' ? 'editor'
         : 'viewer'
       return { level, userId: session.sub }
+    }
+
+    // Check workspace membership (project belongs to a workspace the user is in)
+    const wsMember = db.prepare(`
+      SELECT wm.role FROM workspace_members wm
+      JOIN projects p ON p.workspace_id = wm.workspace_id
+      WHERE p.id = ? AND wm.user_id = ? AND wm.joined_at IS NOT NULL
+    `).get(realId, session.sub) as { role: string } | undefined
+
+    if (wsMember) {
+      return { level: 'editor', userId: session.sub }
     }
 
     // Logged in but not a member → no access
@@ -89,6 +100,27 @@ export async function getProjectAccess(
   }
 
   return { level: null, userId: null }
+}
+
+/**
+ * Sync check (no request needed): get a user's role on a project.
+ * Checks project_members first, then workspace_members.
+ * Returns role string or null.
+ */
+export function getProjectRole(projectId: string, userId: string): string | null {
+  const pm = db
+    .prepare('SELECT role FROM project_members WHERE project_id = ? AND user_id = ?')
+    .get(projectId, userId) as { role: string } | undefined
+  if (pm) return pm.role
+
+  const wm = db.prepare(`
+    SELECT wm.role FROM workspace_members wm
+    JOIN projects p ON p.workspace_id = wm.workspace_id
+    WHERE p.id = ? AND wm.user_id = ? AND wm.joined_at IS NOT NULL
+  `).get(projectId, userId) as { role: string } | undefined
+  if (wm) return 'editor'
+
+  return null
 }
 
 /**

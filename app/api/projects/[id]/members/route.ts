@@ -14,22 +14,6 @@ interface MemberRow {
   color: string
 }
 
-function getProjectIfOwnerOrEditor(projectId: string, userId: string): DbProject | null {
-  const project = db
-    .prepare("SELECT * FROM projects WHERE id = ? AND archived = 0")
-    .get(projectId) as DbProject | undefined
-  if (!project) return null
-
-  if (project.owner_id === userId) return project
-
-  const member = db
-    .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
-    .get(projectId, userId) as { role: string } | undefined
-  if (member && (member.role === "owner" || member.role === "editor")) return project
-
-  return null
-}
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
@@ -80,8 +64,11 @@ export async function POST(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const project = getProjectIfOwnerOrEditor(params.id, session.sub)
-  if (!project) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  const { getProjectRole } = await import("@/lib/project-access")
+  const role = getProjectRole(params.id, session.sub)
+  if (!role || role === "viewer") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
   const body = await req.json() as { email?: string; role?: string }
   if (!body.email || !body.role) {

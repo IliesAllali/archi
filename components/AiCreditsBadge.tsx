@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Key } from "lucide-react"
+import { Sparkles, Key, Plus } from "lucide-react"
 import { getStoredApiKey, getStoredProvider } from "@/lib/ai-providers"
 
 interface Credits {
@@ -89,6 +89,27 @@ export default function AiCreditsBadge({ className = "", onByokActive }: Props) 
           transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
+      {isEmpty && (
+        <button
+          onClick={async () => {
+            try {
+              const res = await fetch("/api/checkout?product=credits_starter")
+              if (!res.ok) throw new Error()
+              const { url } = await res.json()
+              if (url) {
+                const { PolarEmbedCheckout } = await import("@polar-sh/checkout/embed")
+                const checkout = await PolarEmbedCheckout.create(url, { theme: "dark" })
+                checkout.addEventListener("success", () => { window.location.reload() })
+              }
+            } catch { /* fallback */ }
+          }}
+          className="flex items-center gap-0.5 ml-1 hover:underline"
+          style={{ color: "var(--error-text)" }}
+        >
+          <Plus className="w-2.5 h-2.5" />
+          <span>Recharger</span>
+        </button>
+      )}
     </div>
   )
 }

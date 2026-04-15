@@ -164,6 +164,8 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [creditsEmpty, setCreditsEmpty] = useState(false);
+  const [isPaidPlan, setIsPaidPlan] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [actionLog, setActionLog] = useState<{ type: string; label?: string }[]>([]);
   const [lastResponse, setLastResponse] = useState<InlineResponse | null>(null);
@@ -196,9 +198,14 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
     }
     if (open) {
       setError("");
+      setCreditsEmpty(false);
       setLastResponse(null);
       setSpeed(getStoredSpeed());
       if (!wireframeContext) setWireframeTarget("page");
+      // Fetch plan for BYOK visibility
+      fetch("/api/me/plan").then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.tier) setIsPaidPlan(data.tier !== "free") })
+        .catch(() => {})
     }
   }, [open]);
 
@@ -423,7 +430,8 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
       if (!contentType.includes("text/event-stream")) {
         const data = await res.json().catch(() => ({}));
         if (res.status === 402) {
-          setError("Crédits épuisés. Ajoute ta clé API dans Paramètres > IA.");
+          setCreditsEmpty(true);
+          Events.premiumWallHit("credits_depleted", "ai_bar");
         } else {
           setError(data.error || "Erreur de modification");
         }
@@ -650,6 +658,53 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               <div className="px-4 py-2.5 flex items-center gap-2" style={{ background: "var(--error-glow)" }}>
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--error-text)" }} />
                 <p className="text-2xs" style={{ color: "var(--error-text)" }}>{error}</p>
+              </div>
+            )}
+
+            {/* Credits empty banner */}
+            {creditsEmpty && !error && (
+              <div
+                className="px-4 py-3 flex items-center gap-3"
+                style={{ background: "var(--warning-bg)", borderBottom: "1px solid var(--line)" }}
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--warning-text)" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
+                    Cr&eacute;dits &eacute;puis&eacute;s
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                    {isPaidPlan ? "Recharge ou ajoute ta cl\u00e9 API." : "Recharge tes cr\u00e9dits pour continuer."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/checkout?product=credits_starter")
+                        if (!res.ok) throw new Error()
+                        const { url } = await res.json()
+                        if (url) {
+                          const { PolarEmbedCheckout } = await import("@polar-sh/checkout/embed")
+                          const checkout = await PolarEmbedCheckout.create(url, { theme: "dark" })
+                          checkout.addEventListener("success", () => { setCreditsEmpty(false); window.location.reload() })
+                        }
+                      } catch { /* fallback */ }
+                    }}
+                    className="px-2 py-1 rounded-md text-[10px] font-medium transition-[transform] duration-150 hover:-translate-y-0.5 active:scale-[0.97]"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    Recharger 4&euro;
+                  </button>
+                  {isPaidPlan && (
+                    <a
+                      href="/account"
+                      className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors duration-150 hover:bg-[var(--surface-hover)]"
+                      style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
+                    >
+                      Cl&eacute; API
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 

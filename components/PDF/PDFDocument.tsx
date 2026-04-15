@@ -526,10 +526,16 @@ export interface PDFDocumentProps {
   project: Project;
   treeImageDataUrl: string;
   wireframeImages?: Record<string, string>; // nodeId → PNG data URL
+  /** Owner plan tier — "free" shows watermark */
+  planTier?: string;
+  /** White label branding (Studio/Agency) */
+  branding?: { logoUrl?: string | null; companyName?: string | null } | null;
 }
 
-export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImages }: PDFDocumentProps) {
+export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImages, planTier, branding }: PDFDocumentProps) {
   const accent = project.accent;
+  const showWatermark = !planTier || planTier === "free";
+  const hasWhiteLabel = branding?.logoUrl || branding?.companyName;
   const formattedDate = new Date(project.date).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -556,10 +562,18 @@ export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImage
     >
       {/* ── Page 1 : Cover ── */}
       <Page size="A4" style={styles.coverPage}>
-        {/* Top — app identity */}
+        {/* Top — app identity (or custom branding) */}
         <View style={styles.coverTop}>
-          <View style={[styles.coverDot, { backgroundColor: accent }]} />
-          <Text style={styles.coverAppName}>ARBO</Text>
+          {hasWhiteLabel && branding?.logoUrl ? (
+            <Image src={branding.logoUrl} style={{ height: 24, maxWidth: 120 }} />
+          ) : (
+            <>
+              <View style={[styles.coverDot, { backgroundColor: accent }]} />
+              <Text style={styles.coverAppName}>
+                {hasWhiteLabel && branding?.companyName ? branding.companyName.toUpperCase() : "ARBO"}
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Main — project info */}
@@ -588,6 +602,13 @@ export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImage
           <Text style={styles.coverFooterText}>Document confidentiel — usage interne</Text>
           <Text style={styles.coverNodeCount}>{project.nodes.length} pages · {primaryNodes.length} primaires</Text>
         </View>
+        {showWatermark && !hasWhiteLabel && (
+          <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 16 }}>
+            <Text style={{ fontSize: 8, color: "#52525b", letterSpacing: 0.5 }}>
+              Built with arbo — arbo.patchou.cloud
+            </Text>
+          </View>
+        )}
       </Page>
 
       {/* ── Page 2 : Tree screenshot ── */}
@@ -624,6 +645,11 @@ export function PDFDocumentComponent({ project, treeImageDataUrl, wireframeImage
         {/* Footer */}
         <View style={[styles.pageFooter]}>
           <Text style={styles.pageFooterLeft}>{project.name} · {project.version}</Text>
+          {showWatermark && (
+            <Text style={{ fontSize: 7, color: "#9ca3af", position: "absolute", left: 0, right: 0, textAlign: "center" }}>
+              Built with arbo
+            </Text>
+          )}
           <Text style={styles.pageFooterRight}>3 / {totalPages}</Text>
         </View>
       </Page>

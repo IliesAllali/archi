@@ -103,7 +103,30 @@ function createDb(): Database.Database {
         db.exec("ALTER TABLE users ADD COLUMN google_id TEXT")
         db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
       }
+      // Polar billing: add plan_tier + polar_customer_id if missing
+      if (!cols.some(c => c.name === "plan_tier")) {
+        db.exec("ALTER TABLE users ADD COLUMN plan_tier TEXT NOT NULL DEFAULT 'free'")
+      }
+      if (!cols.some(c => c.name === "polar_customer_id")) {
+        db.exec("ALTER TABLE users ADD COLUMN polar_customer_id TEXT")
+      }
     }
+
+    // Purchases history (Polar orders)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS purchases (
+        id              TEXT PRIMARY KEY,
+        user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        polar_order_id  TEXT UNIQUE NOT NULL,
+        type            TEXT NOT NULL,
+        tier            TEXT,
+        credits_added   INTEGER,
+        amount_cents    INTEGER NOT NULL,
+        currency        TEXT NOT NULL DEFAULT 'eur',
+        created_at      INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_purchases_user ON purchases(user_id);
+    `)
 
     // Ensure comments table exists (auto-migration)
     db.exec(`
@@ -166,6 +189,97 @@ function createDb(): Database.Database {
       }
       if (!cols.some(c => c.name === "wireframe_settings")) {
         db.exec("ALTER TABLE projects ADD COLUMN wireframe_settings TEXT")
+      }
+    }
+
+    // ── Workspace tables (team features for Studio/Agency) ──
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id              TEXT PRIMARY KEY,
+        name            TEXT NOT NULL,
+        owner_id        TEXT NOT NULL REFERENCES users(id),
+        plan_tier       TEXT NOT NULL DEFAULT 'free',
+        ai_credits      INTEGER NOT NULL DEFAULT 20,
+        created_at      INTEGER NOT NULL,
+        updated_at      INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_workspaces_owner ON workspaces(owner_id);
+    `)
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_members (
+        id              TEXT PRIMARY KEY,
+        workspace_id    TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+        user_id         TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role            TEXT NOT NULL DEFAULT 'editor',
+        invited_by      TEXT REFERENCES users(id),
+        joined_at       INTEGER,
+        invited_at      INTEGER NOT NULL,
+        UNIQUE(workspace_id, user_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_wm_workspace ON workspace_members(workspace_id);
+      CREATE INDEX IF NOT EXISTS idx_wm_user ON workspace_members(user_id);
+    `)
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_invitations (
+        id              TEXT PRIMARY KEY,
+        workspace_id    TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+        email           TEXT NOT NULL,
+        role            TEXT NOT NULL DEFAULT 'editor',
+        invited_by      TEXT NOT NULL REFERENCES users(id),
+        token           TEXT NOT NULL UNIQUE,
+        expires_at      INTEGER NOT NULL,
+        accepted_at     INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_wi_workspace ON workspace_invitations(workspace_id);
+      CREATE INDEX IF NOT EXISTS idx_wi_token ON workspace_invitations(token);
+    `)
+
+    // Workspace branding (white label for Studio/Agency)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workspace_branding (
+        workspace_id    TEXT PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
+        logo_url        TEXT,
+        company_name    TEXT,
+        updated_at      INTEGER NOT NULL DEFAULT 0
+      );
+    `)
+
+    // Add workspace_id to projects if missing
+    if (projectsExist) {
+      const projCols = db.prepare("PRAGMA table_info(projects)").all() as { name: string }[]
+      if (!projCols.some(c => c.name === "workspace_id")) {
+        db.exec("ALTER TABLE projects ADD COLUMN workspace_id TEXT REFERENCES workspaces(id)")
+      }
+    }
+
+    // Auto-create a workspace for each user who doesn't have one yet
+    if (usersExist) {
+      const usersWithoutWs = db.prepare(`
+        SELECT id, name, plan_tier FROM users
+        WHERE id NOT IN (SELECT owner_id FROM workspaces)
+      `).all() as { id: string; name: string; plan_tier: string }[]
+
+      const now = Date.now()
+      const insertWs = db.prepare(`
+        INSERT INTO workspaces (id, name, owner_id, plan_tier, ai_credits, created_at, updated_at)
+        VALUES (?, ?, ?, ?, 0, ?, ?)
+      `)
+      const insertMember = db.prepare(`
+        INSERT OR IGNORE INTO workspace_members (id, workspace_id, user_id, role, invited_at, joined_at)
+        VALUES (?, ?, ?, 'owner', ?, ?)
+      `)
+      const attachProjects = db.prepare(`
+        UPDATE projects SET workspace_id = ? WHERE owner_id = ? AND workspace_id IS NULL
+      `)
+
+      for (const u of usersWithoutWs) {
+        const wsId = `ws_${u.id}`
+        const memberId = `wm_${u.id}`
+        insertWs.run(wsId, `${u.name}'s workspace`, u.id, u.plan_tier || "free", now, now)
+        insertMember.run(memberId, wsId, u.id, now, now)
+        attachProjects.run(wsId, u.id)
       }
     }
   } catch {
@@ -235,7 +349,7 @@ export function trimVersionHistory(projectId: string, maxSnapshots = 10): void {
   }
 }
 
-/** Save a version snapshot (auto-trims to 10) */
+/** Save a version snapshot (auto-trims based on owner's plan) */
 export function saveSnapshot(
   projectId: string,
   trigger: string,
@@ -243,8 +357,20 @@ export function saveSnapshot(
   triggeredByType: 'human' | 'ai'
 ): void {
   const { nanoid } = require('nanoid')
+  const { PLAN_LIMITS } = require('@/lib/plans')
   const nodes = getActiveNodes(projectId)
-  trimVersionHistory(projectId)
+
+  // Get snapshot limit from project owner's plan
+  const project = db.prepare('SELECT owner_id FROM projects WHERE id = ?').get(projectId) as { owner_id: string } | undefined
+  const user = project ? db.prepare('SELECT plan_tier FROM users WHERE id = ?').get(project.owner_id) as { plan_tier: string } | undefined : undefined
+  const tier = user?.plan_tier || 'free'
+  const maxSnapshots = PLAN_LIMITS[tier]?.maxSnapshots ?? 10
+
+  if (maxSnapshots !== null) {
+    trimVersionHistory(projectId, maxSnapshots)
+  }
+  // null = unlimited, no trimming
+
   db.prepare(
     `INSERT INTO version_snapshots (id, project_id, trigger, triggered_by, triggered_by_type, snapshot, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
@@ -334,6 +460,8 @@ export interface DbUser {
   color: string
   role_global: string
   google_id: string | null
+  plan_tier: string
+  polar_customer_id: string | null
   created_at: number
   updated_at: number
 }

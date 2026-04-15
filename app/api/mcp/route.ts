@@ -581,6 +581,18 @@ async function handleMcpRequest(req: Request): Promise<Response> {
     })
   }
 
+  // MCP is restricted to paid plans (Solo+)
+  if (auth.userId) {
+    const user = db.prepare("SELECT plan_tier FROM users WHERE id = ?")
+      .get(auth.userId) as { plan_tier: string } | undefined
+    if (!user || user.plan_tier === "free") {
+      return new Response(JSON.stringify({ error: "MCP server requires a paid plan (Solo, Studio or Agency)." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+  }
+
   const server = createMcpServer(auth)
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

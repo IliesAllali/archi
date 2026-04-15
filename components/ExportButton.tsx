@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDown, Loader2, Check, Layout } from "lucide-react";
 import type { Project } from "@/lib/types";
 import { Events } from "@/lib/posthog";
@@ -58,7 +58,21 @@ export default function ExportButton({ project }: ExportButtonProps) {
   const [state, setState] = useState<ExportState>("idle");
   const [includeWireframes, setIncludeWireframes] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [planTier, setPlanTier] = useState<string>("free");
+  const [branding, setBranding] = useState<{ logoUrl?: string | null; companyName?: string | null } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fetch plan tier + branding on mount
+  useEffect(() => {
+    fetch("/api/me/plan")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.tier) setPlanTier(data.tier) })
+      .catch(() => {})
+    fetch("/api/me/branding")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.enabled) setBranding(data) })
+      .catch(() => {})
+  }, []);
 
   const nodesWithWireframe = project.nodes.filter(n => !!n.zoningHtml);
   const hasWireframes = nodesWithWireframe.length > 0;
@@ -169,6 +183,8 @@ export default function ExportButton({ project }: ExportButtonProps) {
         project,
         treeImageDataUrl,
         wireframeImages: Object.keys(wireframeImages).length > 0 ? wireframeImages : undefined,
+        planTier,
+        branding,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any;
 

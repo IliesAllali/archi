@@ -37,10 +37,9 @@ export async function PUT(
   if (!payload) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const member = db
-    .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
-    .get(params.id, payload.sub) as { role: string } | undefined;
-  if (!member || member.role === "viewer") {
+  const { getProjectRole } = await import("@/lib/project-access");
+  const role = getProjectRole(params.id, payload.sub);
+  if (!role || role === "viewer") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

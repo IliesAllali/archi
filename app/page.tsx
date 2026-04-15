@@ -1,5 +1,7 @@
 import { getAllProjects, getDemoProject, getProjectsForUser } from "@/lib/project-loader";
 import { getSession } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { PLAN_LIMITS, type PlanTier } from "@/lib/plans";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -18,6 +20,16 @@ export default async function HomePage() {
 
   const projects = allProjects.filter((p) => demo ? p.id !== demo.id : true);
 
+  // Plan info for project counter
+  let planTier: PlanTier = "free";
+  let maxProjects: number | null = 3;
+  if (session) {
+    const user = db.prepare("SELECT plan_tier FROM users WHERE id = ?")
+      .get(session.sub) as { plan_tier: string } | undefined;
+    planTier = (user?.plan_tier || "free") as PlanTier;
+    maxProjects = PLAN_LIMITS[planTier]?.maxProjects ?? 3;
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
       {/* Top bar */}
@@ -35,8 +47,16 @@ export default async function HomePage() {
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-2xs font-mono hidden sm:inline" style={{ color: "var(--text-faint)" }}>
-            {projects.length} projet{projects.length !== 1 ? "s" : ""}
+            {projects.length}{maxProjects ? `/${maxProjects}` : ""} projet{projects.length !== 1 ? "s" : ""}
           </span>
+          {planTier !== "free" && (
+            <span
+              className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded hidden sm:inline"
+              style={{ background: "var(--accent-muted)", color: "var(--accent)" }}
+            >
+              {PLAN_LIMITS[planTier]?.label}
+            </span>
+          )}
           <ThemeToggle />
           <UserMenu />
         </div>

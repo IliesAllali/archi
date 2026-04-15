@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { checkAiRateLimit } from "@/lib/ai-rate-limit"
-import { checkCredits, deductCredits, getServerAiKey } from "@/lib/ai-credits"
+import { checkCredits, deductCredits, getServerAiKey, canUseByok } from "@/lib/ai-credits"
 import type { AiSpeed } from "@/lib/ai"
 
 export const dynamic = "force-dynamic"
@@ -77,6 +77,14 @@ export async function POST(req: NextRequest) {
 
   if (!resolvedApiKey) {
     return NextResponse.json({ error: "apiKey is required" }, { status: 400 })
+  }
+
+  // BYOK restricted to paid plans
+  if (!useCredits && !canUseByok(payload.sub)) {
+    return NextResponse.json(
+      { error: "BYOK is available on Solo, Studio and Agency plans." },
+      { status: 403 }
+    );
   }
 
   // Credits check

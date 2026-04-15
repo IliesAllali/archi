@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-
 let _resend: Resend | null = null
 function getResend() {
   if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
@@ -21,7 +20,7 @@ function layout(content: string) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:12px;border:1px solid #e5e5e5;overflow:hidden">
         <!-- Header -->
         <tr><td style="padding:28px 32px 0;text-align:center">
-          <img src="${BASE_URL}/static/logo-64.png" alt="Arbo" width="32" height="32" style="display:block;margin:0 auto;border-radius:8px" />
+          <img src="https://res.cloudinary.com/dutb4mjjm/image/upload/v1776247119/logo_w3lhau.png" alt="Arbo" width="32" height="32" style="display:block;margin:0 auto;border-radius:8px" />
           <div style="margin-top:8px;font-size:13px;font-weight:600;color:#18181b;letter-spacing:-0.2px">arbo</div>
         </td></tr>
         <!-- Content -->
@@ -40,6 +39,16 @@ function layout(content: string) {
 </html>`
 }
 
+/** Send an email with the Arbo layout */
+async function sendWithLogo(options: { to: string; subject: string; html: string }) {
+  return getResend().emails.send({
+    from: FROM,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  })
+}
+
 function button(href: string, label: string) {
   return `
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px auto 0">
@@ -54,8 +63,7 @@ function button(href: string, label: string) {
 export async function sendVerificationEmail(email: string, name: string, token: string) {
   const link = `${BASE_URL}/api/auth/verify-email?token=${token}`
 
-  return getResend().emails.send({
-    from: FROM,
+  return sendWithLogo({
     to: email,
     subject: 'Confirmez votre email \u2014 Arbo',
     html: layout(`
@@ -76,8 +84,7 @@ export async function sendVerificationEmail(email: string, name: string, token: 
 export async function sendPasswordResetEmail(email: string, name: string, token: string) {
   const link = `${BASE_URL}/reset-password?token=${token}`
 
-  return getResend().emails.send({
-    from: FROM,
+  return sendWithLogo({
     to: email,
     subject: 'R\u00e9initialisation de mot de passe \u2014 Arbo',
     html: layout(`
@@ -88,6 +95,42 @@ export async function sendPasswordResetEmail(email: string, name: string, token:
       ${button(link, 'R\u00e9initialiser')}
       <p style="margin:20px 0 0;font-size:11px;color:#a3a3a3;text-align:center;line-height:1.4">
         Ce lien expire dans 1 heure.<br>Si vous n\u2019avez pas fait cette demande, ignorez cet email.
+      </p>
+    `),
+  })
+}
+
+// ─── Workspace invitation ────────────────────────────────────────────────────
+
+export async function sendWorkspaceInvitationEmail(
+  email: string,
+  inviterName: string,
+  workspaceName: string,
+  role: string,
+  token: string
+) {
+  const link = `${BASE_URL}/join?token=${token}`
+  const roleLabel: Record<string, string> = {
+    editor: '\u00e9diteur',
+    admin:  'admin',
+    owner:  'propri\u00e9taire',
+  }
+
+  return sendWithLogo({
+    to: email,
+    subject: `${inviterName} vous invite dans "${workspaceName}" \u2014 Arbo`,
+    html: layout(`
+      <h2 style="margin:0 0 6px;font-size:17px;font-weight:600;color:#18181b">Rejoignez l\u2019\u00e9quipe</h2>
+      <p style="margin:0;font-size:13px;color:#737373;line-height:1.5">
+        <strong style="color:#18181b">${inviterName}</strong> vous invite \u00e0 rejoindre le workspace
+        <strong style="color:#18181b">\u201c${workspaceName}\u201d</strong> en tant que <strong style="color:#18181b">${roleLabel[role] || role}</strong>.
+      </p>
+      <p style="margin:12px 0 0;font-size:13px;color:#737373;line-height:1.5">
+        Vous aurez acc\u00e8s \u00e0 tous les projets de l\u2019\u00e9quipe.
+      </p>
+      ${button(link, 'Rejoindre le workspace')}
+      <p style="margin:20px 0 0;font-size:11px;color:#a3a3a3;text-align:center;line-height:1.4">
+        Ce lien expire dans 7 jours.
       </p>
     `),
   })
@@ -109,8 +152,7 @@ export async function sendInvitationEmail(
     owner:  'propri\u00e9taire',
   }
 
-  return getResend().emails.send({
-    from: FROM,
+  return sendWithLogo({
     to: email,
     subject: `${inviterName} vous invite sur "${projectName}" \u2014 Arbo`,
     html: layout(`

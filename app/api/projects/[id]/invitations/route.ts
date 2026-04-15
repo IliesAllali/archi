@@ -3,8 +3,6 @@ import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { nanoid } from "nanoid"
 import { sendInvitationEmail } from "@/lib/email"
-import type { DbProject } from "@/lib/db"
-
 export const dynamic = "force-dynamic"
 
 interface InvitationRow {
@@ -15,19 +13,6 @@ interface InvitationRow {
   token: string
   expires_at: number
   accepted_at: number | null
-}
-
-function isProjectOwnerOrEditor(projectId: string, userId: string): boolean {
-  const project = db
-    .prepare("SELECT owner_id FROM projects WHERE id = ? AND archived = 0")
-    .get(projectId) as DbProject | undefined
-  if (!project) return false
-  if (project.owner_id === userId) return true
-
-  const member = db
-    .prepare("SELECT role FROM project_members WHERE project_id = ? AND user_id = ?")
-    .get(projectId, userId) as { role: string } | undefined
-  return member?.role === "owner" || member?.role === "editor"
 }
 
 export async function GET(
@@ -53,7 +38,9 @@ export async function POST(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!isProjectOwnerOrEditor(params.id, session.sub)) {
+  const { getProjectRole } = await import("@/lib/project-access")
+  const role = getProjectRole(params.id, session.sub)
+  if (!role || role === "viewer") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
@@ -101,7 +88,9 @@ export async function DELETE(
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  if (!isProjectOwnerOrEditor(params.id, session.sub)) {
+  const { getProjectRole } = await import("@/lib/project-access")
+  const roleCheck = getProjectRole(params.id, session.sub)
+  if (!roleCheck || roleCheck === "viewer") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

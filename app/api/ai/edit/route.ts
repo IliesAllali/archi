@@ -5,7 +5,7 @@ import { db, getActiveNodes, saveSnapshot } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
-import { checkCredits, deductCredits, getServerAiKey } from "@/lib/ai-credits";
+import { checkCredits, deductCredits, getServerAiKey, canUseByok } from "@/lib/ai-credits";
 
 export const dynamic = "force-dynamic"
 
@@ -88,6 +88,14 @@ export async function POST(req: NextRequest) {
     .get(projectId, payload.sub) as { role: string } | undefined;
   if (!member) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // BYOK restricted to paid plans
+  if (!useCredits && !canUseByok(payload.sub)) {
+    return NextResponse.json(
+      { error: "BYOK is available on Solo, Studio and Agency plans." },
+      { status: 403 }
+    );
   }
 
   // Check AI credits if using server key

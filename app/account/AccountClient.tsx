@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown, HardDrive, Terminal, Copy } from "lucide-react"
+import { ChevronLeft, Plus, Trash2, Key, Loader2, Check, Lock, Palette, Pencil, Package, AlertTriangle, Camera, X, Sparkles, Zap, Crown, HardDrive, Terminal, Copy, Gem, ArrowUpRight, Users, UserPlus, Mail } from "lucide-react"
+import PricingModal from "@/components/PricingModal"
 import { motion } from "framer-motion"
 import Logo from "@/components/Logo"
 import { AI_PROVIDERS, getStoredApiKey, type AiProvider } from "@/lib/ai-providers"
+import { CREDIT_PACKS } from "@/lib/plans"
 
 function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null
@@ -16,6 +18,7 @@ function getCsrfToken(): string | null {
 interface UserData { id: string; name: string; email: string; color: string; avatar: string | null; role: string }
 interface ApiKey { id: string; provider: string; key_hint: string; label: string | null; created_at: number }
 interface Credits { creditsTotal: number; creditsUsed: number; creditsRemaining: number }
+interface PlanInfo { tier: string; label: string; price: number; limits: { maxProjects: number | null; whiteLabel: boolean }; projectCount: number; canCreateProject: boolean }
 interface McpToken { id: string; name: string; scope: string; last_used_at: number | null; created_at: number; revoked_at: number | null }
 type McpClientTab = "claude" | "claude-code" | "cursor" | "chatgpt"
 
@@ -34,6 +37,29 @@ export default function AccountClient() {
   const [user, setUser] = useState<UserData | null>(null)
   const [keys, setKeys] = useState<ApiKey[]>([])
   const [credits, setCredits] = useState<Credits | null>(null)
+  const [plan, setPlan] = useState<PlanInfo | null>(null)
+  const [upgradeSuccess, setUpgradeSuccess] = useState(false)
+  const [showPricing, setShowPricing] = useState(false)
+  const [loadingCreditPack, setLoadingCreditPack] = useState<string | null>(null)
+
+  // Workspace / team
+  const [workspace, setWorkspace] = useState<{
+    id: string; name: string; planTier: string; members: { id: string; userId: string; role: string; userName?: string; userEmail?: string; userAvatar?: string | null }[]
+    activeMembers: number; editorLimit: number | null; canInvite: boolean
+  } | null>(null)
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState("")
+  const [inviteSuccess, setInviteSuccess] = useState("")
+
+  // Workspace branding (white label)
+  const [brandingEnabled, setBrandingEnabled] = useState(false)
+  const [brandingLogo, setBrandingLogo] = useState<string | null>(null)
+  const [brandingCompany, setBrandingCompany] = useState("")
+  const [savingBranding, setSavingBranding] = useState(false)
+  const [editingWsName, setEditingWsName] = useState(false)
+  const [wsNameValue, setWsNameValue] = useState("")
+  const [savingWsName, setSavingWsName] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // API key form
@@ -80,21 +106,49 @@ export default function AccountClient() {
   const [confirmDemo, setConfirmDemo] = useState(false)
 
   useEffect(() => {
+    // Check for upgrade success from URL
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("upgrade") === "success") {
+      setUpgradeSuccess(true)
+      window.history.replaceState({}, "", "/account")
+    }
+
     Promise.all([
       fetch("/api/me").then(r => r.json()),
       fetch("/api/me/api-keys").then(r => r.json()),
       fetch("/api/demo").then(r => r.json()).catch(() => ({ exists: false })),
       fetch("/api/me/ai-credits").then(r => r.ok ? r.json() : null).catch(() => null),
       fetch("/api/me/mcp-tokens").then(r => r.json()).catch(() => []),
-    ]).then(([u, k, d, c, mcp]) => {
+      fetch("/api/me/plan").then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([u, k, d, c, mcp, p]) => {
       setUser(u)
       setKeys(Array.isArray(k) ? k : [])
       setNameValue(u?.name || "")
       setHasDemo(!!d?.exists)
       setCredits(c)
+      setPlan(p)
       setMcpTokens(Array.isArray(mcp) ? mcp.filter((t: McpToken) => !t.revoked_at) : [])
       setMcpLoading(false)
     }).finally(() => setLoading(false))
+
+    // Fetch workspace + branding
+    fetch("/api/me/workspace").then(r => r.ok ? r.json() : null)
+      .then(ws => {
+        if (ws) {
+          setWorkspace(ws)
+          setWsNameValue(ws.name || "")
+          if (["studio", "agency"].includes(ws.planTier)) {
+            fetch(`/api/workspaces/${ws.id}/branding`).then(r => r.ok ? r.json() : null)
+              .then(b => {
+                if (b?.enabled) {
+                  setBrandingEnabled(true)
+                  setBrandingLogo(b.logoUrl)
+                  setBrandingCompany(b.companyName || "")
+                }
+              }).catch(() => {})
+          }
+        }
+      })
+      .catch(() => {})
 
     // Detect localStorage BYOK keys
     const detected: { provider: AiProvider; hint: string }[] = []
@@ -244,17 +298,61 @@ export default function AccountClient() {
     setTimeout(() => setMcpCopied(null), 2000)
   }
 
+  // ─── Workspace invite ──────────────────────────────────
+  const handleInvite = async () => {
+    if (!workspace || !inviteEmail.includes("@")) return
+    setInviting(true)
+    setInviteError("")
+    setInviteSuccess("")
+    try {
+      const csrf = getCsrfToken()
+      const h: Record<string, string> = { "Content-Type": "application/json" }
+      if (csrf) h["x-csrf-token"] = csrf
+      const res = await fetch(`/api/workspaces/${workspace.id}/invite`, {
+        method: "POST",
+        headers: h,
+        body: JSON.stringify({ email: inviteEmail.trim().toLowerCase() }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setInviteEmail("")
+        setInviteSuccess(data.status === "joined" ? `${data.email} a rejoint l'\u00e9quipe` : `Invitation envoy\u00e9e \u00e0 ${data.email}`)
+        // Refresh workspace
+        const wsRes = await fetch("/api/me/workspace")
+        if (wsRes.ok) setWorkspace(await wsRes.json())
+      } else {
+        const data = await res.json().catch(() => ({}))
+        if (data.error === "editor_limit") {
+          setInviteError(`Limite de ${data.limit} membres atteinte. Upgrade pour inviter plus.`)
+        } else if (data.error === "Already a member") {
+          setInviteError("D\u00e9j\u00e0 membre de l'\u00e9quipe.")
+        } else if (data.error === "Already invited") {
+          setInviteError("Invitation d\u00e9j\u00e0 envoy\u00e9e.")
+        } else {
+          setInviteError(data.error || "Erreur")
+        }
+      }
+    } catch {
+      setInviteError("Erreur de connexion")
+    } finally {
+      setInviting(false)
+    }
+  }
+
   const mcpConfigs: Record<McpClientTab, string> = {
     "claude": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
     "claude-code": `claude mcp add --transport http arbo "${baseUrl}/api/mcp" --header "Authorization: Bearer ${mcpTokenValue}"`,
     "cursor": JSON.stringify({ mcpServers: { arbo: { url: `${baseUrl}/api/mcp`, headers: { Authorization: `Bearer ${mcpTokenValue}` } } } }, null, 2),
-    "chatgpt": `1. Ouvre ChatGPT sur le web
-2. Settings -> Apps -> Advanced Settings -> active Developer mode
-3. Apps -> Create
-4. Endpoint MCP: ${baseUrl}/api/mcp
-5. Choisis l'authentification de ton connecteur puis configure le Bearer token Arbo si l'interface le demande
+    "chatgpt": `1. Ouvre chatgpt.com
+2. Settings \u2192 Connectors \u2192 Advanced settings \u2192 active Developer Mode
+3. Retourne dans Connectors \u2192 clique "Create"
+4. Nom : Arbo
+5. URL : ${baseUrl}/api/mcp
+6. Auth : None (le token passe en header)
+7. Sauvegarde, puis dans un nouveau chat :
+   + \u2192 More \u2192 Developer Mode \u2192 Add sources \u2192 active Arbo
 
-Bearer token Arbo
+Header d'auth :
 Authorization: Bearer ${mcpTokenValue}`,
   }
 
@@ -262,7 +360,7 @@ Authorization: Bearer ${mcpTokenValue}`,
     "claude": "Colle ce JSON dans la configuration MCP de Claude Desktop.",
     "claude-code": "Commande officielle Claude Code pour enregistrer un serveur MCP distant en HTTP.",
     "cursor": "Colle ce JSON dans le fichier mcp.json de Cursor.",
-    "chatgpt": "ChatGPT passe par l'interface Apps, pas par une commande CLI. Le parcours exact depend de ton plan et des permissions de ton workspace.",
+    "chatgpt": "Requiert ChatGPT Pro, Team, Enterprise ou Edu. Le connecteur se configure dans Settings \u2192 Connectors.",
   }
 
   if (loading) return (
@@ -407,24 +505,137 @@ Authorization: Bearer ${mcpTokenValue}`,
         <section className="space-y-3">
           <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Plan & IA</h3>
           <div className="p-4 rounded-lg space-y-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
-            {/* Current plan */}
+            {/* Current plan — dynamic */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--accent-muted)" }}>
-                  <Crown className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: plan && plan.tier !== "free"
+                      ? "linear-gradient(135deg, var(--accent-muted) 0%, var(--accent-strong) 100%)"
+                      : "var(--surface-hover)",
+                  }}
+                >
+                  <Crown className="w-4 h-4" style={{ color: plan && plan.tier !== "free" ? "var(--accent)" : "var(--text-faint)" }} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Free</p>
-                  <p className="text-2xs" style={{ color: "var(--text-faint)" }}>3 projets, watermark</p>
+                  <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {plan?.label || "Free"}
+                  </p>
+                  <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                    {plan?.tier === "free"
+                      ? "3 projets, watermark"
+                      : plan?.tier === "solo"
+                      ? "Projets illimit\u00e9s, sans watermark"
+                      : plan?.tier === "studio"
+                      ? "5 \u00e9diteurs, white label"
+                      : plan?.tier === "agency"
+                      ? "15 \u00e9diteurs, multi-workspace"
+                      : ""}
+                  </p>
                 </div>
               </div>
               <span
-                className="px-2 py-0.5 rounded-full text-2xs font-medium"
-                style={{ background: "var(--accent-muted)", color: "var(--accent)" }}
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+                style={{
+                  background: plan && plan.tier !== "free" ? "var(--accent-muted)" : "var(--surface-hover)",
+                  color: plan && plan.tier !== "free" ? "var(--accent)" : "var(--text-faint)",
+                }}
               >
-                Actif
+                {plan && plan.tier !== "free" ? "Lifetime" : "Free"}
               </span>
             </div>
+
+            {/* Upgrade success celebration */}
+            {upgradeSuccess && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className="relative overflow-hidden rounded-xl p-4"
+                style={{
+                  background: "linear-gradient(135deg, rgba(247,107,21,0.08) 0%, rgba(46,160,67,0.08) 100%)",
+                  border: "1px solid rgba(247,107,21,0.2)",
+                }}
+              >
+                {/* Confetti particles */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1.5 h-1.5 rounded-full"
+                      style={{
+                        background: ["var(--accent)", "#16a34a", "#eab308", "#6366f1", "#ec4899"][i % 5],
+                        left: `${10 + (i * 7.5) % 80}%`,
+                        top: -4,
+                      }}
+                      animate={{
+                        y: [0, 60 + Math.random() * 30],
+                        x: [0, (Math.random() - 0.5) * 40],
+                        opacity: [1, 0],
+                        rotate: [0, 360 + Math.random() * 360],
+                      }}
+                      transition={{
+                        duration: 1.2 + Math.random() * 0.6,
+                        delay: Math.random() * 0.4,
+                        ease: [0.2, 0, 0.8, 1],
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="relative flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                      Bienvenue en {plan?.label || "Premium"} !
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      Ton plan a &eacute;t&eacute; activ&eacute;. Toutes les features sont d&eacute;bloqu&eacute;es.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Plan */}
+            {plan && (
+              <div className="space-y-3" style={{ borderTop: "1px solid var(--line)", paddingTop: 16 }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gem className="w-3.5 h-3.5" style={{ color: plan.tier === "free" ? "var(--text-faint)" : "var(--accent)" }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Plan</span>
+                  </div>
+                  <span
+                    className="px-2 py-0.5 rounded-full text-2xs font-semibold"
+                    style={{
+                      background: plan.tier === "free" ? "var(--surface-hover)" : "var(--accent-muted)",
+                      color: plan.tier === "free" ? "var(--text-muted)" : "var(--accent)",
+                    }}
+                  >
+                    {plan.label}
+                  </span>
+                </div>
+                <div className="text-2xs space-y-1" style={{ color: "var(--text-muted)" }}>
+                  <p>Projets : {plan.projectCount}{plan.limits.maxProjects ? ` / ${plan.limits.maxProjects}` : " (illimités)"}</p>
+                  {plan.limits.whiteLabel && <p>White label actif</p>}
+                </div>
+                {plan.tier === "free" && (
+                  <button
+                    onClick={() => setShowPricing(true)}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-2xs font-medium transition-[transform,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    <ArrowUpRight className="w-3 h-3" />
+                    Voir les plans
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* AI Credits */}
             {credits && (() => {
@@ -473,30 +684,339 @@ Authorization: Bearer ${mcpTokenValue}`,
                     </div>
                   </div>
 
-                  {/* Empty state */}
-                  {isEmpty && (
-                    <p className="text-2xs" style={{ color: "#ef4444" }}>
-                      Crédits épuisés. Ajoute ta clé API perso ci-dessous pour continuer.
+                  {/* Credit packs */}
+                  <div className="space-y-2.5" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                    {isEmpty && (
+                      <p className="text-2xs" style={{ color: "#ef4444" }}>
+                        Cr&eacute;dits &eacute;puis&eacute;s. Recharge ou ajoute ta cl&eacute; API perso ci-dessous.
+                      </p>
+                    )}
+                    <p className="text-2xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                      Recharger
                     </p>
-                  )}
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { key: "credits_starter", ...CREDIT_PACKS.starter },
+                        { key: "credits_pro", ...CREDIT_PACKS.pro },
+                        { key: "credits_power", ...CREDIT_PACKS.power },
+                      ] as const).map((pack) => (
+                        <button
+                          key={pack.key}
+                          onClick={async () => {
+                            setLoadingCreditPack(pack.key)
+                            try {
+                              const res = await fetch(`/api/checkout?product=${pack.key}`)
+                              if (!res.ok) throw new Error()
+                              const { url } = await res.json()
+                              if (url) {
+                                const { PolarEmbedCheckout } = await import("@polar-sh/checkout/embed")
+                                const checkout = await PolarEmbedCheckout.create(url, { theme: "dark" })
+                                checkout.addEventListener("success", () => {
+                                  window.location.href = "/account?upgrade=success"
+                                })
+                              }
+                            } catch {
+                              window.open(`/api/checkout?product=${pack.key}`, "_blank")
+                            } finally {
+                              setLoadingCreditPack(null)
+                            }
+                          }}
+                          disabled={!!loadingCreditPack}
+                          className="group relative flex flex-col items-center gap-1 p-3 rounded-lg transition-[transform,border-color] duration-150 ease-out hover:-translate-y-0.5 hover:border-[var(--accent)] active:scale-[0.98] disabled:opacity-50"
+                          style={{ background: "var(--elevated)", border: "1px solid var(--line)" }}
+                        >
+                          <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>
+                            {pack.credits}
+                          </span>
+                          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                            credits
+                          </span>
+                          <span className="text-2xs font-medium mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                            {pack.price}&euro;
+                          </span>
+                          {loadingCreditPack === pack.key && (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-lg" style={{ background: "var(--elevated)" }}>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--accent)" }} />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+                      One-time, pas d&apos;abonnement. Les cr&eacute;dits ne p&eacute;riment pas.
+                    </p>
+                  </div>
                 </div>
               )
             })()}
 
-            {/* BYOK status */}
-            {(localKeys.length > 0 || keys.length > 0) && (
+            {/* BYOK status — paid plans only */}
+            {plan && plan.tier !== "free" && (localKeys.length > 0 || keys.length > 0) && (
               <div
                 className="flex items-center gap-2 px-3 py-2 rounded-md"
                 style={{ background: "rgba(46,160,67,0.08)", border: "1px solid rgba(46,160,67,0.2)" }}
               >
                 <Key className="w-3 h-3" style={{ color: "#2ea043" }} />
                 <span className="text-2xs" style={{ color: "#2ea043" }}>
-                  Clé API perso active — crédits non consommés
+                  Cl&eacute; API perso active &mdash; cr&eacute;dits non consomm&eacute;s
+                </span>
+              </div>
+            )}
+            {plan && plan.tier === "free" && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-md"
+                style={{ background: "var(--surface-hover)" }}
+              >
+                <Key className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
+                <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                  BYOK disponible avec les plans Solo, Studio et Agency.
                 </span>
               </div>
             )}
           </div>
         </section>
+
+        {/* ─── Team ─────────────────────────────────────────── */}
+        {workspace && (
+          <section className="space-y-3">
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>&Eacute;quipe</h3>
+            <div className="p-4 rounded-lg space-y-4" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+              {/* Workspace name (editable) + member count */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                  {editingWsName ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={wsNameValue}
+                        onChange={e => setWsNameValue(e.target.value)}
+                        className="h-6 px-2 rounded text-xs font-medium focus:outline-none"
+                        style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)", width: 160 }}
+                        autoFocus
+                        maxLength={100}
+                        onKeyDown={async e => {
+                          if (e.key === "Enter") {
+                            setSavingWsName(true)
+                            const csrf = getCsrfToken()
+                            const h: Record<string, string> = { "Content-Type": "application/json" }
+                            if (csrf) h["x-csrf-token"] = csrf
+                            await fetch(`/api/workspaces/${workspace.id}`, { method: "PATCH", headers: h, body: JSON.stringify({ name: wsNameValue.trim() }) })
+                            setWorkspace(prev => prev ? { ...prev, name: wsNameValue.trim() } : prev)
+                            setEditingWsName(false)
+                            setSavingWsName(false)
+                          }
+                          if (e.key === "Escape") { setEditingWsName(false); setWsNameValue(workspace.name) }
+                        }}
+                      />
+                      {savingWsName && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--text-faint)" }} />}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setEditingWsName(true)}
+                      className="text-xs font-medium flex items-center gap-1 group"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {workspace.name}
+                      <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: "var(--text-faint)" }} />
+                    </button>
+                  )}
+                </div>
+                <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
+                  {workspace.activeMembers}{workspace.editorLimit ? ` / ${workspace.editorLimit}` : ""} membre{workspace.activeMembers !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {/* Members list */}
+              <div className="space-y-1.5">
+                {workspace.members.map(m => (
+                  <div key={m.id} className="flex items-center gap-2.5 py-1.5">
+                    {m.userAvatar ? (
+                      <img src={m.userAvatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ background: "var(--accent-muted)", color: "var(--accent)" }}
+                      >
+                        {(m.userName || m.userEmail || "?").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-2xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                        {m.userName || m.userEmail}
+                      </p>
+                      {m.userName && m.userEmail && (
+                        <p className="text-[10px] truncate" style={{ color: "var(--text-faint)" }}>
+                          {m.userEmail}
+                        </p>
+                      )}
+                    </div>
+                    <span
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                      style={{
+                        background: m.role === "owner" ? "var(--accent-muted)" : "var(--surface-hover)",
+                        color: m.role === "owner" ? "var(--accent)" : "var(--text-faint)",
+                      }}
+                    >
+                      {m.role === "owner" ? "Owner" : m.role === "admin" ? "Admin" : "Editor"}
+                    </span>
+                    {m.role !== "owner" && m.userId !== user?.id && (
+                      <button
+                        onClick={async () => {
+                          const csrf = getCsrfToken()
+                          const h: Record<string, string> = {}
+                          if (csrf) h["x-csrf-token"] = csrf
+                          await fetch(`/api/workspaces/${workspace.id}/members/${m.userId}`, { method: "DELETE", headers: h })
+                          const wsRes = await fetch("/api/me/workspace")
+                          if (wsRes.ok) setWorkspace(await wsRes.json())
+                        }}
+                        className="p-0.5 rounded transition-colors hover:bg-[var(--error-glow)]"
+                        style={{ color: "var(--text-faint)" }}
+                        title="Retirer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Invite form */}
+              {workspace.canInvite ? (
+                <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={e => { setInviteEmail(e.target.value); setInviteError(""); setInviteSuccess("") }}
+                      placeholder="email@example.com"
+                      className="flex-1 h-8 px-2.5 rounded-md text-2xs focus:outline-none"
+                      style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}
+                      onKeyDown={e => { if (e.key === "Enter") handleInvite() }}
+                    />
+                    <button
+                      onClick={handleInvite}
+                      disabled={inviting || !inviteEmail.includes("@")}
+                      className="flex items-center gap-1 px-3 h-8 rounded-md text-2xs font-medium transition-[transform] duration-150 hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-50"
+                      style={{ background: "var(--accent)", color: "#fff" }}
+                    >
+                      {inviting ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                      Inviter
+                    </button>
+                  </div>
+                  {inviteError && (
+                    <p className="text-[10px] mt-1.5" style={{ color: "var(--error-text)" }}>{inviteError}</p>
+                  )}
+                  {inviteSuccess && (
+                    <p className="text-[10px] mt-1.5" style={{ color: "var(--success-text)" }}>{inviteSuccess}</p>
+                  )}
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-2 px-3 py-2 rounded-md"
+                  style={{ background: "var(--warning-bg)", border: "1px solid var(--warning-border)" }}
+                >
+                  <Lock className="w-3 h-3" style={{ color: "var(--warning-text)" }} />
+                  <span className="text-2xs" style={{ color: "var(--text-muted)" }}>
+                    Limite de {workspace.editorLimit} membre{(workspace.editorLimit || 0) > 1 ? "s" : ""} atteinte.{" "}
+                    <button onClick={() => setShowPricing(true)} className="underline" style={{ color: "var(--accent)" }}>
+                      Voir les plans
+                    </button>
+                  </span>
+                </div>
+              )}
+
+              {/* White label branding (Studio/Agency) */}
+              {brandingEnabled && (
+                <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>White label</span>
+                  </div>
+
+                  {/* Logo upload */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Logo (PDF + liens partag&eacute;s)</p>
+                    <div className="flex items-center gap-3">
+                      {brandingLogo ? (
+                        <div className="relative group">
+                          <img src={brandingLogo} alt="" className="h-8 max-w-[120px] object-contain rounded" style={{ border: "1px solid var(--line)" }} />
+                          <button
+                            onClick={async () => {
+                              setSavingBranding(true)
+                              const csrf = getCsrfToken()
+                              const h: Record<string, string> = { "Content-Type": "application/json" }
+                              if (csrf) h["x-csrf-token"] = csrf
+                              await fetch(`/api/workspaces/${workspace.id}/branding`, { method: "PATCH", headers: h, body: JSON.stringify({ logoUrl: null }) })
+                              setBrandingLogo(null)
+                              setSavingBranding(false)
+                            }}
+                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ background: "var(--error-bg)", border: "1px solid var(--error-border)" }}
+                          >
+                            <X className="w-2.5 h-2.5" style={{ color: "var(--error-text)" }} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-md text-2xs font-medium cursor-pointer transition-colors hover:bg-[var(--surface-hover)]"
+                          style={{ border: "1px solid var(--line)", color: "var(--text-muted)" }}
+                        >
+                          <Plus className="w-3 h-3" />
+                          Uploader un logo
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0]
+                              if (!file) return
+                              if (file.size > 500_000) { alert("Max 500KB"); return }
+                              setSavingBranding(true)
+                              const reader = new FileReader()
+                              reader.onload = async () => {
+                                const dataUrl = reader.result as string
+                                const csrf = getCsrfToken()
+                                const h: Record<string, string> = { "Content-Type": "application/json" }
+                                if (csrf) h["x-csrf-token"] = csrf
+                                const res = await fetch(`/api/workspaces/${workspace.id}/branding`, { method: "PATCH", headers: h, body: JSON.stringify({ logoUrl: dataUrl }) })
+                                if (res.ok) setBrandingLogo(dataUrl)
+                                setSavingBranding(false)
+                              }
+                              reader.readAsDataURL(file)
+                              e.target.value = ""
+                            }}
+                          />
+                        </label>
+                      )}
+                      {savingBranding && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--text-faint)" }} />}
+                    </div>
+                  </div>
+
+                  {/* Company name */}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>Nom entreprise</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={brandingCompany}
+                        onChange={e => setBrandingCompany(e.target.value)}
+                        placeholder="Nom affich&eacute; sur les exports"
+                        className="flex-1 h-7 px-2.5 rounded-md text-2xs focus:outline-none"
+                        style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line)" }}
+                        maxLength={60}
+                        onBlur={async () => {
+                          const csrf = getCsrfToken()
+                          const h: Record<string, string> = { "Content-Type": "application/json" }
+                          if (csrf) h["x-csrf-token"] = csrf
+                          await fetch(`/api/workspaces/${workspace.id}/branding`, { method: "PATCH", headers: h, body: JSON.stringify({ companyName: brandingCompany.trim() }) })
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ─── Password ────────────────────────────────────── */}
         <section className="space-y-3">
@@ -559,10 +1079,11 @@ Authorization: Bearer ${mcpTokenValue}`,
           )}
         </section>
 
-        {/* ─── API Keys ────────────────────────────────────── */}
+        {/* ─── API Keys (paid plans only) ─────────────────── */}
+        {plan && plan.tier !== "free" && (
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Clés API</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Cl&eacute;s API (BYOK)</h3>
             <p className="text-2xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               Tes clés permettent à Arbo d&apos;utiliser l&apos;IA de ton choix. Les clés locales restent sur ce navigateur.
             </p>
@@ -701,6 +1222,7 @@ Authorization: Bearer ${mcpTokenValue}`,
             </div>
           )}
         </section>
+        )}
 
         {/* ─── MCP / Integrations ─────────────────────────── */}
         <section className="space-y-3">
@@ -710,6 +1232,23 @@ Authorization: Bearer ${mcpTokenValue}`,
               Connecte Claude, Cursor, ChatGPT ou tout client MCP pour modifier tes projets par IA.
             </p>
           </div>
+
+          {plan?.tier === "free" && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+              <Terminal className="w-4 h-4 shrink-0" style={{ color: "var(--text-faint)" }} />
+              <div className="flex-1">
+                <p className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
+                  Disponible avec Solo, Studio et Agency
+                </p>
+                <p className="text-2xs mt-0.5" style={{ color: "var(--text-faint)" }}>
+                  Passe sur un plan payant pour connecter ton IA pr&eacute;f&eacute;r&eacute;e.
+                </p>
+              </div>
+              <button onClick={() => setShowPricing(true)} className="px-3 py-1.5 rounded-md text-2xs font-medium shrink-0" style={{ background: "var(--accent)", color: "#fff" }}>
+                Voir les plans
+              </button>
+            </div>
+          )}
 
           {/* Token revealed */}
           {mcpRevealed && (
@@ -750,28 +1289,30 @@ Authorization: Bearer ${mcpTokenValue}`,
             </div>
           )}
 
-          {/* Create form */}
-          {!mcpShowForm ? (
-            <button onClick={() => setMcpShowForm(true)} className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--accent)" }}>
-              <Plus className="w-3 h-3" />
-              {mcpTokens.length > 0 ? "Nouveau token" : "Cr\u00e9er un token MCP"}
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={mcpName}
-                onChange={e => setMcpName(e.target.value)}
-                placeholder="Nom (ex: Mon Claude Code)"
-                autoFocus
-                className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none"
-                style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
-                onKeyDown={e => { if (e.key === "Enter") createMcpToken() }}
-              />
-              <button onClick={createMcpToken} disabled={mcpCreating || !mcpName.trim()} className="px-3 h-8 rounded-md text-2xs font-medium disabled:opacity-40" style={{ background: "var(--accent)", color: "#fff" }}>
-                {mcpCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Cr\u00e9er"}
+          {/* Create form — paid plans only */}
+          {plan?.tier !== "free" && (
+            !mcpShowForm ? (
+              <button onClick={() => setMcpShowForm(true)} className="flex items-center gap-1.5 text-2xs font-medium" style={{ color: "var(--accent)" }}>
+                <Plus className="w-3 h-3" />
+                {mcpTokens.length > 0 ? "Nouveau token" : "Cr\u00e9er un token MCP"}
               </button>
-            </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={mcpName}
+                  onChange={e => setMcpName(e.target.value)}
+                  placeholder="Nom (ex: Mon Claude Code)"
+                  autoFocus
+                  className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none"
+                  style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+                  onKeyDown={e => { if (e.key === "Enter") createMcpToken() }}
+                />
+                <button onClick={createMcpToken} disabled={mcpCreating || !mcpName.trim()} className="px-3 h-8 rounded-md text-2xs font-medium disabled:opacity-40" style={{ background: "var(--accent)", color: "#fff" }}>
+                  {mcpCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Cr\u00e9er"}
+                </button>
+              </div>
+            )
           )}
 
           {/* Config instructions (shown when token exists) */}
@@ -870,6 +1411,11 @@ Authorization: Bearer ${mcpTokenValue}`,
         )}
 
       </main>
+
+      <PricingModal
+        open={showPricing}
+        onClose={() => setShowPricing(false)}
+      />
     </div>
   )
 }

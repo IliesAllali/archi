@@ -516,12 +516,89 @@ function SocialProof({ t }: { t: Translations }) {
 
 /* ───── Pricing ───── */
 
+function PricingCard({
+  tier,
+  recommended = false,
+  delay = 0,
+}: {
+  tier: { name: string; price: string; desc: string; features: string[] }
+  recommended?: boolean
+  delay?: number
+}) {
+  const once = tier.price !== "0" ? "one-time" : ""
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay, ease }}
+      className="relative rounded-xl p-6 flex flex-col"
+      style={{
+        background: "var(--surface)",
+        border: recommended ? "1.5px solid var(--accent)" : "1px solid var(--line)",
+        boxShadow: recommended ? "0 0 0 1px var(--accent), 0 8px 32px rgba(247,107,21,0.10)" : undefined,
+      }}
+    >
+      {recommended && (
+        <div
+          className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
+          style={{ background: "var(--accent)", color: "#fff" }}
+        >
+          Popular
+        </div>
+      )}
+      <p className="text-xs font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+        {tier.name}
+      </p>
+      <p className="text-[11px] mb-4" style={{ color: "var(--text-muted)" }}>
+        {tier.desc}
+      </p>
+      <div className="flex items-baseline gap-1 mb-5">
+        <span className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+          {tier.price}&euro;
+        </span>
+        {once && (
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+            {once}
+          </span>
+        )}
+      </div>
+      <ul className="space-y-2 flex-1 mb-6">
+        {tier.features.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+            <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <CtaButton
+        href="/signup"
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-[0.97] ${
+          recommended
+            ? "hover:shadow-lg hover:shadow-orange-500/20 hover:-translate-y-0.5"
+            : "hover:bg-[var(--surface-hover)]"
+        }`}
+        style={{
+          background: recommended ? "var(--accent)" : "transparent",
+          color: recommended ? "#fff" : "var(--text-primary)",
+          border: recommended ? "none" : "1px solid var(--line)",
+        }}
+      >
+        {tier.price === "0" ? "Start free" : "Buy now"}
+        <ArrowRight className="w-3.5 h-3.5" />
+      </CtaButton>
+    </motion.div>
+  )
+}
+
 function Pricing({ t }: { t: Translations }) {
+  const tiers = [t.pricing.free, t.pricing.solo, t.pricing.studio, t.pricing.agency]
+
   return (
     <section id="pricing" className="px-6 pt-20 sm:pt-28 pb-14 sm:pb-20">
       <div className="max-w-[1120px] mx-auto">
         <FadeUp>
-          <div className="max-w-xl">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <p
               className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
               style={{ color: "var(--accent)" }}
@@ -535,31 +612,38 @@ function Pricing({ t }: { t: Translations }) {
               {t.pricing.title}
             </h2>
             <p
-              className="text-[15px] sm:text-base leading-[1.65] mb-10"
+              className="text-[15px] sm:text-base leading-[1.65]"
               style={{ color: "var(--text-secondary)" }}
             >
               {t.pricing.subtitle}
             </p>
-
-            <CtaButton
-              href="/signup"
-              className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/25 active:scale-[0.97]"
-              style={{ background: "var(--accent)", color: "#fff" }}
-            >
-              {t.pricing.cta}
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </CtaButton>
-            <p
-              className="text-[11px] mt-3"
-              style={{ color: "var(--text-faint)" }}
-            >
-              {t.pricing.soon}
-            </p>
           </div>
         </FadeUp>
 
+        {/* Tier cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {tiers.map((tier, i) => (
+            <PricingCard
+              key={tier.name}
+              tier={tier}
+              recommended={i === 1}
+              delay={i * 0.06}
+            />
+          ))}
+        </div>
+
+        {/* Competitor note */}
+        <FadeUp delay={0.15}>
+          <p
+            className="text-center text-xs mt-6"
+            style={{ color: "var(--text-faint)" }}
+          >
+            {t.pricing.competitor}
+          </p>
+        </FadeUp>
+
         {/* Perks — full width below */}
-        <FadeUp delay={0.1}>
+        <FadeUp delay={0.2}>
           <div
             className="mt-10 sm:mt-14 pt-8 sm:pt-10 grid grid-cols-2 sm:grid-cols-3 gap-6"
             style={{ borderTop: "1px solid var(--line)" }}

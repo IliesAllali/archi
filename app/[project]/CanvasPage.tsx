@@ -29,6 +29,8 @@ interface Props {
   project: Project;
   currentUser?: { id: string; name: string; role: string; avatar?: string | null } | null;
   readOnly?: boolean;
+  ownerPlanTier?: string;
+  ownerBranding?: { logoUrl?: string | null; companyName?: string | null } | null;
 }
 
 function CommentModeButton({ accent, onToggle, isActive }: { accent: string; onToggle: () => void; isActive: boolean }) {
@@ -59,7 +61,7 @@ function CommentModeButton({ accent, onToggle, isActive }: { accent: string; onT
 
 type ProjectTab = "sitemap" | "wireframe"
 
-export default function CanvasPage({ project, currentUser, readOnly = false }: Props) {
+export default function CanvasPage({ project, currentUser, readOnly = false, ownerPlanTier, ownerBranding }: Props) {
   // Visibility for guests based on shareView setting
   const wfSettings = project.wireframeSettings
     ? { ...DEFAULT_WIREFRAME_SETTINGS, ...project.wireframeSettings }
@@ -746,6 +748,54 @@ export default function CanvasPage({ project, currentUser, readOnly = false }: P
           } : undefined}
         />
       )}
+
+      {/* Shared view branding: white label OR "Built with arbo" */}
+      {(readOnly || isDemo) && (() => {
+        // White label: show custom branding
+        if (ownerBranding && (ownerBranding.logoUrl || ownerBranding.companyName)) {
+          return (
+            <div
+              className="fixed bottom-2 right-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--line)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}
+            >
+              {ownerBranding.logoUrl && (
+                <img src={ownerBranding.logoUrl} alt="" className="h-4 max-w-[80px] object-contain" />
+              )}
+              {ownerBranding.companyName && !ownerBranding.logoUrl && (
+                <span className="text-[10px] font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {ownerBranding.companyName}
+                </span>
+              )}
+            </div>
+          )
+        }
+        // Free plan: "Built with arbo" watermark
+        if (!ownerPlanTier || ownerPlanTier === "free") {
+          return (
+            <a
+              href="https://arbo.patchou.cloud"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium transition-opacity duration-200 opacity-60 hover:opacity-100"
+              style={{
+                background: "var(--surface)",
+                border: "1px solid var(--line)",
+                color: "var(--text-muted)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg>
+              Built with arbo
+            </a>
+          )
+        }
+        // Paid plan without branding: no badge
+        return null
+      })()}
     </div>
   );
 }

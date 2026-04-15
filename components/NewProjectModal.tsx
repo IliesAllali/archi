@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, Zap, Gem, Plus, Globe, Upload, Link2, List, Check, AlertCircle } from "lucide-react"
+import { X, Sparkles, Loader2, ArrowRight, FileText, Wand2, Zap, Gem, Plus, Globe, Upload, Link2, List, Check, AlertCircle, Lock } from "lucide-react"
 import AiInput, { type AttachedFile } from "./AiInput"
+import PricingModal from "./PricingModal"
 import { AiThinkingBlock, AiProgressBar, AiCompletionBurst } from "./ai"
 import { Events } from "@/lib/posthog"
 import {
@@ -61,6 +62,10 @@ export default function NewProjectModal({ open, onClose }: Props) {
   const [importMaxDepth, setImportMaxDepth] = useState<number>(0) // 0 = no limit
   const [importGroupSimilar, setImportGroupSimilar] = useState(false)
 
+  // Plan limit paywall
+  const [planLimit, setPlanLimit] = useState<{ tier: string; limit: number } | null>(null)
+  const [showPricing, setShowPricing] = useState(false)
+
   // Auto-scroll actions list
   useEffect(() => {
     if (actionsListRef.current) {
@@ -90,6 +95,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
       setImportMaxDepth(0)
       setImportGroupSimilar(false)
       setImportResult(null)
+      setPlanLimit(null)
     }
   }, [open])
 
@@ -120,7 +126,15 @@ export default function NewProjectModal({ open, onClose }: Props) {
         Events.projectCreated(!!client.trim())
         router.push(`/${data.id}`)
         onClose()
-      } else if (res.status === 401 || res.status === 403) {
+      } else if (res.status === 403) {
+        const data = await res.json().catch(() => ({}))
+        if (data.error === "project_limit") {
+          setPlanLimit({ tier: data.tier, limit: data.limit })
+          Events.premiumWallHit("project_limit", "new_project_modal")
+        } else {
+          router.push("/login?redirect=/")
+        }
+      } else if (res.status === 401) {
         router.push("/login?redirect=/")
       } else {
         setError("Erreur lors de la création")
@@ -254,6 +268,15 @@ export default function NewProjectModal({ open, onClose }: Props) {
       })
 
       if (!projectRes.ok) {
+        if (projectRes.status === 403) {
+          const data = await projectRes.json().catch(() => ({}))
+          if (data.error === "project_limit") {
+            setPlanLimit({ tier: data.tier, limit: data.limit })
+            setImportStatus("idle")
+            setLoading(false)
+            return
+          }
+        }
         if (projectRes.status === 401 || projectRes.status === 403) {
           router.push("/login?redirect=/")
           return
@@ -371,8 +394,49 @@ export default function NewProjectModal({ open, onClose }: Props) {
             </div>
 
             <div className="px-5 pb-5">
+              {/* ─── Plan limit paywall ───────────────────────────────────── */}
+              {planLimit && (
+                <div className="space-y-5 py-5">
+                  {/* Illustration */}
+                  <div className="text-center">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                      style={{ background: "var(--accent-muted)" }}
+                    >
+                      <Lock className="w-5 h-5" style={{ color: "var(--accent)" }} />
+                    </div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {planLimit.limit} projets, c&apos;est le max en Free
+                    </p>
+                    <p className="text-2xs mt-1 max-w-[260px] mx-auto" style={{ color: "var(--text-muted)" }}>
+                      Passe &agrave; Solo pour cr&eacute;er des projets sans limite + 300 cr&eacute;dits IA.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => { setShowPricing(true); Events.upgradeCTAClicked("solo", "project_limit_paywall") }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg hover:shadow-orange-500/20 active:scale-[0.98]"
+                    style={{ background: "var(--accent)", color: "#fff" }}
+                  >
+                    <Gem className="w-3.5 h-3.5" />
+                    Voir les plans
+                  </button>
+                  <button
+                    onClick={() => setPlanLimit(null)}
+                    className="w-full text-center text-2xs py-1 transition-colors hover:underline"
+                    style={{ color: "var(--text-faint)" }}
+                  >
+                    Retour
+                  </button>
+                  <PricingModal
+                    open={showPricing}
+                    onClose={() => setShowPricing(false)}
+                    highlightTier="solo"
+                  />
+                </div>
+              )}
               {/* ─── Choice screen ─────────────────────────────────────────── */}
-              {mode === "choice" && (
+              {!planLimit && mode === "choice" && (
                 <div className="space-y-2 pt-1">
                   <button
                     onClick={() => setMode("ai")}
