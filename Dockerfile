@@ -18,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # Remove devDependencies
-RUN npm prune --production
+RUN npm prune --production --legacy-peer-deps
 
 # Create data directory
 RUN mkdir -p data
