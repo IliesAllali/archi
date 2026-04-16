@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { Events } from "@/lib/posthog";
+import { useT } from "@/lib/app-i18n";
 
 function SignupForm() {
+  const t = useT();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,12 +46,12 @@ function SignupForm() {
         return;
       } else if (res.ok) {
         Events.userSignedUp("direct");
-        setSuccess(data.message || "Compte créé. Vérifiez votre email.");
+        setSuccess(data.message || t("signup.successDefault"));
       } else {
-        setError(data.error || "Erreur lors de l'inscription");
+        setError(data.error || t("signup.errorConnection"));
       }
     } catch {
-      setError("Erreur de connexion");
+      setError(t("signup.errorConnection"));
     } finally {
       setLoading(false);
     }
@@ -76,20 +78,27 @@ function SignupForm() {
           className="inline-block text-2xs font-medium hover:underline"
           style={{ color: "var(--accent)" }}
         >
-          Retour au login
+          {t("signup.backToLogin")}
         </Link>
       </div>
     );
   }
 
   return (
+    <>
+      <h1
+        className="text-sm font-semibold text-center mb-6"
+        style={{ color: "var(--text-primary)" }}
+      >
+        {t("signup.pageTitle")}
+      </h1>
     <form onSubmit={handleSubmit} className="space-y-3">
       <input
         ref={nameRef}
         type="text"
         value={name}
         onChange={(e) => { setName(e.target.value); if (error) setError(""); }}
-        placeholder="Nom"
+        placeholder={t("signup.namePlaceholder")}
         autoFocus
         autoComplete="name"
         className="w-full h-11 px-4 rounded-lg text-sm transition-all duration-200 focus:outline-none"
@@ -108,7 +117,7 @@ function SignupForm() {
         type="email"
         value={email}
         onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
-        placeholder="Email"
+        placeholder={t("signup.emailPlaceholder")}
         autoComplete="email"
         className="w-full h-11 px-4 rounded-lg text-sm transition-all duration-200 focus:outline-none"
         style={inputStyle()}
@@ -127,7 +136,7 @@ function SignupForm() {
           type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-          placeholder="Mot de passe (8 caractères min.)"
+          placeholder={t("signup.passwordPlaceholder")}
           autoComplete="new-password"
           className="w-full h-11 pl-4 pr-12 rounded-lg text-sm transition-all duration-200 focus:outline-none"
           style={inputStyle()}
@@ -164,16 +173,17 @@ function SignupForm() {
         className="w-full h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
       >
-        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Créer mon compte"}
+        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : t("signup.submitButton")}
       </button>
 
       <p className="text-2xs text-center pt-2" style={{ color: "var(--text-faint)" }}>
-        Déjà un compte ?{" "}
+        {t("signup.alreadyAccount")}{" "}
         <Link href="/login" className="font-medium hover:underline" style={{ color: "var(--accent)" }}>
-          Se connecter
+          {t("signup.signIn")}
         </Link>
       </p>
     </form>
+    </>
   );
 }
 
@@ -189,13 +199,6 @@ export default function SignupPage() {
             <Logo size={22} />
           </div>
         </div>
-
-        <h1
-          className="text-sm font-semibold text-center mb-6"
-          style={{ color: "var(--text-primary)" }}
-        >
-          Cr{"é"}er un compte
-        </h1>
 
         <div className="animate-fade-in-up" style={{ animationDelay: "100ms", opacity: 0 }}>
           <Suspense fallback={<div className="h-[280px]" />}>

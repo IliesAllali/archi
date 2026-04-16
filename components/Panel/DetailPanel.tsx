@@ -7,6 +7,7 @@ import {
   Search, AlertTriangle, Scale, Layers, Tag, MousePointerClick,
   Lightbulb, MessageSquare, Globe, Trash2, Link2, Unlink,
 } from "lucide-react";
+import { useT } from "@/lib/app-i18n";
 import type { SiteNode, Project, NodeData, BuiltInPageType } from "@/lib/types";
 import { BUILT_IN_PAGE_TYPES, PAGE_TYPE_CONFIG } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
@@ -59,6 +60,7 @@ function getNodeColorTint(group?: string): string {
 }
 
 function ColorDot({ group, onChange }: { group?: string; onChange: (g: string) => void }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const color = getNodeColor(group);
@@ -77,7 +79,7 @@ function ColorDot({ group, onChange }: { group?: string; onChange: (g: string) =
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center justify-center group cursor-pointer"
-        title="Couleur"
+        title={t("detailPanel.colorTooltip")}
       >
         <div
           className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform group-hover:scale-125"
@@ -115,7 +117,7 @@ function ColorDot({ group, onChange }: { group?: string; onChange: (g: string) =
           </div>
           <div className="text-center">
             <span className="text-2xs" style={{ color: "var(--text-faint)" }}>
-              {COLOR_PALETTE.find((c) => c.value === (group || ""))?.label || "Défaut"}
+              {COLOR_PALETTE.find((c) => c.value === (group || ""))?.label || t("detailPanel.defaultColor")}
             </span>
           </div>
         </div>
@@ -213,6 +215,7 @@ function getNodePath(node: SiteNode, allNodes: SiteNode[]): SiteNode[] {
 }
 
 export default function DetailPanel({ node, project, onClose, readOnly = false }: DetailPanelProps) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -332,7 +335,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                         value={node.label}
                         onChange={(v) => handleFieldChange("label", v)}
                         className="text-base font-semibold text-label-primary"
-                        placeholder="Nom de la page"
+                        placeholder={t("detailPanel.namePlaceholder")}
                       />
                     )}
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -373,14 +376,14 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
 
             {/* Content */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scroll">
-              <SectionAnimated index={0} title="Description">
+              <SectionAnimated index={0} title={t("detailPanel.sectionDescription")}>
                 {readOnly ? (
-                  <ReadOnlyText value={node.description} placeholder="Aucune description" />
+                  <ReadOnlyText value={node.description} placeholder={t("detailPanel.noDescription")} />
                 ) : (
                   <EditableTextarea
                     value={node.description || ""}
                     onChange={(v) => handleFieldChange("description", v)}
-                    placeholder="Description de la page..."
+                    placeholder={t("detailPanel.descriptionPlaceholder")}
                     minRows={5}
                     maxRows={200}
                   />
@@ -388,7 +391,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
               </SectionAnimated>
 
               {!readOnly && (
-                <SectionAnimated index={1} title="Points d'entrée" icon={Globe}>
+                <SectionAnimated index={1} title={t("detailPanel.sectionEntryPoints")} icon={Globe}>
                   <EntryPointsBlock
                     entryPoints={node.entryPoints || []}
                     onChange={(eps) => handleFieldChange("entryPoints", eps)}
@@ -397,7 +400,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
               )}
 
               {!readOnly && (
-                <SectionAnimated index={2} title="Zoning" icon={Layers}>
+                <SectionAnimated index={2} title={t("detailPanel.sectionZoning")} icon={Layers}>
                   <ZoningEditor
                     pageType={node.type}
                     pageLabel={node.label}
@@ -414,14 +417,14 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                 </SectionAnimated>
               )}
 
-              <SectionAnimated index={3} title="Rationale" icon={Lightbulb}>
+              <SectionAnimated index={3} title={t("detailPanel.sectionRationale")} icon={Lightbulb}>
                 {readOnly ? (
-                  <ReadOnlyText value={node.rationale} placeholder="Non renseigné" />
+                  <ReadOnlyText value={node.rationale} placeholder={t("detailPanel.noRationale")} />
                 ) : (
                   <EditableTextarea
                     value={node.rationale || ""}
                     onChange={(v) => handleFieldChange("rationale", v)}
-                    placeholder="Pourquoi cette page existe..."
+                    placeholder={t("detailPanel.rationalePlaceholder")}
                     minRows={2}
                     maxRows={6}
                   />
@@ -429,45 +432,45 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
               </SectionAnimated>
 
               {!readOnly && (
-                <SectionAnimated index={4} title="Notes" icon={MessageSquare}>
+                <SectionAnimated index={4} title={t("detailPanel.sectionNotes")} icon={MessageSquare}>
                   <EditableTextarea
                     value={node.notes || ""}
                     onChange={(v) => handleFieldChange("notes", v)}
-                    placeholder="Notes internes, insights UX..."
+                    placeholder={t("detailPanel.notesPlaceholder")}
                     minRows={2}
                     maxRows={6}
                   />
                 </SectionAnimated>
               )}
 
-              <SectionAnimated index={5} title="CTAs" icon={MousePointerClick}>
+              <SectionAnimated index={5} title={t("detailPanel.sectionCtas")} icon={MousePointerClick}>
                 {readOnly ? (
                   <ReadOnlyTags values={node.cta || []} accentStyle />
                 ) : (
                   <EditableTagList
                     values={node.cta || []}
                     onChange={(v) => handleFieldChange("cta", v)}
-                    placeholder="Ajouter un CTA..."
+                    placeholder={t("detailPanel.ctaPlaceholder")}
                     accentStyle
                   />
                 )}
               </SectionAnimated>
 
-              <SectionAnimated index={6} title="Tags" icon={Tag}>
+              <SectionAnimated index={6} title={t("detailPanel.sectionTags")} icon={Tag}>
                 {readOnly ? (
                   <ReadOnlyTags values={node.tags || []} />
                 ) : (
                   <EditableTagList
                     values={node.tags || []}
                     onChange={(v) => handleFieldChange("tags", v)}
-                    placeholder="Ajouter un tag..."
+                    placeholder={t("detailPanel.tagPlaceholder")}
                   />
                 )}
               </SectionAnimated>
 
               {/* Secondary parents (multi-parent links) */}
               {node.secondaryParentIds && node.secondaryParentIds.length > 0 && (
-                <SectionAnimated index={7} title="Parents secondaires" icon={Link2}>
+                <SectionAnimated index={7} title={t("detailPanel.sectionSecondaryParents")} icon={Link2}>
                   <div className="flex flex-col gap-1.5">
                     {node.secondaryParentIds.map((pid) => {
                       const parentNode = nodes.find((n) => n.id === pid);
@@ -488,7 +491,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                                 unlinkFromParent(node.id, pid);
                               }}
                               className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
-                              title="Supprimer ce lien"
+                              title={t("detailPanel.unlinkTooltip")}
                             >
                               <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
                             </button>
@@ -502,7 +505,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
 
               {/* Cross-links (dashed, non-hierarchical) */}
               {node.links && node.links.length > 0 && (
-                <SectionAnimated index={8} title="Liens" icon={Link2}>
+                <SectionAnimated index={8} title={t("detailPanel.sectionLinks")} icon={Link2}>
                   <div className="flex flex-col gap-1.5">
                     {node.links.map((tid) => {
                       const targetNode = nodes.find((n) => n.id === tid);
@@ -526,7 +529,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                                 removeCrossLink(node.id, tid);
                               }}
                               className="p-1 rounded hover:bg-bg-hover transition-colors shrink-0"
-                              title="Supprimer ce lien"
+                              title={t("detailPanel.unlinkTooltip")}
                             >
                               <Unlink className="w-3 h-3" style={{ color: "var(--text-faint)" }} />
                             </button>
@@ -544,7 +547,11 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                   {showDeleteConfirm ? (
                     <div className="flex flex-col gap-2 p-3 rounded-lg border" style={{ borderColor: "var(--error-border)", background: "var(--error-glow)" }}>
                       <p className="text-xs font-medium" style={{ color: "var(--error-text)" }}>
-                        Supprimer « {node.label} » {node.children.length > 0 ? `et ses ${node.children.length} sous-page${node.children.length > 1 ? "s" : ""} ?` : "?"}
+                        {node.children.length > 0
+                          ? (node.children.length > 1
+                            ? t("detailPanel.deleteConfirm_withChildren_other").replace("{{label}}", node.label).replace("{{count}}", String(node.children.length))
+                            : t("detailPanel.deleteConfirm_withChildren_one").replace("{{label}}", node.label).replace("{{count}}", String(node.children.length)))
+                          : t("detailPanel.deleteConfirm_noChildren").replace("{{label}}", node.label)}
                       </p>
                       <div className="flex items-center gap-2">
                         <button
@@ -556,7 +563,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                           className="px-3 py-1.5 rounded text-xs font-medium text-white transition-colors"
                           style={{ background: "var(--error-text)" }}
                         >
-                          {node.children.length > 0 ? "Supprimer tout" : "Supprimer"}
+                          {node.children.length > 0 ? t("detailPanel.deleteAll") : t("detailPanel.deleteButton")}
                         </button>
                         {node.children.length > 0 && (
                           <button
@@ -568,7 +575,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                             className="px-3 py-1.5 rounded text-xs font-medium transition-colors border"
                             style={{ color: "var(--text-secondary)", borderColor: "var(--line)" }}
                           >
-                            Remonter les enfants
+                            {t("detailPanel.reparentChildren")}
                           </button>
                         )}
                         <button
@@ -587,7 +594,7 @@ export default function DetailPanel({ node, project, onClose, readOnly = false }
                     >
                       <Trash2 className="w-3.5 h-3.5 text-label-faint group-hover:text-red-500 transition-colors group-hover:animate-[wiggle_400ms_ease-out]" />
                       <span className="text-xs text-label-faint group-hover:text-red-500 transition-colors">
-                        Supprimer cette page
+                        {t("detailPanel.deleteButton")}
                       </span>
                     </button>
                   )}
@@ -760,7 +767,8 @@ function ReadOnlyText({ value, placeholder }: { value?: string; placeholder?: st
 }
 
 function ReadOnlyTags({ values, accentStyle }: { values: string[]; accentStyle?: boolean }) {
-  if (!values.length) return <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucun</p>;
+  const t = useT();
+  if (!values.length) return <p className="text-sm" style={{ color: "var(--text-faint)" }}>{t("detailPanel.noTags")}</p>;
   return (
     <div className="flex flex-wrap gap-1.5">
       {values.map((tag, i) => (

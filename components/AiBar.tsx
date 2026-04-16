@@ -6,6 +6,7 @@ import { Sparkles, Send, X, Check, AlertTriangle, Zap, Gem, MessageSquare, Chevr
 import ReactMarkdown from "react-markdown";
 import AiInput, { type AttachedFile } from "./AiInput";
 import { AiActionPill, AiThinkingBlock, compactMarkdownComponents, type AiActionType } from "./ai";
+import { useT } from "@/lib/app-i18n";
 
 /* ── Inline response card ─────────────────────────────────────────────────── */
 
@@ -18,6 +19,7 @@ interface InlineResponse {
 }
 
 function InlineResponseCard({ response, onDismiss }: { response: InlineResponse; onDismiss: () => void }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(true);
   const hasActions = response.actions && response.actions.length > 0;
 
@@ -44,16 +46,18 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
           {response.type === "edit" ? (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--success-bg)", color: "var(--success-text)" }}>
               <Check className="w-3 h-3" />
-              {response.actions?.length || 0} modif{(response.actions?.length || 0) > 1 ? "s" : ""}
+              {(response.actions?.length || 0) > 1
+                  ? t("aiBar.modifCount_other").replace("{{count}}", String(response.actions?.length || 0))
+                  : t("aiBar.modifCount_one").replace("{{count}}", String(response.actions?.length || 0))}
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}>
               <MessageSquare className="w-3 h-3" />
-              Réponse
+              {t("aiBar.responseLabel")}
             </div>
           )}
           <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-            {new Date(response.timestamp).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            {new Date(response.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -159,6 +163,7 @@ interface Props {
 }
 
 export default function AiBar({ projectId, projectName, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult }: Props) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -272,13 +277,13 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
 
           if (!res.ok) {
             const err = await res.json();
-            setError(err.error || "Erreur");
+            setError(err.error || t("aiBar.errorNetwork"));
             setLoading(false);
             return;
           }
 
           const reader = res.body?.getReader();
-          if (!reader) { setError("Erreur"); setLoading(false); return; }
+          if (!reader) { setError(t("aiBar.errorNetwork")); setLoading(false); return; }
 
           const decoder = new TextDecoder();
           let fullHtml = "";
@@ -306,13 +311,13 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
             wireframeContext.onSaveGlobalHtml!(globalSlot, "desktop", clean);
             setLastResponse({
               id: `wf-${Date.now()}`, type: "edit",
-              summary: `${globalSlot === "header" ? "Header" : "Footer"} global mis \u00e0 jour`,
+              summary: globalSlot === "header" ? t("aiBar.globalHeaderUpdated") : t("aiBar.globalFooterUpdated"),
               timestamp: Date.now(),
             });
             setPrompt("");
           }
         } catch {
-          setError("Erreur r\u00e9seau");
+          setError(t("aiBar.errorNetwork"));
         } finally {
           setLoading(false);
           setStatusMsg("");
@@ -321,7 +326,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
       }
 
       // ─── Page wireframe mode ───
-      setStatusMsg("G\u00e9n\u00e9ration du wireframe...");
+      setStatusMsg(t("aiBar.generating"));
       try {
         const res = await fetch("/api/ai/wireframe", {
           method: "POST",
@@ -351,13 +356,13 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
 
         if (!res.ok) {
           const err = await res.json();
-          setError(err.error || "Erreur");
+          setError(err.error || t("aiBar.errorNetwork"));
           setLoading(false);
           return;
         }
 
         const reader = res.body?.getReader();
-        if (!reader) { setError("Erreur de connexion"); setLoading(false); return; }
+        if (!reader) { setError(t("aiBar.errorConnection")); setLoading(false); return; }
 
         const decoder = new TextDecoder();
         let fullHtml = "";
@@ -389,13 +394,13 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           onWireframeResult(fullHtml.trim(), true);
           setLastResponse({
             id: `wf-${Date.now()}`, type: "edit",
-            summary: wireframeContext.currentHtml ? "Wireframe mis \u00e0 jour" : "Wireframe g\u00e9n\u00e9r\u00e9",
+            summary: wireframeContext.currentHtml ? t("aiBar.wireframeUpdated") : t("aiBar.wireframeGenerated"),
             timestamp: Date.now(),
           });
           setPrompt("");
         }
       } catch {
-        setError("Erreur r\u00e9seau");
+        setError(t("aiBar.errorNetwork"));
       } finally {
         setLoading(false);
         setStatusMsg("");
@@ -433,14 +438,14 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           setCreditsEmpty(true);
           Events.premiumWallHit("credits_depleted", "ai_bar");
         } else {
-          setError(data.error || "Erreur de modification");
+          setError(data.error || t("aiBar.errorNetwork"));
         }
         setLoading(false);
         return;
       }
 
       const reader = res.body?.getReader();
-      if (!reader) { setError("Erreur de connexion"); setLoading(false); return; }
+      if (!reader) { setError(t("aiBar.errorConnection")); setLoading(false); return; }
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -501,7 +506,8 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     const project = await projectRes.json();
                     initProject(project);
                   }
-                  const summary = data.summary || `${data.total} modification(s) appliqu\u00e9e(s)`;
+                  const appliedKey = (data.total ?? 1) > 1 ? "aiBar.appliedFallback_other" : "aiBar.appliedFallback_one"
+                  const summary = data.summary || t(appliedKey as Parameters<typeof t>[0]).replace("{{count}}", String(data.total ?? 0));
 
                   // Send to chat panel (persistent history)
                   const now = Date.now();
@@ -546,12 +552,12 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
         }
       }
     } catch {
-      setError("Erreur de connexion");
+      setError(t("aiBar.errorConnection"));
     } finally {
       setLoading(false);
       setStatusMsg("");
     }
-  }, [prompt, attachedFiles, projectId, projectName, speed, initProject, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult]);
+  }, [prompt, attachedFiles, projectId, projectName, speed, initProject, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult, t]);
 
   return (
     <>
@@ -569,7 +575,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           }}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Assistant IA
+          {t("aiBar.toggleLabel")}
           <kbd className="ml-1 px-1.5 py-0.5 rounded text-2xs font-mono hidden sm:inline" style={{ background: "rgba(255,255,255,0.2)" }}>
             Ctrl+I
           </kbd>
@@ -597,7 +603,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
                 <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-                  Assistant IA
+                  {t("aiBar.headerTitle")}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -609,10 +615,10 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     color: speed === "fast" ? "var(--warning-text)" : "var(--accent)",
                     background: speed === "fast" ? "var(--warning-bg)" : "var(--accent-muted)",
                   }}
-                  title={speed === "fast" ? "Mode rapide (1 crédit)" : "Mode qualité (3 crédits)"}
+                  title={speed === "fast" ? t("aiBar.speedFastTooltip") : t("aiBar.speedQualityTooltip")}
                 >
                   {speed === "fast" ? <Zap className="w-3 h-3" /> : <Gem className="w-3 h-3" />}
-                  {speed === "fast" ? "Rapide" : "Qualité"}
+                  {speed === "fast" ? t("aiBar.speedFast") : t("aiBar.speedQuality")}
                 </button>
                 {/* Credits badge */}
                 <AiSourcePicker />
@@ -622,9 +628,9 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     onClick={onOpenChat}
                     className="flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium transition-colors duration-150"
                     style={{ color: "var(--text-muted)", background: "var(--surface)" }}
-                    title="Ouvrir le chat"
+                    title={t("aiBar.openChatTooltip")}
                   >
-                    Chat ({Math.floor(chatMessages.length / 2) || chatMessages.length})
+                    {t("aiBar.chatButton")} ({Math.floor(chatMessages.length / 2) || chatMessages.length})
                   </button>
                 )}
                 <button
@@ -670,10 +676,10 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 <Sparkles className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--warning-text)" }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
-                    Cr&eacute;dits &eacute;puis&eacute;s
+                    {t("aiBar.creditsEmptyTitle")}
                   </p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {isPaidPlan ? "Recharge ou ajoute ta cl\u00e9 API." : "Recharge tes cr\u00e9dits pour continuer."}
+                    {isPaidPlan ? t("aiBar.creditsEmptyDesc") : t("aiBar.creditsEmptyDescFree")}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -693,7 +699,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                     className="px-2 py-1 rounded-md text-[10px] font-medium transition-[transform] duration-150 hover:-translate-y-0.5 active:scale-[0.97]"
                     style={{ background: "var(--accent)", color: "#fff" }}
                   >
-                    Recharger 4&euro;
+                    {t("aiBar.rechargeButton")}
                   </button>
                   {isPaidPlan && (
                     <a
@@ -701,7 +707,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                       className="px-2 py-1 rounded-md text-[10px] font-medium transition-colors duration-150 hover:bg-[var(--surface-hover)]"
                       style={{ color: "var(--text-muted)", border: "1px solid var(--line)" }}
                     >
-                      Cl&eacute; API
+                      {t("aiBar.apiKeyButton")}
                     </a>
                   )}
                 </div>
@@ -725,18 +731,18 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               {/* Target selector — only in wireframe mode when globals exist */}
               {wireframeContext && (wireframeContext.hasGlobalHeader || wireframeContext.hasGlobalFooter) && (
                 <div className="flex items-center gap-1 mb-2">
-                  <span className="text-[10px] mr-1" style={{ color: "var(--text-faint)" }}>Cible :</span>
-                  {(["page", ...(wireframeContext.hasGlobalHeader ? ["header"] : []), ...(wireframeContext.hasGlobalFooter ? ["footer"] : [])] as const).map((t) => (
+                  <span className="text-[10px] mr-1" style={{ color: "var(--text-faint)" }}>{t("aiBar.targetLabel")}</span>
+                  {(["page", ...(wireframeContext.hasGlobalHeader ? ["header"] : []), ...(wireframeContext.hasGlobalFooter ? ["footer"] : [])] as const).map((target) => (
                     <button
-                      key={t}
-                      onClick={() => setWireframeTarget(t as "page" | "header" | "footer")}
+                      key={target}
+                      onClick={() => setWireframeTarget(target as "page" | "header" | "footer")}
                       className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors duration-150"
                       style={{
-                        background: wireframeTarget === t ? "var(--accent)" : "var(--bg-hover)",
-                        color: wireframeTarget === t ? "#fff" : "var(--text-faint)",
+                        background: wireframeTarget === target ? "var(--accent)" : "var(--bg-hover)",
+                        color: wireframeTarget === target ? "#fff" : "var(--text-faint)",
                       }}
                     >
-                      {t === "page" ? "Page" : t === "header" ? "Header" : "Footer"}
+                      {target === "page" ? t("aiBar.targetPage") : target === "header" ? t("aiBar.targetHeader") : t("aiBar.targetFooter")}
                     </button>
                   ))}
                 </div>
@@ -746,10 +752,10 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
                 onChange={setPrompt}
                 onSend={(_text, files) => handleSubmit(files)}
                 placeholder={wireframeContext
-                  ? wireframeTarget === "header" ? "Modifie le Header global..."
-                  : wireframeTarget === "footer" ? "Modifie le Footer global..."
-                  : `Wireframe "${wireframeContext.pageLabel}" \u2014 d\u00e9cris les modifications...`
-                  : "Modifie l'arbo ou pose une question..."}
+                  ? wireframeTarget === "header" ? t("aiBar.inputPlaceholderHeader")
+                  : wireframeTarget === "footer" ? t("aiBar.inputPlaceholderFooter")
+                  : `Wireframe "${wireframeContext.pageLabel}" — ${t("aiBar.inputPlaceholderWireframe")}`
+                  : t("aiBar.inputPlaceholderSitemap")}
                 rows={1}
                 disabled={loading}
                 compact
@@ -782,10 +788,10 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
               />
               <div className="hidden sm:flex items-center justify-between mt-2">
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Enter pour envoyer, Shift+Enter pour retour ligne
+                  {t("aiBar.sendHint")}
                 </p>
                 <p className="text-2xs" style={{ color: "var(--text-faint)" }}>
-                  Esc pour fermer
+                  {t("aiBar.closeHint")}
                 </p>
               </div>
             </div>

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles, PenTool } from "lucide-react"
 import Logo from "@/components/Logo"
+import { useT } from "@/lib/app-i18n"
 import GeneralTab from "./tabs/GeneralTab"
 import MembersTab from "./tabs/MembersTab"
 import ShareTab from "./tabs/ShareTab"
@@ -23,17 +24,18 @@ interface ProjectMeta {
   ownerId?: string
 }
 
-const TABS = [
-  { id: "general", label: "Général", icon: Settings },
-  { id: "wireframe", label: "Wireframes", icon: PenTool },
-  { id: "ai", label: "Connecter une IA", icon: Sparkles },
-  { id: "members", label: "Membres", icon: Users },
-  { id: "share", label: "Liens de partage", icon: Link2 },
-  { id: "tokens", label: "Tokens IA", icon: Key },
-  { id: "danger", label: "Zone danger", icon: AlertTriangle },
-] as const
+const TAB_IDS = ["general", "wireframe", "ai", "members", "share", "tokens", "danger"] as const
+const TAB_ICONS = {
+  general: Settings,
+  wireframe: PenTool,
+  ai: Sparkles,
+  members: Users,
+  share: Link2,
+  tokens: Key,
+  danger: AlertTriangle,
+} as const
 
-type TabId = typeof TABS[number]["id"]
+type TabId = typeof TAB_IDS[number]
 
 export default function SettingsClient({
   project,
@@ -42,11 +44,12 @@ export default function SettingsClient({
   project: ProjectMeta
   currentUserId: string
 }) {
+  const t = useT()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     const tab = searchParams.get("tab")
-    if (tab && TABS.some(t => t.id === tab)) return tab as TabId
+    if (tab && TAB_IDS.includes(tab as TabId)) return tab as TabId
     return "general"
   })
   const [projectName, setProjectName] = useState(project.name)
@@ -99,7 +102,7 @@ export default function SettingsClient({
             className="text-xs font-medium"
             style={{ color: "var(--text-primary)" }}
           >
-            Paramètres
+            {t("settings.pageTitle")}
           </span>
         </div>
       </header>
@@ -110,13 +113,13 @@ export default function SettingsClient({
           className="flex gap-1 mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0"
           style={{ borderBottom: "1px solid var(--line)" }}
         >
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
+          {TAB_IDS.map((tabId) => {
+            const Icon = TAB_ICONS[tabId]
+            const isActive = activeTab === tabId
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={tabId}
+                onClick={() => setActiveTab(tabId)}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors duration-100 border-b-2 -mb-px"
                 style={{
                   color: isActive ? "var(--text-primary)" : "var(--text-muted)",
@@ -124,7 +127,7 @@ export default function SettingsClient({
                 }}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                {t(`settings.tabs.${tabId}` as Parameters<typeof t>[0])}
               </button>
             )
           })}

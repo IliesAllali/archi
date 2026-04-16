@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
+import { useT } from "@/lib/app-i18n";
 
 function LoginForm() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37,11 +39,11 @@ function LoginForm() {
         return;
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Identifiants incorrects");
+        setError(data.error || t("login.errorInvalidCredentials"));
         emailRef.current?.focus();
       }
     } catch {
-      setError("Erreur de connexion");
+      setError(t("login.errorConnection"));
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,7 @@ function LoginForm() {
           className="px-4 py-3 rounded-lg text-2xs text-center animate-fade-in"
           style={{ background: "var(--success-bg)", color: "var(--success-text)" }}
         >
-          Email confirm\u00e9 ! Vous pouvez maintenant vous connecter.
+          {t("login.emailConfirmed")}
         </div>
       )}
 
@@ -91,7 +93,7 @@ function LoginForm() {
           type="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); if (error) setError(""); }}
-          placeholder="Email"
+          placeholder={t("login.emailPlaceholder")}
           autoFocus
           autoComplete="email"
           className="w-full h-11 px-4 rounded-lg text-sm transition-all duration-200 focus:outline-none"
@@ -114,7 +116,7 @@ function LoginForm() {
           type={showPassword ? "text" : "password"}
           value={password}
           onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-          placeholder="Mot de passe"
+          placeholder={t("login.passwordPlaceholder")}
           autoComplete="current-password"
           className="w-full h-11 pl-4 pr-12 rounded-lg text-sm transition-all duration-200 focus:outline-none"
           style={inputStyle(!!error)}
@@ -153,12 +155,12 @@ function LoginForm() {
             className="text-2xs font-medium hover:underline transition-opacity disabled:opacity-50"
             style={{ color: "var(--accent)" }}
           >
-            {resending ? "Envoi en cours..." : "Renvoyer l\u2019email de confirmation"}
+            {resending ? t("login.resending") : t("login.resendVerification")}
           </button>
         )}
         {resendSuccess && (
           <p className="text-2xs animate-fade-in" style={{ color: "var(--success-text)" }}>
-            Email renvoy\u00e9 ! V\u00e9rifiez votre bo\u00eete mail.
+            {t("login.emailResent")}
           </p>
         )}
       </div>
@@ -169,13 +171,13 @@ function LoginForm() {
         className="w-full h-11 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ background: "var(--text-primary)", color: "var(--canvas-bg)" }}
       >
-        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : "Se connecter"}
+        {loading ? <Loader2 className="w-4 h-4 mx-auto animate-spin" /> : t("login.submitButton")}
       </button>
 
       <p className="text-2xs text-center pt-2" style={{ color: "var(--text-faint)" }}>
-        Pas encore de compte ?{" "}
+        {t("login.noAccount")}{" "}
         <Link href="/signup" className="font-medium hover:underline" style={{ color: "var(--accent)" }}>
-          Créer un compte
+          {t("login.createAccount")}
         </Link>
       </p>
     </form>
