@@ -1,11 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Loader2, Check, AlertTriangle, Users } from "lucide-react"
 import Logo from "@/components/Logo"
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--canvas-bg)" }}>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--text-faint)" }} />
+      </div>
+    }>
+      <JoinContent />
+    </Suspense>
+  )
+}
+
+function JoinContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token") || ""
 
