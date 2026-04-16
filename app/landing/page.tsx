@@ -1,6 +1,9 @@
 import type { Metadata } from "next"
 import LandingClient from "./LandingClient"
 
+/** Avoid Full Route Cache (s-maxage=1y) so deploys show new landing HTML immediately */
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Arbo — Free AI Visual Sitemap Builder & Wireframe Generator | Generate Sitemaps from Text",
   description:
