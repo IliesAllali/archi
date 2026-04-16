@@ -122,7 +122,7 @@ function SkinForm() {
 function HomeExpandedCard({ delay, onClick, selected }: { delay: number; onClick: () => void; selected: boolean }) {
   const n = getNode("accueil")
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay, ease }}
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay, ease }}
       onClick={onClick}
       className="group/card"
       style={{
@@ -152,7 +152,7 @@ function HomeExpandedCard({ delay, onClick, selected }: { delay: number; onClick
 function ExpandedCard({ delay, onClick, selected }: { delay: number; onClick: () => void; selected: boolean }) {
   const n = getNode("entreprise")
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay, ease }}
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay, ease }}
       onClick={onClick} style={{
         position: "absolute", left: n.x, top: n.y, width: n.w, height: n.h, cursor: "pointer",
         background: "var(--card-bg)", borderRadius: 4, overflow: "hidden",
@@ -262,6 +262,11 @@ function AppChrome({ isFr = true }: { isFr?: boolean }) {
         </div>
         <span style={{ fontSize: 12, color: "var(--text-faint)", userSelect: "none" }}>/</span>
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{isFr ? "Mon site web" : "My website"}</span>
+        {/* Tabs — Sitemap (active) | Wireframe */}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 10, padding: 2, borderRadius: 8, background: "var(--surface-hover)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "var(--accent)", background: "var(--elevated)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg><span>Sitemap</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "var(--text-faint)", cursor: "pointer" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Wireframe</span></div>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 8 }}>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }} title="Annuler (Ctrl+Z)"><IconUndo2 /></HBtn>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }} title="Rétablir (Ctrl+Y)"><IconRedo2 /></HBtn>
@@ -270,6 +275,16 @@ function AppChrome({ isFr = true }: { isFr?: boolean }) {
 
       {/* Right — actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+        {/* Presence avatars */}
+        <div style={{ display: "flex", alignItems: "center", marginLeft: -6 }}>
+          {[{ src: "https://i.pravatar.cc/56?img=47", color: "#4F46E5" }, { src: "https://i.pravatar.cc/56?img=11", color: "#059669" }].map((u, i) => (
+            <div key={i} style={{ position: "relative", width: 28, height: 28, borderRadius: "50%", marginLeft: i > 0 ? -6 : 0, flexShrink: 0, border: "2px solid var(--surface)", boxShadow: `0 0 0 1px ${u.color}40`, overflow: "hidden", backgroundColor: u.color }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={u.src} alt="" width={28} height={28} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ width: 1, height: 16, background: "var(--line)", margin: "0 4px" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, color: "var(--text-faint)", fontSize: 10 }}>
           <IconCloud /><span>{isFr ? "Sauvegardé" : "Saved"}</span>
         </div>
@@ -277,10 +292,14 @@ function AppChrome({ isFr = true }: { isFr?: boolean }) {
         <HBtn style={{ padding: "5px 10px", color: "var(--text-muted)", fontSize: 10, fontWeight: 500, gap: 5 }} title="Exporter en PDF">
           <IconFileDown /><span>PDF</span>
         </HBtn>
-        <HBtn style={{ padding: 6, color: "var(--text-muted)" }} title="Mode commentaire"><IconMsgCircle2 /></HBtn>
+        {/* Comment button with badge */}
+        <div style={{ position: "relative" }}>
+          <HBtn style={{ padding: 6, color: "var(--text-muted)" }} title="Mode commentaire"><IconMsgCircle2 /></HBtn>
+          <div style={{ position: "absolute", top: 0, right: 0, width: 14, height: 14, borderRadius: "50%", background: "#F76B15", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 8, fontWeight: 700, color: "#fff" }}>3</span></div>
+        </div>
         <HBtn style={{ padding: 6, color: "var(--text-muted)" }} title="Plus d'options"><IconEllipsis /></HBtn>
         <button
-          className="transition-all duration-200 hover:scale-110 hover:shadow-theme-glow active:scale-90"
+          className="transition-[transform,box-shadow] duration-200 hover:scale-105 hover:shadow-theme-glow active:scale-95"
           style={{
             width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
             background: "var(--controls-bg, var(--surface))", border: "1px solid var(--line)", cursor: "pointer",
@@ -290,7 +309,7 @@ function AppChrome({ isFr = true }: { isFr?: boolean }) {
           <span style={{ color: "var(--controls-fill, var(--text-muted))" }}><IconMoon /></span>
         </button>
         <button
-          className="transition-all duration-150 hover:brightness-125 active:scale-95"
+          className="transition-[transform,filter] duration-150 hover:brightness-125 active:scale-95"
           style={{
             display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 6,
             backgroundColor: "#F76B1520", color: "#F76B15", fontSize: 11, fontWeight: 500,
@@ -352,7 +371,7 @@ function PanelSection({ title, icon, children, index }: { title: string; icon?: 
         <span style={{ flex: 1, fontSize: 10, fontWeight: 500, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{title}</span>
         <span style={{ color: "var(--text-faint)", transform: open ? "rotate(0)" : "rotate(-90deg)", transition: "transform 0.15s" }}><IconChevronDown /></span>
       </button>
-      <div style={{ overflow: "hidden", maxHeight: open ? 500 : 0, opacity: open ? 1 : 0, transition: "all 0.2s ease", padding: open ? "0 20px 14px" : "0 20px 0" }}>
+      <div style={{ overflow: "hidden", maxHeight: open ? 500 : 0, opacity: open ? 1 : 0, transition: "max-height 0.2s cubic-bezier(0.23,1,0.32,1), opacity 0.15s ease, padding 0.2s ease", padding: open ? "0 20px 14px" : "0 20px 0" }}>
         {children}
       </div>
     </motion.div>
@@ -426,7 +445,7 @@ function DetailSlider({ nodeId, onClose }: { nodeId: string; onClose: () => void
             </div>
           </div>
           <button onClick={onClose}
-            className="transition-all duration-100 hover:rotate-90 active:scale-90"
+            className="transition-[transform,background-color] duration-100 hover:rotate-90 active:scale-95"
             style={{ padding: 6, borderRadius: 6, color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}
             onMouseEnter={e => { e.currentTarget.style.background = "var(--bg-hover, rgba(0,0,0,0.04))" }}
             onMouseLeave={e => { e.currentTarget.style.background = "none" }}
@@ -501,7 +520,7 @@ function DetailSlider({ nodeId, onClose }: { nodeId: string; onClose: () => void
         {n.type !== "home-expanded" && (
           <div style={{ padding: "16px 20px" }}>
             <div
-              className="group/del transition-all duration-150"
+              className="group/del transition-[border-color,background-color] duration-150"
               style={{
                 display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 8,
                 border: "1px dashed var(--line)", cursor: "pointer",
@@ -567,62 +586,59 @@ function FakeMiniMap() {
 
 /* ═══ AI Bar ═══ */
 function AiBar() {
-  const [mode, setMode] = useState<"quality" | "speed">("quality")
   const [text, setText] = useState("")
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.8, ease }}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.7, ease }}
       style={{
         position: "absolute", bottom: 20, left: 0, right: 0, marginLeft: "auto", marginRight: "auto",
         width: "min(88%, 480px)", borderRadius: 12, overflow: "hidden", zIndex: 15,
-        background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
+        background: "var(--elevated)", border: "1px solid var(--line-strong)", boxShadow: "var(--shadow-panel)",
       }}>
-      {/* Top */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 12px", borderBottom: "1px solid var(--line)" }}>
+      {/* Header — exact match of real AiBar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px 6px 12px", borderBottom: "1px solid var(--line)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ color: "var(--accent)" }}><IconSparkles /></span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-primary)" }}>Assistant IA</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text-primary)" }}>Assistant IA</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <button onClick={() => setMode("quality")} style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 500, cursor: "pointer", border: "none", transition: "all 0.15s",
-            color: mode === "quality" ? "var(--accent)" : "var(--text-faint)",
-            background: mode === "quality" ? "var(--accent-muted)" : "transparent",
-          }}><IconGem /><span>Qualité</span></button>
-          <button onClick={() => setMode("speed")} style={{
-            display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 500, cursor: "pointer", border: "none", transition: "all 0.15s",
-            color: mode === "speed" ? "var(--accent)" : "var(--text-faint)",
-            background: mode === "speed" ? "var(--accent-muted)" : "transparent",
-          }}><IconZap /><span>Rapidité</span></button>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, color: "var(--text-faint)", fontSize: 10 }}>
-            <IconKey /><span>BYOK</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          {/* Speed toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 7px", borderRadius: 5, background: "var(--warning-bg)", color: "var(--warning-text)", fontSize: 10, fontWeight: 500 }}>
+            <IconZap />Rapide
           </div>
+          {/* AiSourcePicker badge — credits with mini progress bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 7px", borderRadius: 5, background: "var(--accent-muted)", color: "var(--accent)", fontSize: 10, fontWeight: 500 }}>
+            <IconSparkles />
+            <span>17/20</span>
+            <div style={{ width: 20, height: 3, borderRadius: 2, background: "var(--surface-hover)", overflow: "hidden" }}>
+              <div style={{ width: "85%", height: "100%", borderRadius: 2, background: "var(--accent)" }} />
+            </div>
+          </div>
+          {/* Close */}
+          <div style={{ padding: 3, color: "var(--text-faint)", cursor: "pointer" }}><IconX /></div>
         </div>
       </div>
-      {/* Input */}
-      <div style={{ padding: "10px 12px" }}>
-        <div style={{ display: "flex", gap: 8 }}>
+      {/* Input — textarea + paperclip + send */}
+      <div style={{ padding: "8px 10px 8px 12px", display: "flex", gap: 6, alignItems: "flex-end" }}>
+        <div style={{ flex: 1, borderRadius: 8, background: "var(--surface)", border: "1px solid var(--line)", overflow: "hidden" }}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Modifie l'arbo ou pose une question..."
             rows={1}
-            style={{
-              flex: 1, padding: "8px 10px", borderRadius: 8, fontSize: 12, resize: "none",
-              background: "var(--surface)", color: "var(--text-primary)", border: "1px solid var(--line)",
-              outline: "none", fontFamily: "inherit",
-            }}
+            style={{ width: "100%", padding: "7px 10px", fontSize: 11, resize: "none", background: "transparent", color: "var(--text-primary)", border: "none", outline: "none", fontFamily: "inherit" }}
           />
-          <button style={{
-            padding: 8, borderRadius: 8, background: "var(--accent)", color: "#fff",
-            opacity: text.trim() ? 1 : 0.4, display: "flex", alignItems: "center", justifyContent: "center",
-            alignSelf: "flex-end", flexShrink: 0, cursor: text.trim() ? "pointer" : "not-allowed", border: "none", transition: "opacity 0.15s",
-          }}><IconSend /></button>
+          <div style={{ padding: "0 8px 5px" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551" /></svg>
+          </div>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: "var(--text-faint)" }}>
-          <span>Enter pour envoyer, Shift+Enter pour retour ligne</span>
-          <span>Esc pour fermer</span>
-        </div>
+        <button style={{ padding: 8, borderRadius: 8, background: "var(--accent)", color: "#fff", opacity: text.trim() ? 1 : 0.4, display: "flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-end", flexShrink: 0, cursor: text.trim() ? "pointer" : "not-allowed", border: "none", transition: "opacity 0.15s" }}>
+          <IconSend />
+        </button>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "0 12px 6px", fontSize: 9, color: "var(--text-faint)" }}>
+        <span>Enter pour envoyer, Shift+Enter pour retour ligne</span>
+        <span>Esc pour fermer</span>
       </div>
     </motion.div>
   )
@@ -671,7 +687,7 @@ export default function HeroTreeIllustration({ locale = "fr" }: { locale?: "fr" 
                   {edges.map((e, i) => (
                     <motion.path key={`${e.from}-${e.to}`} d={edgePath(e.from, e.to)} fill="none" stroke="var(--line)" strokeWidth={1.5}
                       initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 0.8, delay: 0.25 + i * 0.04, ease }} />
+                      transition={{ duration: 0.5, delay: 0.2 + i * 0.04, ease }} />
                   ))}
                 </svg>
                 <HomeExpandedCard delay={0.1} onClick={() => setSelectedNode("accueil")} selected={selectedNode === "accueil"} />

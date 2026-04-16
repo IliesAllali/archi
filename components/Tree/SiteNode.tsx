@@ -125,8 +125,6 @@ function blocksHeight(blocks: ZoningBlock[]): number {
 function resolveExpandedSections(type: string, zoningExpanded?: boolean, zoningBlocks?: ZoningBlock[]): { blocks?: ZoningBlock[]; sections?: Section[] } | null {
   if (!zoningExpanded) return null;
   if (zoningBlocks && zoningBlocks.length > 0) return { blocks: zoningBlocks };
-  const typeSections = ZONING_SECTIONS[type as ZoningType];
-  if (typeSections) return { sections: typeSections };
   return null;
 }
 

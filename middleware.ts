@@ -42,6 +42,7 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/auth/') &&
     !pathname.startsWith('/api/health') &&
     !pathname.startsWith('/api/mcp') &&
+    !pathname.startsWith('/api/webhooks/') &&
     MUTATION_METHODS.includes(method)
   ) {
     const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value
@@ -93,5 +94,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|fonts|robots.txt|sitemap.xml).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|fonts|robots.txt|sitemap.xml|demo-wireframe\\.html).*)'],
 }

@@ -210,7 +210,7 @@ function NewProjectModal({ onSelect, l }: { onSelect: () => void; l: "fr" | "en"
           <button
             key={i}
             onClick={opt.active ? onSelect : undefined}
-            className="group transition-all duration-150"
+            className="group transition-[transform,border-color,box-shadow] duration-150"
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 8,
               textAlign: "left", background: "var(--surface)", border: "1px solid var(--line)",

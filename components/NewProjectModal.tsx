@@ -226,6 +226,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                 setAiActions(prev => [...prev, { label: data.label, index: data.index, total: data.total }])
                 setAiStatus(`${data.index}/${data.total} pages créées`)
               } else if (currentEvent === "done") {
+                Events.aiGenerated(data.nodeCount || 0, "builtin")
                 Events.projectCreated(false)
                 router.push(`/${data.projectId}`)
                 onClose()

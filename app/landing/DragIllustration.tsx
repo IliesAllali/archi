@@ -194,6 +194,10 @@ function AppChrome({ dt }: { dt: DTxt }) {
         <div style={{ width: 20, height: 20, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--card-title-bg)", border: "1px solid var(--card-ring)" }}><ArboLogo /></div>
         <span style={{ fontSize: 12, color: "var(--text-faint)" }}>/</span>
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>{dt.project}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 10, padding: 2, borderRadius: 8, background: "var(--surface-hover)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "var(--accent)", background: "var(--elevated)", boxShadow: "0 1px 2px rgba(0,0,0,0.08)", cursor: "pointer" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg><span>Sitemap</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, color: "var(--text-faint)", cursor: "pointer" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span>Wireframe</span></div>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 8 }}>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }}><IconUndo2 /></HBtn>
           <HBtn disabled style={{ padding: 6, color: "var(--text-muted)", opacity: 0.3 }}><IconRedo2 /></HBtn>
@@ -203,12 +207,17 @@ function AppChrome({ dt }: { dt: DTxt }) {
         <PresenceAvatarsDemo />
         <div style={{ width: 1, height: 16, background: "var(--line)", margin: "0 4px" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", color: "var(--text-faint)", fontSize: 10 }}><IconCloud /><span>{dt.saved}</span></div>
+        <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--text-faint)" }}>8p</span>
         <HBtn style={{ padding: "5px 10px", color: "var(--text-muted)", fontSize: 10, fontWeight: 500, gap: 5 }}><IconFileDown /><span>PDF</span></HBtn>
+        <div style={{ position: "relative" }}>
+          <HBtn style={{ padding: 6, color: "var(--text-muted)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></HBtn>
+          <div style={{ position: "absolute", top: 0, right: 0, width: 14, height: 14, borderRadius: "50%", background: "#F76B15", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 8, fontWeight: 700, color: "#fff" }}>3</span></div>
+        </div>
         <HBtn style={{ padding: 6, color: "var(--text-muted)" }}><IconMore /></HBtn>
-        <button className="transition-all duration-200 hover:scale-110 hover:shadow-theme-glow active:scale-90" style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--controls-bg,var(--surface))", border: "1px solid var(--line)", cursor: "pointer" }}>
+        <button className="transition-[transform,box-shadow] duration-200 hover:scale-105 hover:shadow-theme-glow active:scale-95" style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--controls-bg,var(--surface))", border: "1px solid var(--line)", cursor: "pointer" }}>
           <span style={{ color: "var(--controls-fill,var(--text-muted))" }}><IconMoon /></span>
         </button>
-        <button className="transition-all duration-150 hover:brightness-125 active:scale-95" style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 6, backgroundColor: "#F76B1520", color: "#F76B15", fontSize: 11, fontWeight: 500, border: "none", cursor: "pointer" }}>
+        <button className="transition-[transform,filter] duration-150 hover:brightness-125 active:scale-95" style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 6, backgroundColor: "#F76B1520", color: "#F76B15", fontSize: 11, fontWeight: 500, border: "none", cursor: "pointer" }}>
           <IconShare2 /><span>{dt.share}</span>
         </button>
       </div>

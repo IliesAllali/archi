@@ -26,10 +26,16 @@ export async function GET() {
   return NextResponse.json(tokens)
 }
 
-/** POST /api/me/mcp-tokens — create an account-level MCP token */
+/** POST /api/me/mcp-tokens — create an account-level MCP token (paid plans only) */
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  // Gate: paid plans only
+  const user = db.prepare("SELECT plan_tier FROM users WHERE id = ?").get(session.sub) as { plan_tier: string } | undefined
+  if (!user || user.plan_tier === "free") {
+    return NextResponse.json({ error: "MCP requires a paid plan" }, { status: 403 })
+  }
 
   const body = await req.json() as { name?: string }
   const name = body.name?.trim()
