@@ -3,13 +3,12 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, Settings, Users, Link2, Key, AlertTriangle, Sparkles, PenTool } from "lucide-react"
+import { ChevronLeft, Settings, Users, Link2, AlertTriangle, Sparkles, PenTool } from "lucide-react"
 import Logo from "@/components/Logo"
 import { useT } from "@/lib/app-i18n"
 import GeneralTab from "./tabs/GeneralTab"
 import MembersTab from "./tabs/MembersTab"
 import ShareTab from "./tabs/ShareTab"
-import TokensTab from "./tabs/TokensTab"
 import DangerTab from "./tabs/DangerTab"
 import AiConnectTab from "./tabs/AiConnectTab"
 import WireframeTab from "./tabs/WireframeTab"
@@ -24,14 +23,13 @@ interface ProjectMeta {
   ownerId?: string
 }
 
-const TAB_IDS = ["general", "wireframe", "ai", "members", "share", "tokens", "danger"] as const
+const TAB_IDS = ["general", "wireframe", "ai", "members", "share", "danger"] as const
 const TAB_ICONS = {
   general: Settings,
   wireframe: PenTool,
   ai: Sparkles,
   members: Users,
   share: Link2,
-  tokens: Key,
   danger: AlertTriangle,
 } as const
 
@@ -148,9 +146,6 @@ export default function SettingsClient({
         )}
         {activeTab === "share" && (
           <ShareTab projectId={project.id} />
-        )}
-        {activeTab === "tokens" && (
-          <TokensTab projectId={project.id} />
         )}
         {activeTab === "danger" && (
           <DangerTab projectId={project.id} projectName={project.name} />
