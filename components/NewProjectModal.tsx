@@ -870,7 +870,7 @@ export default function NewProjectModal({ open, onClose }: Props) {
                                 className="h-7 px-2 rounded-md text-2xs focus:outline-none transition-all"
                                 style={{ background: "var(--surface)", border: "1px solid var(--line-strong)", color: "var(--text-primary)" }}
                               >
-                                <option value={0}>Illimit\u00e9e</option>
+                                <option value={0}>Illimitée</option>
                                 <option value={2}>2 niveaux</option>
                                 <option value={3}>3 niveaux</option>
                                 <option value={4}>4 niveaux</option>
