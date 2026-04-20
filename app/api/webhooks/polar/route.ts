@@ -34,10 +34,9 @@ export const POST = Webhooks({
     }
 
     // Resolve which product was purchased
-    const items = (order as Record<string, unknown>).items as Array<{ productId: string }> | undefined
-    const productId = items?.[0]?.productId
+    const productId = (order as Record<string, unknown>).productId as string | undefined
     if (!productId) {
-      console.error("[polar webhook] No productId in order items")
+      console.error("[polar webhook] No productId on order")
       return
     }
 
