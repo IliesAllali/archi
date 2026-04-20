@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Plus, Loader2 } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -30,6 +31,7 @@ interface Props {
   projects: Project[];
   demo: Project | null;
   currentUserId: string;
+  planTier: PlanTier;
 }
 
 function getCsrfToken(): string | null {
@@ -38,10 +40,29 @@ function getCsrfToken(): string | null {
   return match ? match[1] : null;
 }
 
-export default function HomeClient({ workspaces, projects: initialProjects, demo, currentUserId }: Props) {
+const CAN_CREATE_WORKSPACE: Record<PlanTier, boolean> = {
+  free: false,
+  solo: false,
+  studio: true,
+  agency: true,
+};
+
+export default function HomeClient({
+  workspaces: initialWorkspaces,
+  projects: initialProjects,
+  demo,
+  currentUserId,
+  planTier,
+}: Props) {
+  const [workspaces, setWorkspaces] = useState<WorkspaceLite[]>(initialWorkspaces);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [creatingWs, setCreatingWs] = useState(false);
+  const [newWsName, setNewWsName] = useState("");
+  const [showCreateWs, setShowCreateWs] = useState(false);
+
+  const canCreateWorkspace = CAN_CREATE_WORKSPACE[planTier] ?? false;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -66,8 +87,9 @@ export default function HomeClient({ workspaces, projects: initialProjects, demo
 
   const activeProject = activeProjectId ? projects.find((p) => p.id === activeProjectId) ?? null : null;
 
-  // Single-workspace mode: fall back to flat list (no sections, no dnd visuals).
-  const flatMode = workspaces.length <= 1;
+  // Flat list when the user only has one workspace AND can't create more —
+  // no point showing sections with a single workspace the user can't split across.
+  const flatMode = workspaces.length <= 1 && !canCreateWorkspace;
 
   async function moveProject(projectId: string, targetWorkspaceId: string) {
     const project = projects.find((p) => p.id === projectId);
@@ -113,6 +135,36 @@ export default function HomeClient({ workspaces, projects: initialProjects, demo
     moveProject(String(e.active.id), String(e.over.id));
   }
 
+  async function createWorkspace() {
+    const name = newWsName.trim();
+    if (!name || creatingWs) return;
+    setCreatingWs(true);
+    setMoveError(null);
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const csrf = getCsrfToken();
+      if (csrf) headers["x-csrf-token"] = csrf;
+      const res = await fetch("/api/workspaces", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Erreur");
+      }
+      const ws = (await res.json()) as WorkspaceLite;
+      setWorkspaces((prev) => [...prev, ws]);
+      setNewWsName("");
+      setShowCreateWs(false);
+    } catch (err) {
+      setMoveError(err instanceof Error ? err.message : "Impossible de créer le workspace.");
+      setTimeout(() => setMoveError(null), 3000);
+    } finally {
+      setCreatingWs(false);
+    }
+  }
+
   if (flatMode) {
     return (
       <div>
@@ -148,7 +200,43 @@ export default function HomeClient({ workspaces, projects: initialProjects, demo
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2">
+        {canCreateWorkspace ? (
+          showCreateWs ? (
+            <form
+              onSubmit={(e) => { e.preventDefault(); createWorkspace(); }}
+              className="flex items-center gap-2 flex-1 max-w-[320px]"
+            >
+              <input
+                autoFocus
+                value={newWsName}
+                onChange={(e) => setNewWsName(e.target.value)}
+                onBlur={() => { if (!newWsName.trim()) setShowCreateWs(false); }}
+                placeholder="Nom du workspace"
+                maxLength={60}
+                className="flex-1 h-8 px-3 rounded-md text-2xs focus:outline-none"
+                style={{ background: "var(--elevated)", color: "var(--text-primary)", border: "1px solid var(--line-strong)" }}
+              />
+              <button
+                type="submit"
+                disabled={!newWsName.trim() || creatingWs}
+                className="h-8 px-3 rounded-md text-2xs font-medium transition-all disabled:opacity-40"
+                style={{ background: "var(--accent)", color: "#fff" }}
+              >
+                {creatingWs ? <Loader2 className="w-3 h-3 animate-spin" /> : "Créer"}
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowCreateWs(true)}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-2xs font-medium transition-all hover:brightness-110"
+              style={{ background: "var(--surface)", color: "var(--text-secondary)", border: "1px solid var(--line)" }}
+            >
+              <Plus className="w-3 h-3" />
+              Nouveau workspace
+            </button>
+          )
+        ) : <span />}
         <NewProjectButton variant="small" />
       </div>
 

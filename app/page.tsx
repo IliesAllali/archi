@@ -98,6 +98,7 @@ export default async function HomePage() {
             projects={projects}
             demo={demo}
             currentUserId={session?.sub || ""}
+            planTier={planTier}
           />
         )}
       </main>
