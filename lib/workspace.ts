@@ -77,6 +77,23 @@ export function getWorkspaceForUser(userId: string): Workspace | null {
   return membership ? toWorkspace(membership) : null
 }
 
+/** Get all workspaces the user can access (owned + member of via workspace_members).
+ *  Returns them with the user's role in each. Owned workspaces come first. */
+export function getWorkspacesForUser(userId: string): (Workspace & { role: "owner" | "admin" | "editor" })[] {
+  const rows = db.prepare(`
+    SELECT w.*, wm.role as wm_role
+    FROM workspaces w
+    LEFT JOIN workspace_members wm ON wm.workspace_id = w.id AND wm.user_id = ?
+    WHERE w.owner_id = ? OR wm.user_id IS NOT NULL
+    ORDER BY (w.owner_id = ?) DESC, w.created_at ASC
+  `).all(userId, userId, userId) as (DbWorkspace & { wm_role: string | null })[]
+
+  return rows.map(r => ({
+    ...toWorkspace(r),
+    role: (r.owner_id === userId ? "owner" : (r.wm_role || "editor")) as "owner" | "admin" | "editor",
+  }))
+}
+
 /** Get workspace by ID */
 export function getWorkspaceById(workspaceId: string): Workspace | null {
   const row = db.prepare("SELECT * FROM workspaces WHERE id = ?")

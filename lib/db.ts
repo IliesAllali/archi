@@ -444,6 +444,7 @@ export interface DbProject {
   accent: string
   version: string
   owner_id: string
+  workspace_id: string | null
   archived: number
   global_sections: string | null // JSON: GlobalSection[]
   wireframe_settings: string | null // JSON: WireframeSettings

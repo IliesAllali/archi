@@ -1,12 +1,14 @@
-import { getAllProjects, getDemoProject, getProjectsForUser } from "@/lib/project-loader";
+import { getDemoProject, getProjectsForUser } from "@/lib/project-loader";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS, type PlanTier } from "@/lib/plans";
+import { getWorkspacesForUser } from "@/lib/workspace";
 import Logo from "@/components/Logo";
 import ProjectCard from "@/components/ProjectCard";
 import ThemeToggle from "@/components/ThemeToggle";
 import NewProjectButton from "@/components/NewProjectButton";
 import UserMenu from "@/components/UserMenu";
+import HomeClient from "./HomeClient";
 
 export const dynamic = "force-dynamic";
 
@@ -14,13 +16,11 @@ export default async function HomePage() {
   const session = await getSession();
   const demo = getDemoProject();
 
-  const allProjects = session
-    ? getProjectsForUser(session.sub)
-    : [];
+  const allProjects = session ? getProjectsForUser(session.sub) : [];
+  const projects = allProjects.filter((p) => (demo ? p.id !== demo.id : true));
 
-  const projects = allProjects.filter((p) => demo ? p.id !== demo.id : true);
+  const workspaces = session ? getWorkspacesForUser(session.sub) : [];
 
-  // Plan info for project counter
   let planTier: PlanTier = "free";
   let maxProjects: number | null = 3;
   if (session) {
@@ -32,7 +32,6 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--canvas-bg)" }}>
-      {/* Top bar */}
       <header
         className="px-3 sm:px-5 h-11 flex items-center justify-between"
         style={{ borderBottom: "1px solid var(--line)" }}
@@ -62,7 +61,6 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {projects.length === 0 ? (
           <div className="animate-fade-in-up space-y-8">
@@ -73,10 +71,7 @@ export default async function HomePage() {
               >
                 <Logo size={20} />
               </div>
-              <h2
-                className="text-sm font-semibold mb-1"
-                style={{ color: "var(--text-primary)" }}
-              >
+              <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
                 Bienvenue sur arbo
               </h2>
               <p className="text-2xs mb-6" style={{ color: "var(--text-muted)" }}>
@@ -98,34 +93,12 @@ export default async function HomePage() {
             )}
           </div>
         ) : (
-          <div>
-            <div className="flex items-center justify-between mb-4 animate-fade-in">
-              <p
-                className="text-2xs uppercase tracking-widest font-medium"
-                style={{ color: "var(--text-faint)" }}
-              >
-                Projets récents
-              </p>
-              <NewProjectButton variant="small" />
-            </div>
-            <div className="space-y-1.5">
-              {projects.map((project, i) => (
-                <ProjectCard key={project.id} project={project} index={i} />
-              ))}
-            </div>
-
-            {demo && (
-              <div className="mt-8">
-                <p
-                  className="text-2xs uppercase tracking-widest font-medium mb-3"
-                  style={{ color: "var(--text-faint)" }}
-                >
-                  Exemple
-                </p>
-                <ProjectCard project={demo} index={projects.length} />
-              </div>
-            )}
-          </div>
+          <HomeClient
+            workspaces={workspaces}
+            projects={projects}
+            demo={demo}
+            currentUserId={session?.sub || ""}
+          />
         )}
       </main>
     </div>

@@ -176,6 +176,8 @@ export interface Project {
   password?: string       // Guest share link password — NOT stored on project anymore
   nodes: SiteNode[]
   ownerId?: string
+  workspaceId?: string | null
+  updatedAt?: number
   globalSections?: GlobalSection[]
   wireframeSettings?: WireframeSettings
 }

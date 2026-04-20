@@ -182,7 +182,6 @@ const translations = {
       tabs: {
         general: "General",
         wireframe: "Wireframes",
-        ai: "Connect an AI",
         members: "Members",
         share: "Share links",
         danger: "Danger zone",
@@ -360,7 +359,6 @@ const translations = {
       tabs: {
         general: "Général",
         wireframe: "Wireframes",
-        ai: "Connecter une IA",
         members: "Membres",
         share: "Liens de partage",
         danger: "Zone danger",

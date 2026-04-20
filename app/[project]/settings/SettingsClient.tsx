@@ -3,14 +3,13 @@
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronLeft, Settings, Users, Link2, AlertTriangle, Sparkles, PenTool } from "lucide-react"
+import { ChevronLeft, Settings, Users, Link2, AlertTriangle, PenTool } from "lucide-react"
 import Logo from "@/components/Logo"
 import { useT } from "@/lib/app-i18n"
 import GeneralTab from "./tabs/GeneralTab"
 import MembersTab from "./tabs/MembersTab"
 import ShareTab from "./tabs/ShareTab"
 import DangerTab from "./tabs/DangerTab"
-import AiConnectTab from "./tabs/AiConnectTab"
 import WireframeTab from "./tabs/WireframeTab"
 
 interface ProjectMeta {
@@ -23,11 +22,10 @@ interface ProjectMeta {
   ownerId?: string
 }
 
-const TAB_IDS = ["general", "wireframe", "ai", "members", "share", "danger"] as const
+const TAB_IDS = ["general", "wireframe", "members", "share", "danger"] as const
 const TAB_ICONS = {
   general: Settings,
   wireframe: PenTool,
-  ai: Sparkles,
   members: Users,
   share: Link2,
   danger: AlertTriangle,
@@ -137,9 +135,6 @@ export default function SettingsClient({
         )}
         {activeTab === "wireframe" && (
           <WireframeTab projectId={project.id} />
-        )}
-        {activeTab === "ai" && (
-          <AiConnectTab projectId={project.id} />
         )}
         {activeTab === "members" && (
           <MembersTab projectId={project.id} currentUserId={currentUserId} ownerId={project.ownerId} />

@@ -42,15 +42,17 @@ function dbProjectToProject(proj: DbProject, nodes: DbNode[]): Project {
     if (proj.wireframe_settings) wireframeSettings = JSON.parse(proj.wireframe_settings)
   } catch { /* invalid JSON, ignore */ }
   return {
-    id:      proj.id,
-    slug:    proj.slug,
-    name:    proj.name,
-    client:  proj.client ?? '',
-    version: proj.version,
-    date:    new Date(proj.created_at).toISOString().split('T')[0],
-    accent:  proj.accent,
-    nodes:   nodes.map((n) => dbNodeToSiteNode(n, childrenMap)),
-    ownerId: proj.owner_id,
+    id:          proj.id,
+    slug:        proj.slug,
+    name:        proj.name,
+    client:      proj.client ?? '',
+    version:     proj.version,
+    date:        new Date(proj.created_at).toISOString().split('T')[0],
+    accent:      proj.accent,
+    nodes:       nodes.map((n) => dbNodeToSiteNode(n, childrenMap)),
+    ownerId:     proj.owner_id,
+    workspaceId: proj.workspace_id ?? null,
+    updatedAt:   proj.updated_at,
     globalSections,
     wireframeSettings,
   }
@@ -70,12 +72,18 @@ export function getAllProjects(): Project[] {
 }
 
 export function getProjectsForUser(userId: string): Project[] {
+  // Include projects where the user is:
+  // - the owner
+  // - a direct project member (invited to a single project)
+  // - a workspace member (invited to a workspace → sees all its projects)
   const rows = db.prepare(`
     SELECT DISTINCT p.* FROM projects p
     LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = ?
-    WHERE p.archived = 0 AND (p.owner_id = ? OR pm.user_id IS NOT NULL)
+    LEFT JOIN workspace_members wm ON wm.workspace_id = p.workspace_id AND wm.user_id = ?
+    WHERE p.archived = 0
+      AND (p.owner_id = ? OR pm.user_id IS NOT NULL OR wm.user_id IS NOT NULL)
     ORDER BY p.updated_at DESC
-  `).all(userId, userId) as DbProject[]
+  `).all(userId, userId, userId) as DbProject[]
 
   return rows.map((proj) => {
     const nodes = getActiveNodes(proj.id)
