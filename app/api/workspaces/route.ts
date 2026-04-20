@@ -3,7 +3,7 @@ import { nanoid } from "nanoid"
 import { getSession } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getWorkspaceForUser } from "@/lib/workspace"
-import { PLAN_LIMITS, type PlanTier } from "@/lib/plans"
+import { PLAN_LIMITS, WORKSPACE_LIMIT, type PlanTier } from "@/lib/plans"
 
 export const dynamic = "force-dynamic"
 
@@ -50,6 +50,18 @@ export async function POST(req: NextRequest) {
       { error: "Multiple workspaces require a Studio or Agency plan." },
       { status: 403 }
     )
+  }
+
+  const limit = WORKSPACE_LIMIT[tier]
+  if (limit !== null) {
+    const owned = (db.prepare("SELECT COUNT(*) as c FROM workspaces WHERE owner_id = ?")
+      .get(session.sub) as { c: number }).c
+    if (owned >= limit) {
+      return NextResponse.json(
+        { error: `Limite atteinte : ${limit} workspace${limit > 1 ? "s" : ""} max sur le plan ${tier}.` },
+        { status: 403 }
+      )
+    }
   }
 
   const now = Date.now()

@@ -17,6 +17,14 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   agency: { maxProjects: null, maxEditors: 15, maxSnapshots: null, initialCredits: 3000, whiteLabel: true,  label: "Agency", price: 249 },
 }
 
+/** Max owned workspaces per plan. null = unlimited. */
+export const WORKSPACE_LIMIT: Record<PlanTier, number | null> = {
+  free:   1,
+  solo:   1,
+  studio: 3,
+  agency: null,
+}
+
 export const CREDIT_PACKS = {
   starter: { credits: 200, price: 4,  label: "Starter" },
   pro:     { credits: 600, price: 9,  label: "Pro"     },
