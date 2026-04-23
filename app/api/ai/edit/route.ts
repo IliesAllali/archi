@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { editSitemap, getProviderLabel } from "@/lib/ai";
-import type { AiProvider, AiSpeed } from "@/lib/ai";
+import type { AiProvider, AiSpeed, ProjectMode, UiContext } from "@/lib/ai";
 import { db, getActiveNodes, saveSnapshot } from "@/lib/db";
 import type { DbNode } from "@/lib/db";
+import { appendProjectContext } from "@/lib/project-loader";
 import { nanoid } from "nanoid";
 import { checkAiRateLimit } from "@/lib/ai-rate-limit";
 import { checkCredits, deductCredits, getServerAiKey, canUseByok } from "@/lib/ai-credits";
@@ -25,11 +26,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory, propose: rawPropose, attachments } = body as {
+  const { prompt, apiKey, projectId, provider: rawProvider, speed: rawSpeed, history: rawHistory, propose: rawPropose, attachments, uiContext: rawUiContext } = body as {
     prompt?: string; apiKey?: string; projectId?: string; provider?: string; speed?: string;
     history?: { role: string; content: string }[];
     propose?: boolean;
     attachments?: { name: string; type: string; base64: string }[];
+    uiContext?: UiContext;
   };
   const proposeOnly = rawPropose === true;
   const conversationHistory = Array.isArray(rawHistory)
@@ -89,6 +91,28 @@ export async function POST(req: NextRequest) {
   if (!member) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Load project mode + context for system prompt personalization
+  const projRow = db
+    .prepare("SELECT mode, context FROM projects WHERE id = ?")
+    .get(projectId) as { mode: string | null; context: string | null } | undefined;
+  const projectMode: ProjectMode = projRow?.mode === "app" ? "app" : "website";
+  const projectContext = projRow?.context || undefined;
+
+  // Resolve focused page label for clearer AI context
+  let focusedPageLabel: string | null = null;
+  const focusedId = rawUiContext?.wireframePageId || rawUiContext?.selectedPageId;
+  if (focusedId) {
+    try {
+      const row = db
+        .prepare("SELECT data FROM nodes WHERE id = ? AND project_id = ? AND archived = 0")
+        .get(focusedId, projectId) as { data: string } | undefined;
+      if (row) focusedPageLabel = (JSON.parse(row.data) as { label?: string }).label || null;
+    } catch { /* ignore */ }
+  }
+  const uiContext: UiContext | undefined = rawUiContext
+    ? { ...rawUiContext, focusedPageLabel }
+    : undefined;
 
   // BYOK restricted to paid plans
   if (!useCredits && !canUseByok(payload.sub)) {
@@ -172,9 +196,16 @@ export async function POST(req: NextRequest) {
           speed,
           conversationHistory,
           onChunk,
-          attachments
+          attachments,
+          { mode: projectMode, projectContext, uiContext }
         );
         const aiLabel = getProviderLabel(useCredits ? "anthropic" : provider);
+
+        // Persist AI-learned memory items to project context
+        if (result.memoryUpdate && result.memoryUpdate.length > 0) {
+          try { appendProjectContext(projectId as string, result.memoryUpdate); }
+          catch (e) { console.warn("[AI Edit] memory append failed:", e); }
+        }
 
         // Log AI response for debugging
         console.log(`[AI Edit] project=${projectId} type=${result.type} actions=${result.actions.length} summary="${result.summary?.slice(0, 100)}"`);

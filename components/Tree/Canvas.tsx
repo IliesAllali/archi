@@ -26,6 +26,7 @@ import DropIndicatorNode from "./DropIndicator";
 import DetailPanel from "../Panel/DetailPanel";
 import DeleteNodeModal from "../DeleteNodeModal";
 import CommentOverlay from "../CommentOverlay";
+import ErrorBoundary from "../ErrorBoundary";
 
 const nodeTypes = {
   siteNode: SiteNodeComponent,
@@ -950,15 +951,20 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
         rfNodes={rfNodesRef.current}
       />
 
-      <DetailPanel
-        node={selectedNode}
-        project={project}
-        onClose={() => {
-          selectNode(null);
-          onExternalSelectClear?.();
-        }}
-        readOnly={readOnly}
-      />
+      <ErrorBoundary
+        resetKey={selectedNode?.id ?? null}
+        label="Panneau de détails indisponible"
+      >
+        <DetailPanel
+          node={selectedNode}
+          project={project}
+          onClose={() => {
+            selectNode(null);
+            onExternalSelectClear?.();
+          }}
+          readOnly={readOnly}
+        />
+      </ErrorBoundary>
 
       <DeleteNodeModal
         node={deleteModalNode}

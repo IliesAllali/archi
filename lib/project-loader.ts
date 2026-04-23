@@ -41,6 +41,7 @@ function dbProjectToProject(proj: DbProject, nodes: DbNode[]): Project {
   try {
     if (proj.wireframe_settings) wireframeSettings = JSON.parse(proj.wireframe_settings)
   } catch { /* invalid JSON, ignore */ }
+  const mode = (proj.mode === 'app' ? 'app' : 'website') as import("@/lib/types").ProjectMode
   return {
     id:          proj.id,
     slug:        proj.slug,
@@ -55,6 +56,8 @@ function dbProjectToProject(proj: DbProject, nodes: DbNode[]): Project {
     updatedAt:   proj.updated_at,
     globalSections,
     wireframeSettings,
+    mode,
+    context:     proj.context ?? '',
   }
 }
 
@@ -120,8 +123,9 @@ export function saveProject(project: Partial<Project> & { id: string }): void {
   const existing = db.prepare('SELECT id FROM projects WHERE id = ?').get(project.id)
 
   if (existing) {
+    const mode = project.mode === 'app' ? 'app' : (project.mode === 'website' ? 'website' : null)
     db.prepare(
-      `UPDATE projects SET name = ?, client = ?, accent = ?, version = ?, global_sections = ?, wireframe_settings = ?, updated_at = ?
+      `UPDATE projects SET name = ?, client = ?, accent = ?, version = ?, global_sections = ?, wireframe_settings = ?, mode = COALESCE(?, mode), context = ?, updated_at = ?
        WHERE id = ?`
     ).run(
       project.name ?? '',
@@ -130,11 +134,43 @@ export function saveProject(project: Partial<Project> & { id: string }): void {
       project.version ?? 'v1',
       project.globalSections ? JSON.stringify(project.globalSections) : null,
       project.wireframeSettings ? JSON.stringify(project.wireframeSettings) : null,
+      mode,
+      typeof project.context === 'string' ? project.context : null,
       now,
       project.id
     )
   }
   // Note: full node sync not implemented here — use the nodes API for that
+}
+
+/**
+ * Append AI-learned memory items to the project context.
+ * Keeps the total under 8000 chars by dropping oldest lines when the cap is exceeded.
+ */
+export function appendProjectContext(projectId: string, items: string[]): void {
+  if (!items.length) return
+  const row = db.prepare('SELECT context FROM projects WHERE id = ?').get(projectId) as { context: string | null } | undefined
+  if (!row) return
+
+  const existing = (row.context || '').trim()
+  const additions = items
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => s.startsWith('- ') ? s : `- ${s}`)
+    .join('\n')
+  if (!additions) return
+
+  let combined = existing ? `${existing}\n${additions}` : additions
+
+  // Cap at 8000 chars; drop oldest lines if too long
+  while (combined.length > 8000) {
+    const nl = combined.indexOf('\n')
+    if (nl === -1) { combined = combined.slice(-8000); break }
+    combined = combined.slice(nl + 1)
+  }
+
+  db.prepare('UPDATE projects SET context = ?, updated_at = ? WHERE id = ?')
+    .run(combined, Date.now(), projectId)
 }
 
 export function deleteProject(id: string): boolean {

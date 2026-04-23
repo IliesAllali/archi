@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { FileDown, Loader2, Check, Layout } from "lucide-react";
+import { FileDown, Loader2, Check, Layout, FileJson } from "lucide-react";
 import type { Project } from "@/lib/types";
 import { Events } from "@/lib/posthog";
 import { composeWireframe } from "@/lib/wireframe-compose";
@@ -76,6 +76,40 @@ export default function ExportButton({ project }: ExportButtonProps) {
 
   const nodesWithWireframe = project.nodes.filter(n => !!n.zoningHtml);
   const hasWireframes = nodesWithWireframe.length > 0;
+
+  const handleExportJson = useCallback(() => {
+    setShowMenu(false);
+    try {
+      // Export the full project (nodes + global sections + settings + mode + context)
+      const payload = {
+        version: "arbo/v1",
+        exportedAt: new Date().toISOString(),
+        project: {
+          id: project.id,
+          slug: project.slug,
+          name: project.name,
+          client: project.client,
+          version: project.version,
+          accent: project.accent,
+          mode: project.mode || "website",
+          context: project.context || "",
+          globalSections: project.globalSections || [],
+          wireframeSettings: project.wireframeSettings || null,
+          nodes: project.nodes,
+        },
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeName = (project.slug || project.name || "project").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      link.href = url;
+      link.download = `${safeName}-${project.version || "v1"}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("JSON export failed:", err);
+    }
+  }, [project]);
 
   const handleExport = useCallback(async () => {
     if (state !== "idle") return;
@@ -215,9 +249,9 @@ export default function ExportButton({ project }: ExportButtonProps) {
   return (
     <div className="relative" ref={menuRef}>
       <div className="flex items-center">
-        {/* Main export button */}
+        {/* Main export button — always opens dropdown (PDF + JSON) */}
         <button
-          onClick={hasWireframes ? () => setShowMenu(v => !v) : handleExport}
+          onClick={() => setShowMenu(v => !v)}
           disabled={isLoading}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs font-medium transition-[transform,color,background-color] duration-150 ease-out disabled:cursor-wait active:scale-[0.97]"
           style={{
@@ -236,7 +270,7 @@ export default function ExportButton({ project }: ExportButtonProps) {
               e.currentTarget.style.color = "var(--text-muted)";
             }
           }}
-          data-tooltip={hasWireframes ? "Options d'export PDF" : "Exporter en PDF"}
+          data-tooltip="Options d'export"
         >
           <span className="relative w-3.5 h-3.5 shrink-0">
             <FileDown className="w-3.5 h-3.5 absolute inset-0 transition-opacity duration-200" style={{ opacity: !isLoading && !isDone ? 1 : 0 }} />
@@ -247,51 +281,71 @@ export default function ExportButton({ project }: ExportButtonProps) {
         </button>
       </div>
 
-      {/* Dropdown menu — only shown when wireframes exist */}
-      {showMenu && !isLoading && hasWireframes && (
+      {/* Dropdown menu — PDF options + JSON export */}
+      {showMenu && !isLoading && (
         <div
           className="absolute right-0 top-full mt-1 z-50 rounded-xl shadow-xl overflow-hidden"
-          style={{ background: "var(--elevated)", border: "1px solid var(--line)", minWidth: 220 }}
+          style={{ background: "var(--elevated)", border: "1px solid var(--line)", minWidth: 240 }}
         >
-          {/* Wireframe toggle */}
-          <div className="px-3 py-2.5 border-b" style={{ borderColor: "var(--line)" }}>
-            <button
-              onClick={() => setIncludeWireframes(v => !v)}
-              className="flex items-center gap-2.5 w-full text-left"
-            >
-              <div
-                className="w-8 h-4 rounded-full relative transition-colors duration-200 shrink-0"
-                style={{ background: includeWireframes ? "var(--accent)" : "var(--line-strong)" }}
+          {/* Wireframe toggle — only relevant if wireframes exist */}
+          {hasWireframes && (
+            <div className="px-3 py-2.5 border-b" style={{ borderColor: "var(--line)" }}>
+              <button
+                onClick={() => setIncludeWireframes(v => !v)}
+                className="flex items-center gap-2.5 w-full text-left"
               >
                 <div
-                  className="w-3 h-3 rounded-full absolute top-0.5 transition-all duration-200"
-                  style={{ background: "#fff", left: includeWireframes ? 17 : 2, boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  <Layout className="w-3 h-3" style={{ color: includeWireframes ? "var(--accent)" : "var(--text-muted)" }} />
-                  <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
-                    Inclure les wireframes
-                  </span>
+                  className="w-8 h-4 rounded-full relative transition-colors duration-200 shrink-0"
+                  style={{ background: includeWireframes ? "var(--accent)" : "var(--line-strong)" }}
+                >
+                  <div
+                    className="w-3 h-3 rounded-full absolute top-0.5 transition-all duration-200"
+                    style={{ background: "#fff", left: includeWireframes ? 17 : 2, boxShadow: "0 1px 2px rgba(0,0,0,0.2)" }}
+                  />
                 </div>
-                <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
-                  {nodesWithWireframe.length} page{nodesWithWireframe.length > 1 ? "s" : ""} avec wireframe
-                </p>
-              </div>
-            </button>
-          </div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Layout className="w-3 h-3" style={{ color: includeWireframes ? "var(--accent)" : "var(--text-muted)" }} />
+                    <span className="text-2xs font-medium" style={{ color: "var(--text-primary)" }}>
+                      Inclure les wireframes dans le PDF
+                    </span>
+                  </div>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>
+                    {nodesWithWireframe.length} page{nodesWithWireframe.length > 1 ? "s" : ""} avec wireframe
+                  </p>
+                </div>
+              </button>
+            </div>
+          )}
 
-          {/* Export button */}
+          {/* PDF export */}
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 w-full px-3 py-2.5 text-2xs font-medium transition-colors"
-            style={{ color: "var(--accent)" }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--accent-muted)"}
+            className="flex items-center gap-2 w-full px-3 py-2.5 text-2xs font-medium transition-colors text-left"
+            style={{ color: "var(--text-primary)" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           >
-            <FileDown className="w-3.5 h-3.5" />
-            Exporter le PDF
+            <FileDown className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+            <div className="flex-1">
+              <div>Exporter en PDF</div>
+              <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Impression, présentation client</div>
+            </div>
+          </button>
+
+          {/* JSON export */}
+          <button
+            onClick={handleExportJson}
+            className="flex items-center gap-2 w-full px-3 py-2.5 text-2xs font-medium transition-colors text-left border-t"
+            style={{ color: "var(--text-primary)", borderColor: "var(--line)" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--surface-hover)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <FileJson className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} />
+            <div className="flex-1">
+              <div>Exporter en JSON</div>
+              <div className="text-[10px]" style={{ color: "var(--text-faint)" }}>Backup, import ailleurs, debug</div>
+            </div>
           </button>
         </div>
       )}

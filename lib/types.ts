@@ -144,6 +144,14 @@ export const WIREFRAME_FONT_PRESETS = [
 
 export type ShareView = 'both' | 'sitemap' | 'wireframe'
 
+/** Whether the project is a website (pages with URLs) or a mobile/web app (screens, flows) */
+export type ProjectMode = 'website' | 'app'
+
+export const PROJECT_MODE_CONFIG: Record<ProjectMode, { label: string; description: string }> = {
+  website: { label: 'Site web', description: 'Pages avec URLs, parcours SEO, desktop-first' },
+  app:     { label: 'Application', description: 'Écrans mobiles/web app, flows, navigation tab/stack' },
+}
+
 export interface WireframeSettings {
   /** Whether guests (share links) can see wireframes — legacy, use shareView instead */
   guestVisible: boolean
@@ -180,6 +188,10 @@ export interface Project {
   updatedAt?: number
   globalSections?: GlobalSection[]
   wireframeSettings?: WireframeSettings
+  /** Site web or application — shapes AI prompts */
+  mode?: ProjectMode
+  /** Freeform memory of the project (brief, preferences, constraints). Enriched by AI over time. */
+  context?: string
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

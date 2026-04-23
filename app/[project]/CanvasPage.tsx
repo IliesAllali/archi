@@ -209,6 +209,11 @@ export default function CanvasPage({ project, currentUser, readOnly = false, own
         body: JSON.stringify({
           prompt: message, apiKey, projectId: project.id, provider, speed, history, propose: true,
           attachments: attachments?.map(f => ({ name: f.name, type: f.type, base64: f.base64 })),
+          uiContext: {
+            activeTab,
+            selectedPageId: selectedNodeId,
+            wireframePageId,
+          },
         }),
       });
 
@@ -709,6 +714,11 @@ export default function CanvasPage({ project, currentUser, readOnly = false, own
           chatMessages={aiChatMessages}
           onChatMessage={handleAiChatMessage}
           onOpenChat={() => setAiChatOpen(true)}
+          uiContext={{
+            activeTab,
+            selectedPageId: selectedNodeId,
+            wireframePageId,
+          }}
           wireframeContext={activeTab === "wireframe" && wireframePageId ? (() => {
             const page = nodes.find(n => n.id === wireframePageId);
             if (!page) return null;

@@ -30,13 +30,24 @@ export function usePresence({ projectId, userId, displayName, role, color, avata
   const myId = userId || "";
 
   useEffect(() => {
+    // Cancelled flag so in-flight async ops stop writing to the store after unmount / project change
+    let cancelled = false;
+
     const socket = io({
       transports: ["websocket", "polling"],
       withCredentials: true,
     });
     socketRef.current = socket;
 
+    const clearHeartbeat = () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    };
+
     socket.on("connect", () => {
+      if (cancelled) return;
       socket.emit("join-project", {
         projectId,
         userId: userId || undefined,
@@ -48,18 +59,22 @@ export function usePresence({ projectId, userId, displayName, role, color, avata
         isAI: false,
       });
 
+      // Always clear the previous heartbeat before starting a new one —
+      // reconnects otherwise stack intervals.
+      clearHeartbeat();
       heartbeatRef.current = setInterval(() => {
         socket.emit("heartbeat", { projectId });
       }, HEARTBEAT_INTERVAL);
     });
 
     socket.on("presence-update", ({ users }: { users: PresenceUser[] }) => {
+      if (cancelled) return;
       const others = users.filter((u) => u.id !== myId);
       usePresenceStore.getState().setOtherUsers(others);
     });
 
     socket.on("nodes-updated", async ({ projectId: pid }: { projectId: string }) => {
-      if (pid !== projectId) return;
+      if (cancelled || pid !== projectId) return;
 
       // Skip if we just saved (our own event bouncing back)
       if (Date.now() - lastSaveRef.current < 2000) return;
@@ -69,12 +84,14 @@ export function usePresence({ projectId, userId, displayName, role, color, avata
 
       try {
         const res = await fetch(`/api/projects/${projectId}/nodes`);
-        if (!res.ok) return;
+        if (cancelled || !res.ok) return;
         const rawNodes: SiteNode[] = await res.json();
         const freshNodes = rawNodes.map(migrateNodeZoning);
 
+        // Re-check after the async fetch — if the user made a local edit while we were
+        // fetching, their unsaved work would get clobbered by the stale server state.
         const current = useCanvasStore.getState();
-        if (current.saveStatus === "saving" || current.pendingSave) return;
+        if (cancelled || current.saveStatus === "saving" || current.pendingSave || current.saveStatus === "unsaved") return;
 
         useCanvasStore.setState((state) => {
           state.nodes = freshNodes;
@@ -87,7 +104,8 @@ export function usePresence({ projectId, userId, displayName, role, color, avata
     });
 
     socket.on("disconnect", () => {
-      usePresenceStore.getState().setOtherUsers([]);
+      clearHeartbeat();
+      if (!cancelled) usePresenceStore.getState().setOtherUsers([]);
     });
 
     // Track our own saves to ignore bounced-back events
@@ -98,7 +116,8 @@ export function usePresence({ projectId, userId, displayName, role, color, avata
     });
 
     return () => {
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+      cancelled = true;
+      clearHeartbeat();
       unsubSave();
       socket.emit("leave-project", { projectId });
       socket.disconnect();

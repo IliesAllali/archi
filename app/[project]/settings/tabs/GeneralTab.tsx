@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, Globe, Smartphone, Brain } from "lucide-react"
 import { csrfHeaders } from "../use-csrf"
 
 interface ProjectMeta {
@@ -11,6 +11,8 @@ interface ProjectMeta {
   client: string
   version: string
   accent: string
+  mode?: "website" | "app"
+  context?: string
 }
 
 const ACCENT_PRESETS = [
@@ -30,6 +32,8 @@ export default function GeneralTab({
   const [client, setClient] = useState(project.client)
   const [version, setVersion] = useState(project.version)
   const [accent, setAccent] = useState(project.accent)
+  const [mode, setMode] = useState<"website" | "app">(project.mode || "website")
+  const [context, setContext] = useState(project.context || "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -49,7 +53,7 @@ export default function GeneralTab({
       await fetch(`/api/projects/${project.id}`, {
         method: "PUT",
         headers: csrfHeaders(),
-        body: JSON.stringify({ name, client, version, accent }),
+        body: JSON.stringify({ name, client, version, accent, mode, context }),
       })
       onNameChange(name)
       setSaved(true)
@@ -133,6 +137,78 @@ export default function GeneralTab({
           onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
           placeholder="v1"
         />
+      </div>
+
+      {/* Mode site/app */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide block mb-1.5" style={{ color: "var(--text-muted)" }}>
+          Type de projet
+        </label>
+        <p className="text-2xs mb-2" style={{ color: "var(--text-faint)" }}>
+          Adapte les prompts IA : site web = pages SEO desktop-first, application = écrans mobile-first.
+        </p>
+        <div className="flex gap-2">
+          {(["website", "app"] as const).map((m) => {
+            const isActive = mode === m
+            const Icon = m === "website" ? Globe : Smartphone
+            const label = m === "website" ? "Site web" : "Application"
+            const desc = m === "website" ? "Pages, URLs, SEO" : "Écrans, flows, mobile-first"
+            return (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 flex items-start gap-2.5 p-3 rounded-lg text-left transition-all duration-150"
+                style={{
+                  background: isActive ? "var(--accent-muted)" : "var(--surface)",
+                  border: `1px solid ${isActive ? accent : "var(--line)"}`,
+                  color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                }}
+              >
+                <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: isActive ? accent : "var(--text-muted)" }} />
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold">{label}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: "var(--text-faint)" }}>{desc}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Project memory */}
+      <div>
+        <label className="text-2xs font-medium uppercase tracking-wide mb-1.5 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
+          <Brain className="w-3 h-3" />
+          Mémoire du projet
+        </label>
+        <p className="text-2xs mb-2" style={{ color: "var(--text-faint)" }}>
+          Contexte persistant injecté dans toutes les discussions IA (brief, client, contraintes, tonalité, décisions). S&apos;enrichit automatiquement quand tu partages des infos en chat.
+        </p>
+        <textarea
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          placeholder="Ex: Application B2B pour équipes RH. Ton formel. Pas de gamification. Persona: recruteur senior."
+          rows={6}
+          className="w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors resize-y font-normal"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            color: "var(--text-primary)",
+            minHeight: 120,
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)" }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "var(--line)" }}
+        />
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
+            {context.length} / 8000 caractères
+          </span>
+          {context.length > 7500 && (
+            <span className="text-[10px]" style={{ color: "var(--warning-text)" }}>
+              Les lignes les plus anciennes seront supprimées automatiquement.
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Accent color */}

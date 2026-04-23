@@ -609,14 +609,24 @@ export const useCanvasStore = create<CanvasState>()(
 
 // ─── Auto-save hook ───────────────────────────────────────────────────────
 
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-
+/**
+ * Subscribe to store changes and debounce-save to the backend.
+ * The returned function unsubscribes AND cancels any pending save —
+ * critical when switching projects, otherwise a stale save can POST
+ * nodes from the new project to the previous project's URL.
+ */
 export function setupAutoSave(projectId: string) {
-  return useCanvasStore.subscribe((state, prevState) => {
+  let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  // Bumped on unsub — any in-flight or pending save ignores its result
+  let cancelled = false;
+
+  const unsub = useCanvasStore.subscribe((state) => {
+    if (cancelled) return;
     if (state.saveStatus === "unsaved" && state.pendingSave) {
       if (saveTimeout) clearTimeout(saveTimeout);
 
       saveTimeout = setTimeout(async () => {
+        if (cancelled) return;
         const current = useCanvasStore.getState();
         if (current.saveStatus !== "unsaved") return;
 
@@ -634,12 +644,14 @@ export function setupAutoSave(projectId: string) {
             body: JSON.stringify({ nodes: current.nodes, triggers }),
           });
 
+          if (cancelled) return;
           if (!res.ok) {
             throw new Error(`Save failed: ${res.status}`);
           }
 
           useCanvasStore.setState({ saveStatus: "saved", saveError: null });
         } catch (err) {
+          if (cancelled) return;
           useCanvasStore.setState({
             saveStatus: "error",
             saveError: err instanceof Error ? err.message : "Erreur de sauvegarde",
@@ -648,6 +660,12 @@ export function setupAutoSave(projectId: string) {
       }, 800);
     }
   });
+
+  return () => {
+    cancelled = true;
+    if (saveTimeout) clearTimeout(saveTimeout);
+    unsub();
+  };
 }
 
 function getCsrfToken(): string | null {

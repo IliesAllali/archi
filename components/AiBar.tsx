@@ -46,9 +46,11 @@ function InlineResponseCard({ response, onDismiss }: { response: InlineResponse;
           {response.type === "edit" ? (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--success-bg)", color: "var(--success-text)" }}>
               <Check className="w-3 h-3" />
-              {(response.actions?.length || 0) > 1
-                  ? t("aiBar.modifCount_other").replace("{{count}}", String(response.actions?.length || 0))
-                  : t("aiBar.modifCount_one").replace("{{count}}", String(response.actions?.length || 0))}
+              {response.actions === undefined
+                ? "Modifié"
+                : (response.actions.length > 1
+                    ? t("aiBar.modifCount_other").replace("{{count}}", String(response.actions.length))
+                    : t("aiBar.modifCount_one").replace("{{count}}", String(response.actions.length)))}
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}>
@@ -160,9 +162,15 @@ interface Props {
   wireframeContext?: WireframeContext | null;
   /** Callback when wireframe HTML is generated/updated. Called progressively during streaming. */
   onWireframeResult?: (html: string, done: boolean) => void;
+  /** Where the user currently is in the UI — informs the AI */
+  uiContext?: {
+    activeTab?: "sitemap" | "wireframe";
+    selectedPageId?: string | null;
+    wireframePageId?: string | null;
+  };
 }
 
-export default function AiBar({ projectId, projectName, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult }: Props) {
+export default function AiBar({ projectId, projectName, chatMessages, onChatMessage, onOpenChat, wireframeContext, onWireframeResult, uiContext }: Props) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -259,14 +267,18 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
         // ─── Global component mode ───
         setStatusMsg(`${globalSlot === "header" ? "Header" : "Footer"}...`);
         try {
+          const gHeaders: Record<string, string> = { "Content-Type": "application/json" };
+          const gCsrf = getCsrfToken();
+          if (gCsrf) gHeaders["x-csrf-token"] = gCsrf;
           const res = await fetch("/api/ai/wireframe", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: gHeaders,
             body: JSON.stringify({
               apiKey,
               pageLabel: globalSlot === "header" ? "Header" : "Footer",
               pageType: "component",
               projectName,
+              projectId,
               currentHtml: globalDesktopHtml,
               editPrompt: currentPrompt,
               fidelity: wfFidelity,
@@ -328,14 +340,18 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
       // ─── Page wireframe mode ───
       setStatusMsg(t("aiBar.generating"));
       try {
+        const pHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        const pCsrf = getCsrfToken();
+        if (pCsrf) pHeaders["x-csrf-token"] = pCsrf;
         const res = await fetch("/api/ai/wireframe", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: pHeaders,
           body: JSON.stringify({
             apiKey,
             pageLabel: wireframeContext.pageLabel,
             pageType: wireframeContext.pageType,
             projectName,
+            projectId,
             description: wireframeContext.description,
             blocks: wireframeContext.blocks.length > 0
               ? wireframeContext.blocks
@@ -428,6 +444,7 @@ export default function AiBar({ projectId, projectName, chatMessages, onChatMess
           speed,
           history,
           attachments: currentAttachments,
+          uiContext,
         }),
       });
 

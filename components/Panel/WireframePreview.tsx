@@ -89,9 +89,12 @@ export default function WireframePreview({
     abortRef.current = abort
 
     try {
+      const csrfMatch = typeof document !== "undefined" ? document.cookie.match(/arbo_csrf=([^;]+)/) : null
+      const wpHeaders: Record<string, string> = { "Content-Type": "application/json" }
+      if (csrfMatch) wpHeaders["x-csrf-token"] = csrfMatch[1]
       const res = await fetch("/api/ai/wireframe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: wpHeaders,
         body: JSON.stringify({
           apiKey,
           pageLabel,
@@ -106,6 +109,8 @@ export default function WireframePreview({
         }),
         signal: abort.signal,
       })
+      // NB: WireframePreview doesn't have projectId in scope; caller-level component
+      // owns the projectId and the newer WireframeView flow is the primary path.
 
       if (!res.ok) {
         const err = await res.json()
@@ -414,7 +419,7 @@ export default function WireframePreview({
                     >
                       <iframe
                         srcDoc={html}
-                        sandbox="allow-same-origin allow-scripts"
+                        sandbox="allow-scripts"
                         className="w-full border-0"
                         style={{ minHeight: "80vh" }}
                         title="Wireframe preview"

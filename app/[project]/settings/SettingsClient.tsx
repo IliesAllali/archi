@@ -20,6 +20,8 @@ interface ProjectMeta {
   version: string
   accent: string
   ownerId?: string
+  mode?: "website" | "app"
+  context?: string
 }
 
 const TAB_IDS = ["general", "wireframe", "members", "share", "danger"] as const

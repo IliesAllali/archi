@@ -4,6 +4,7 @@ import { checkAiRateLimit } from "@/lib/ai-rate-limit"
 import { checkCredits, deductCredits, getServerAiKey, canUseByok } from "@/lib/ai-credits"
 import type { AiSpeed } from "@/lib/ai"
 import { buildUserContent } from "@/lib/ai"
+import { db } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
 
@@ -109,6 +110,7 @@ export async function POST(req: NextRequest) {
     blocks,
     currentHtml,
     editPrompt,
+    projectId,
   } = body as {
     apiKey?: string
     pageLabel?: string
@@ -122,6 +124,7 @@ export async function POST(req: NextRequest) {
     editPrompt?: string
     fidelity?: string
     font?: string
+    projectId?: string
   }
 
   const fidelity = (body as { fidelity?: string }).fidelity || "lo-fi"
@@ -185,6 +188,19 @@ export async function POST(req: NextRequest) {
         { error: `Cr\u00e9dits \u00e9puis\u00e9s (${credits.remaining} restants).` },
         { status: 402 }
       )
+    }
+  }
+
+  // Load project mode + context for prompt personalization
+  let projectMode: "website" | "app" = "website"
+  let projectContext = ""
+  if (projectId) {
+    const projRow = db
+      .prepare("SELECT mode, context FROM projects WHERE id = ?")
+      .get(projectId) as { mode: string | null; context: string | null } | undefined
+    if (projRow) {
+      projectMode = projRow.mode === "app" ? "app" : "website"
+      projectContext = projRow.context || ""
     }
   }
 
@@ -289,14 +305,30 @@ ${hasGlobalHeader ? "\n\u26d4 INTERDIT : Ne g\u00e9n\u00e8re AUCUNE section Navi
 Et applique font-family: "${font}", sans-serif au body.`
     : ""
 
+  // Mode addendum — adjust wireframe conventions for mobile apps
+  const modeAddendum = projectMode === "app"
+    ? `\n\nMODE APPLICATION (mobile/web app) :
+- Layout mobile-first : largeur cible ~375-414px, pas 1440px. Le wireframe doit rester lisible à cette taille.
+- Patterns natifs : tab bar en bas (footer), top bar sobre, cards tactiles (min-height 44px), sheets/modales pour les formulaires.
+- Pas de sidebar desktop, pas de breadcrumb texte.
+- Navigation : tab bar avec 3-5 icônes + label ; page header simple (back chevron + titre).
+- Typographie : hiérarchie claire, tailles type iOS/Android (titre 22-28px, body 15-17px).
+- Espacement généreux (16-24px entre sections), padding latéral 16-20px.`
+    : ""
+
+  // Project context addendum — injected into the system prompt
+  const contextAddendum = projectContext.trim()
+    ? `\n\nCONTEXTE PROJET (à respecter) :\n${projectContext.trim().slice(0, 4000)}`
+    : ""
+
   // Stream response
   const stream = new ReadableStream({
     async start(controller) {
       try {
         const client = new Anthropic({ apiKey: resolvedApiKey })
         const systemPrompt = isEdit
-          ? SYSTEM_PROMPT + fidelityAddendum + fontAddendum + editSystemAddendum
-          : SYSTEM_PROMPT + fidelityAddendum + fontAddendum
+          ? SYSTEM_PROMPT + fidelityAddendum + fontAddendum + modeAddendum + contextAddendum + editSystemAddendum
+          : SYSTEM_PROMPT + fidelityAddendum + fontAddendum + modeAddendum + contextAddendum
 
         if (isEdit) {
           // ─── Edit mode: collect full response, parse ops, apply, return result ───
@@ -314,10 +346,14 @@ Et applique font-family: "${font}", sans-serif au body.`
           })
 
           const rawText = response.content[0].type === "text" ? response.content[0].text : ""
+          console.log(`[AI Wireframe edit] page="${pageLabel}" rawTextLen=${rawText.length} preview="${rawText.slice(0, 160).replace(/\n/g, " ")}"`)
 
           // Parse ops JSON (strip markdown fences if present)
           const jsonStr = rawText.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim()
           let resultHtml = currentHtml!
+          let opsApplied = 0
+          let opsFailed = 0
+          let parseFailed = false
 
           try {
             const parsed = JSON.parse(jsonStr)
@@ -325,24 +361,77 @@ Et applique font-family: "${font}", sans-serif au body.`
             if (Array.isArray(ops)) {
               for (const op of ops) {
                 if (op.search && op.replace !== undefined) {
-                  resultHtml = resultHtml.replace(op.search, op.replace)
+                  if (resultHtml.includes(op.search)) {
+                    resultHtml = resultHtml.replace(op.search, op.replace)
+                    opsApplied++
+                  } else {
+                    opsFailed++
+                    console.warn(`[AI Wireframe] search/replace failed: search not found. snippet="${String(op.search).slice(0, 80)}"`)
+                  }
                 } else if (op.after && op.insert) {
                   const idx = resultHtml.indexOf(op.after)
                   if (idx !== -1) {
                     resultHtml = resultHtml.slice(0, idx + op.after.length) + op.insert + resultHtml.slice(idx + op.after.length)
+                    opsApplied++
+                  } else {
+                    opsFailed++
+                    console.warn(`[AI Wireframe] after/insert failed: anchor not found. snippet="${String(op.after).slice(0, 80)}"`)
                   }
                 } else if (op.before && op.insert) {
                   const idx = resultHtml.indexOf(op.before)
                   if (idx !== -1) {
                     resultHtml = resultHtml.slice(0, idx) + op.insert + resultHtml.slice(idx)
+                    opsApplied++
+                  } else {
+                    opsFailed++
+                    console.warn(`[AI Wireframe] before/insert failed: anchor not found. snippet="${String(op.before).slice(0, 80)}"`)
                   }
+                } else {
+                  opsFailed++
                 }
               }
+            } else {
+              parseFailed = true
             }
           } catch {
+            parseFailed = true
             // If JSON parsing fails, the AI might have returned full HTML instead
             if (rawText.includes("<!DOCTYPE") || rawText.includes("<html") || rawText.includes("<body")) {
               resultHtml = rawText
+              parseFailed = false
+              opsApplied = 1 // full rewrite counts as one successful op
+            }
+          }
+
+          console.log(`[AI Wireframe edit] ops applied=${opsApplied} failed=${opsFailed} parseFailed=${parseFailed} changed=${resultHtml !== currentHtml}`)
+
+          // If we ended up with zero applied ops and the HTML didn't change, retry with a full-rewrite instruction.
+          // This handles the "AI picked a search string that doesn't match" silent failure case.
+          if (opsApplied === 0 && resultHtml === currentHtml) {
+            console.warn(`[AI Wireframe] 0 ops applied (opsFailed=${opsFailed}, parseFailed=${parseFailed}) — retrying with full-rewrite instruction`)
+            const retrySystem = systemPrompt.replace(editSystemAddendum, "") +
+              `\n\nRÉGÉNÉRATION COMPLÈTE : l'approche search/replace a échoué (${opsFailed} opération(s) non appliquée(s)). Renvoie maintenant le HTML complet modifié, sans JSON, en repartant du wireframe actuel et en appliquant la demande utilisateur.`
+            const retryResp = await client.messages.create({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 8000,
+              system: retrySystem,
+              messages: [{ role: "user" as const, content: buildUserContent(userPrompt, attachments) }],
+            })
+            const retryText = retryResp.content[0].type === "text" ? retryResp.content[0].text : ""
+            const cleaned = retryText.replace(/^```(?:html)?\s*/i, "").replace(/\s*```$/i, "").trim()
+            if (cleaned && (cleaned.includes("<!DOCTYPE") || cleaned.includes("<html") || cleaned.includes("<body") || cleaned.includes("<div"))) {
+              resultHtml = cleaned
+              opsApplied = 1
+            } else {
+              // Still nothing usable → signal the client so it surfaces a real error instead of "Wireframe mis à jour"
+              controller.enqueue(
+                new TextEncoder().encode(
+                  `data: ${JSON.stringify({ type: "error", error: "L'IA n'a pas pu appliquer la modification (le texte cible n'a pas été trouvé dans le wireframe). Reformule en étant plus précis sur la partie à modifier." })}\n\n`
+                )
+              )
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: "done" })}\n\n`))
+              controller.close()
+              return
             }
           }
 

@@ -19,6 +19,33 @@ export async function middleware(req: NextRequest) {
   const isPublicPrefix = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
 
   if (pathname === '/favicon.ico') return NextResponse.next()
+
+  // ─── CSRF enforcement for internal API mutations ─────────────────────────
+  // Must run BEFORE the public-prefix early-return — otherwise /api/* skip it.
+  // Scope:
+  //   - internal /api/* mutations only (excluding /api/v1/, /api/auth/, /api/mcp, /api/webhooks/, /api/health)
+  //   - /api/ai/* are TEMPORARILY skipped until the client audit is done (some
+  //     callers don't yet include the x-csrf-token header; blocking them would
+  //     break prod until every AiBar / WireframeView / ZoningEditor path is updated)
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/v1/') &&
+    !pathname.startsWith('/api/auth/') &&
+    !pathname.startsWith('/api/health') &&
+    !pathname.startsWith('/api/mcp') &&
+    !pathname.startsWith('/api/webhooks/') &&
+    !pathname.startsWith('/api/ai/') &&
+    MUTATION_METHODS.includes(method)
+  ) {
+    const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value
+    const csrfHeader = req.headers.get('x-csrf-token') ?? undefined
+    if (!verifyCsrfToken(csrfCookie, csrfHeader)) {
+      return NextResponse.json({ error: 'CSRF token invalid' }, { status: 403 })
+    }
+  }
+
+  // Public prefixes (static assets, API routes) don't require middleware auth
+  // (API routes do their own auth internally via cookies/bearer tokens).
   if (isPublicPrefix) return NextResponse.next()
 
   // Redirect root to landing for unauthenticated users
@@ -29,26 +56,6 @@ export async function middleware(req: NextRequest) {
                     (legacyToken && await verifySession(legacyToken))
     if (!hasAuth) {
       return NextResponse.redirect(new URL('/landing', req.url))
-    }
-  }
-
-  // ─── CSRF check for internal API mutations ────────────────────────────────
-  // Only applies to internal routes (not /api/v1/ — those use Bearer tokens)
-  // Not applied to auth routes (login uses credentials, not session cookies)
-
-  if (
-    pathname.startsWith('/api/') &&
-    !pathname.startsWith('/api/v1/') &&
-    !pathname.startsWith('/api/auth/') &&
-    !pathname.startsWith('/api/health') &&
-    !pathname.startsWith('/api/mcp') &&
-    !pathname.startsWith('/api/webhooks/') &&
-    MUTATION_METHODS.includes(method)
-  ) {
-    const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value
-    const csrfHeader = req.headers.get('x-csrf-token') ?? undefined
-    if (!verifyCsrfToken(csrfCookie, csrfHeader)) {
-      return NextResponse.json({ error: 'CSRF token invalid' }, { status: 403 })
     }
   }
 

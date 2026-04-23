@@ -13,6 +13,7 @@ import {
   SECTION_COLORS,
   SECTION_BORDER_COLORS,
 } from "@/components/Tree/SiteNode";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 /* ─── Block skin preview (same rendering as canvas) ─── */
 
@@ -98,15 +99,24 @@ function BlockRow({
 
 /** Injects a tiny script that reports the real content height to the parent */
 function withHeightReporter(html: string, id: string): string {
+  // Debounced so rapidly-mutating AI HTML doesn't spam the parent
   const script = `<script>
 (function(){
+  var pending = null;
   function report() {
-    var h = document.documentElement.scrollHeight || document.body.scrollHeight;
-    window.parent.postMessage({type:'arbo-iframe-height',id:'${id}',height:h},'*');
+    if (pending) clearTimeout(pending);
+    pending = setTimeout(function(){
+      try {
+        var h = document.documentElement.scrollHeight || document.body.scrollHeight || 0;
+        if (h > 20000) h = 20000;
+        window.parent.postMessage({type:'arbo-iframe-height',id:'${id}',height:h},'*');
+      } catch (e) {}
+    }, 80);
   }
   if (document.readyState === 'complete') report();
   else window.addEventListener('load', report);
-  new MutationObserver(report).observe(document.body, {childList:true,subtree:true});
+  try { new MutationObserver(report).observe(document.body, {childList:true,subtree:true}); }
+  catch (e) {}
 })();
 <\/script>`;
   if (html.includes('</body>')) return html.replace('</body>', script + '</body>');
@@ -122,7 +132,8 @@ function WireframeThumb({ html }: { html: string }) {
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === "arbo-iframe-height" && e.data.id === iframeId) {
-        setRealH(e.data.height);
+        const h = Number(e.data.height);
+        if (Number.isFinite(h) && h > 0) setRealH(Math.min(h, 20000));
       }
     };
     window.addEventListener("message", handler);
@@ -140,7 +151,7 @@ function WireframeThumb({ html }: { html: string }) {
       <div style={{ width: Math.round(SRC_WIDTH * SCALE), height: scaledH, position: "relative", overflow: "hidden" }}>
         <iframe
           srcDoc={withHeightReporter(html, iframeId)}
-          sandbox="allow-same-origin allow-scripts"
+          sandbox="allow-scripts"
           className="border-0 pointer-events-none absolute top-0 left-0"
           style={{
             width: SRC_WIDTH,
@@ -223,9 +234,12 @@ export default function ZoningEditor({
       const byokKey = isByokEnabled() ? getStoredApiKey(provider) : "";
       const apiKey = byokKey || "arbo_credits";
 
+      const csrfMatch = typeof document !== "undefined" ? document.cookie.match(/arbo_csrf=([^;]+)/) : null;
+      const zHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (csrfMatch) zHeaders["x-csrf-token"] = csrfMatch[1];
       const res = await fetch("/api/ai/copy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: zHeaders,
         body: JSON.stringify({
           apiKey,
           blockLabel: block.label,
@@ -306,7 +320,22 @@ export default function ZoningEditor({
       </div>
 
       {/* ─── Wireframe preview ─── */}
-      {hasWireframe && <WireframeThumb html={html!} />}
+      {hasWireframe && (
+        <ErrorBoundary
+          resetKey={(html || "").length}
+          label="Aperçu wireframe indisponible"
+          fallback={
+            <div
+              className="rounded-md px-3 py-2 text-2xs"
+              style={{ background: "var(--surface)", border: "1px solid var(--line)", color: "var(--text-muted)" }}
+            >
+              Le rendu a échoué — le HTML est peut-être invalide.
+            </div>
+          }
+        >
+          <WireframeThumb html={html!} />
+        </ErrorBoundary>
+      )}
 
       {/* ─── Zoning blocks (hidden when wireframe exists) ─── */}
       {hasBlocks && !hasWireframe && (

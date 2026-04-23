@@ -190,6 +190,12 @@ function createDb(): Database.Database {
       if (!cols.some(c => c.name === "wireframe_settings")) {
         db.exec("ALTER TABLE projects ADD COLUMN wireframe_settings TEXT")
       }
+      if (!cols.some(c => c.name === "mode")) {
+        db.exec("ALTER TABLE projects ADD COLUMN mode TEXT NOT NULL DEFAULT 'website'")
+      }
+      if (!cols.some(c => c.name === "context")) {
+        db.exec("ALTER TABLE projects ADD COLUMN context TEXT")
+      }
     }
 
     // ── Workspace tables (team features for Studio/Agency) ──
@@ -448,6 +454,8 @@ export interface DbProject {
   archived: number
   global_sections: string | null // JSON: GlobalSection[]
   wireframe_settings: string | null // JSON: WireframeSettings
+  mode: string | null              // 'website' | 'app'
+  context: string | null            // freeform project memory
   created_at: number
   updated_at: number
 }

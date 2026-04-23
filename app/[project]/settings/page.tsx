@@ -26,6 +26,8 @@ export default async function SettingsPage({ params }: Props) {
         version: project.version,
         accent: project.accent,
         ownerId: project.ownerId,
+        mode: project.mode || "website",
+        context: project.context || "",
       }}
       currentUserId={session.sub}
     />

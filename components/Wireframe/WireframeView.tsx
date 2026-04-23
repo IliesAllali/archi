@@ -441,15 +441,19 @@ export default function WireframeView({ project, readOnly = false, currentUser, 
     abortRef.current = abort
 
     try {
+      const csrfMatch = typeof document !== "undefined" ? document.cookie.match(/arbo_csrf=([^;]+)/) : null
+      const wvHeaders: Record<string, string> = { "Content-Type": "application/json" }
+      if (csrfMatch) wvHeaders["x-csrf-token"] = csrfMatch[1]
       const res = await fetch("/api/ai/wireframe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: wvHeaders,
         body: JSON.stringify({
           apiKey,
           pageLabel: targetLabel,
           pageType: targetType,
           projectName: project.name,
           projectClient: project.client || "",
+          projectId: project.id,
           description: targetDesc,
           siteContext: nodes
             .filter(n => n.id !== targetPageId)
@@ -769,7 +773,7 @@ export default function WireframeView({ project, readOnly = false, currentUser, 
                   <iframe
                     ref={iframeRef}
                     srcDoc={readOnly ? composedDisplayHtml : makeEditable(composedDisplayHtml)}
-                    sandbox="allow-same-origin allow-scripts"
+                    sandbox="allow-scripts"
                     className="w-full border-0"
                     style={{ minHeight: "calc(100vh - 180px)" }}
                     title="Wireframe preview"

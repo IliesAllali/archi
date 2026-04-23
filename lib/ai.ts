@@ -29,6 +29,19 @@ export interface AiEditAction {
   rationale?: string;
 }
 
+export type ProjectMode = "website" | "app";
+
+export interface UiContext {
+  /** "sitemap" or "wireframe" tab */
+  activeTab?: "sitemap" | "wireframe";
+  /** Currently selected page in the sitemap canvas */
+  selectedPageId?: string | null;
+  /** Currently viewed page in the wireframe tab */
+  wireframePageId?: string | null;
+  /** Label of the focused page, for clearer system prompt */
+  focusedPageLabel?: string | null;
+}
+
 // ─── Provider config ────────────────────────────────────────────────────────
 
 const PROVIDER_MODELS: Record<AiProvider, Record<AiSpeed, string>> = {
@@ -132,37 +145,98 @@ Fichiers joints = contexte silencieux.
 
 JSON uniquement: {"nodes":[...]}`;
 
-const EDIT_SYSTEM = `Architecte UX/IA. Tu modifies une arborescence de site web.
+const EDIT_SYSTEM_WEBSITE = `Architecte UX/IA. Tu modifies une arborescence de SITE WEB (pages avec URLs, SEO, parcours).
 
-R\u00c8GLE ABSOLUE : chaque modification = une action dans le tableau. Ne d\u00e9cris JAMAIS ce que tu ferais, FAIS-LE. Si l'utilisateur demande un code couleur sur 15 pages, tu renvoies 15 actions update. actions:[] vide = tu n'as rien fait.
+RÈGLE ABSOLUE : chaque modification = une action dans le tableau. Ne décris JAMAIS ce que tu ferais, FAIS-LE. Si l'utilisateur demande un code couleur sur 15 pages, tu renvoies 15 actions update. actions:[] vide = tu n'as rien fait.
 
-SCOPE : touche UNIQUEMENT ce qui est demand\u00e9.
+SCOPE : touche UNIQUEMENT ce qui est demandé.
 
 PAGE = noeud (URL distincte). SECTION = bloc interne (zoningBlocks).
-Ajouter des "sections" \u00e0 une page = update avec zoningBlocks, PAS de nouvelles pages.
+Ajouter des "sections" à une page = update avec zoningBlocks, PAS de nouvelles pages.
 
 Actions : add, update, delete, move, link
 - add : temp_id, parent_id|parent_temp_id, label, type, priority + champs optionnels
-- update : node_id + champs \u00e0 modifier UNIQUEMENT (ex: {"action":"update","node_id":"abc","group":"blue"})
+- update : node_id + champs à modifier UNIQUEMENT (ex: {"action":"update","node_id":"abc","group":"blue"})
 - delete : node_id
 - move : node_id, parent_id (nouveau)
 - link : node_id, parent_id (parent secondaire, multi-parent)
 
 Types : home, listing, detail, form, landing, quiz, search, hub, error, legal
-Priorit\u00e9s : primary, secondary, utility
-Group (couleur cluster) : blue, green, orange, purple, red, pink, yellow, gray, "" (d\u00e9faut)
+Priorités : primary, secondary, utility
+Group (couleur cluster) : blue, green, orange, purple, red, pink, yellow, gray, "" (défaut)
 
 Champs optionnels : description, rationale, cta[], tags[], group, notes, entryPoints[{type,label}] (home/landing uniquement, types: google|direct|social|email|ads|qrcode)
 
 zoningBlocks[{id,label,skin,height}] : skins = nav,hero,breadcrumb,titre,contenu,sidebar,cards,grille,filtres,cta,double-cta,form,submit,arguments,social-proof,image,question,reponses,progression,nav-quiz,search-bar,resultats,pagination,footer,dots. Heights en % (~100 total).
-zoningExpanded: true|false (visibilit\u00e9 wireframe sur le canvas)
+zoningExpanded: true|false (visibilité wireframe sur le canvas)
 
-Question (pas de modif) \u2192 type:"chat", actions:[], summary: r\u00e9ponse compl\u00e8te.
+Question (pas de modif) → type:"chat", actions:[], summary: réponse complète.
 
 Fichiers joints = contexte silencieux.
 
 JSON uniquement, sans markdown :
-{"type":"edit","actions":[{"action":"update","node_id":"ID","group":"blue"},...],"summary":"court"}`;
+{"type":"edit","actions":[{"action":"update","node_id":"ID","group":"blue"},...],"summary":"court","memoryUpdate":["fait persistant à retenir"] }`;
+
+const EDIT_SYSTEM_APP = `Architecte UX/Produit. Tu modifies l'architecture d'une APPLICATION (mobile ou web app) : écrans, flows, navigation tab/stack/modal.
+
+RÈGLE ABSOLUE : chaque modification = une action dans le tableau. Ne décris JAMAIS ce que tu ferais, FAIS-LE. actions:[] vide = tu n'as rien fait.
+
+SCOPE : touche UNIQUEMENT ce qui est demandé.
+
+ECRAN = noeud (vue distincte). SECTION = bloc interne (zoningBlocks).
+Ajouter des "sections" à un écran = update avec zoningBlocks, PAS de nouveaux écrans.
+
+Patterns d'app à privilégier :
+- Racine = home OU onboarding selon le produit
+- Tab bar / bottom nav : modules principaux comme enfants directs de home
+- Flows : parcours linéaires enfants des modules (ex: création → confirmation)
+- Modales / sheets : noeuds secondaires avec priority "utility"
+- Pas de page "Mentions légales" ou "Contact" sauf mention explicite ; l'app a settings/profil à la place
+
+Actions : add, update, delete, move, link
+- add : temp_id, parent_id|parent_temp_id, label, type, priority + champs optionnels
+- update : node_id + champs à modifier UNIQUEMENT
+- delete : node_id
+- move : node_id, parent_id (nouveau)
+- link : node_id, parent_id (parent secondaire, multi-parent)
+
+Types : home, listing, detail, form, landing, quiz, search, hub, error. Ecran d'app → souvent "detail" ou "hub".
+Priorités : primary (tab bar / parcours coeur), secondary (écran), utility (modale, settings, onboarding)
+Group : blue, green, orange, purple, red, pink, yellow, gray, ""
+
+Champs optionnels : description, rationale, cta[], tags[], group, notes
+
+zoningBlocks pour un écran d'app : pense mobile-first (stack vertical), compose avec nav (top bar), contenu, cards, grille, cta, form, image, footer (tab bar). Heights en % (~100 total).
+
+Question (pas de modif) → type:"chat", actions:[], summary: réponse complète.
+
+Fichiers joints = contexte silencieux.
+
+JSON uniquement, sans markdown :
+{"type":"edit","actions":[...],"summary":"court","memoryUpdate":["fait persistant"]}`;
+
+function getEditSystem(mode: ProjectMode, projectContext?: string, uiContext?: UiContext): string {
+  const base = mode === "app" ? EDIT_SYSTEM_APP : EDIT_SYSTEM_WEBSITE;
+  const parts: string[] = [base];
+
+  if (projectContext && projectContext.trim()) {
+    parts.push(`\n\nCONTEXTE PROJET (ne le contredis pas, réfère-toi à ces faits pour personnaliser tes décisions) :\n${projectContext.trim().slice(0, 4000)}`);
+  }
+
+  if (uiContext) {
+    const where = uiContext.activeTab === "wireframe"
+      ? `L'utilisateur est actuellement dans l'éditeur de WIREFRAME${uiContext.focusedPageLabel ? ` sur la page "${uiContext.focusedPageLabel}"` : ""}. Quand il parle de "cette page" ou "ce wireframe", il désigne cet écran. Tu ne peux modifier ici que la structure (ajout/suppression/renommage de pages, sections zoningBlocks). Pour retravailler le HTML du wireframe lui-même, réponds type:"chat" avec summary="→ Utilise l'AI bar depuis l'onglet Wireframe pour modifier la maquette HTML".`
+      : uiContext.selectedPageId
+        ? `L'utilisateur est sur la SITEMAP, page sélectionnée : ${uiContext.focusedPageLabel ? `"${uiContext.focusedPageLabel}"` : uiContext.selectedPageId}. "Cette page" désigne cette sélection.`
+        : `L'utilisateur est sur la SITEMAP globale, aucune page sélectionnée.`;
+    parts.push(`\n\nCONTEXTE UI : ${where}`);
+  }
+
+  parts.push(`\n\nMEMORY UPDATE : si l'utilisateur te livre une info durable sur le projet (client, contraintes, décisions clés, naming, tonalité), ajoute 1-3 lignes courtes au champ memoryUpdate. Pas de recap évident, pas de doublons avec le CONTEXTE PROJET déjà présent. Sinon, omets le champ.`);
+
+  return parts.join("");
+}
+
 
 // ─── Unified LLM call ───────────────────────────────────────────────────────
 
@@ -353,6 +427,15 @@ export async function generateSitemap(
   return { nodes: parsed.nodes };
 }
 
+export interface EditSitemapOptions {
+  conversationHistory?: { role: "user" | "assistant"; content: string }[];
+  onChunk?: (chunk: string) => void;
+  attachments?: AttachmentInput[];
+  mode?: ProjectMode;
+  projectContext?: string;
+  uiContext?: UiContext;
+}
+
 export async function editSitemap(
   apiKey: string,
   prompt: string,
@@ -361,8 +444,9 @@ export async function editSitemap(
   speed: AiSpeed = "fast",
   conversationHistory?: { role: "user" | "assistant"; content: string }[],
   onChunk?: (chunk: string) => void,
-  attachments?: AttachmentInput[]
-): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat" }> {
+  attachments?: AttachmentInput[],
+  options?: { mode?: ProjectMode; projectContext?: string; uiContext?: UiContext }
+): Promise<{ actions: AiEditAction[]; summary: string; type: "edit" | "chat"; memoryUpdate?: string[] }> {
   // Compact tree: no pretty-print, skip default values to minimize tokens
   const compactTree = currentTree.map(n => {
     const c: Record<string, unknown> = { id: n.id, label: (n as Record<string, unknown>).label, parent_id: n.parent_id, children: n.children };
@@ -405,15 +489,19 @@ export async function editSitemap(
     { role: "user", content: buildUserContent(userMessage, attachments) },
   ];
 
-  const text = await callLLM(provider, apiKey, EDIT_SYSTEM, messages, speed, onChunk);
-  const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string; type?: string };
+  const system = getEditSystem(options?.mode ?? "website", options?.projectContext, options?.uiContext);
+  const text = await callLLM(provider, apiKey, system, messages, speed, onChunk);
+  const parsed = parseJSON(text) as { actions?: AiEditAction[]; summary?: string; type?: string; memoryUpdate?: unknown };
 
   if (!parsed.actions || !Array.isArray(parsed.actions)) {
     throw new Error("Invalid AI response: missing actions array");
   }
 
   const responseType = parsed.type === "chat" ? "chat" : "edit";
-  return { actions: parsed.actions, summary: parsed.summary || "", type: responseType };
+  const memoryUpdate = Array.isArray(parsed.memoryUpdate)
+    ? (parsed.memoryUpdate as unknown[]).map(x => String(x)).filter(Boolean)
+    : undefined;
+  return { actions: parsed.actions, summary: parsed.summary || "", type: responseType, memoryUpdate };
 }
 
 // ─── Build context prompt for manual copy-paste mode ─────────────────────────
