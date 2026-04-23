@@ -14,7 +14,7 @@ interface ExportButtonProps {
 type ExportState = "idle" | "capturing" | "rendering" | "done" | "error";
 
 const STATE_LABEL: Record<ExportState, string> = {
-  idle: "PDF",
+  idle: "Exporter",
   capturing: "Capture…",
   rendering: "Génération…",
   done: "Téléchargé",
