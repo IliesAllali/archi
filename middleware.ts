@@ -27,6 +27,11 @@ export async function middleware(req: NextRequest) {
   //   - /api/ai/* are TEMPORARILY skipped until the client audit is done (some
   //     callers don't yet include the x-csrf-token header; blocking them would
   //     break prod until every AiBar / WireframeView / ZoningEditor path is updated)
+  // Public share password verify is intentionally excluded — visitors are
+  // unauthenticated, have no CSRF cookie, and the route protects itself with
+  // a token + password from the body.
+  const isPublicShareVerify = /^\/api\/projects\/[^/]+\/share\/verify\/?$/.test(pathname)
+
   if (
     pathname.startsWith('/api/') &&
     !pathname.startsWith('/api/v1/') &&
@@ -35,6 +40,7 @@ export async function middleware(req: NextRequest) {
     !pathname.startsWith('/api/mcp') &&
     !pathname.startsWith('/api/webhooks/') &&
     !pathname.startsWith('/api/ai/') &&
+    !isPublicShareVerify &&
     MUTATION_METHODS.includes(method)
   ) {
     const csrfCookie = req.cookies.get(CSRF_COOKIE)?.value
