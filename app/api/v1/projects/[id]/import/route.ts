@@ -38,6 +38,7 @@ export async function POST(
     description?: string
     rationale?: string
     notes?: string
+    group?: string
   }[]
 
   // For large imports, use async job pattern
@@ -71,7 +72,7 @@ export async function POST(
 
 function executeImport(
   projectId: string,
-  nodes: { temp_id: string; parent_temp_id: string | null; label: string; type?: string; priority?: string; description?: string; rationale?: string; notes?: string }[],
+  nodes: { temp_id: string; parent_temp_id: string | null; label: string; type?: string; priority?: string; description?: string; rationale?: string; notes?: string; group?: string }[],
   tokenId: string,
   tokenName: string
 ) {
@@ -102,6 +103,7 @@ function executeImport(
         description: node.description ? sanitizeText(node.description) : '',
         rationale: node.rationale ? sanitizeText(node.rationale) : undefined,
         notes: node.notes ? sanitizeText(node.notes) : undefined,
+        group: node.group || undefined,
         lastModifiedBy: 'ai',
         lastModifiedByName: tokenName,
       })
@@ -130,7 +132,7 @@ function executeImport(
 function processImportJob(
   jobId: string,
   projectId: string,
-  nodes: { temp_id: string; parent_temp_id: string | null; label: string; type?: string; priority?: string; description?: string; rationale?: string; notes?: string }[],
+  nodes: { temp_id: string; parent_temp_id: string | null; label: string; type?: string; priority?: string; description?: string; rationale?: string; notes?: string; group?: string }[],
   tokenId: string,
   tokenName: string
 ) {
