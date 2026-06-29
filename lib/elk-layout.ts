@@ -53,16 +53,54 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   const treeNodes = nodes.filter((n) => n.type === "home" || allChildIds.has(n.id));
   const isolatedNodes = nodes.filter((n) => n.type !== "home" && !allChildIds.has(n.id));
 
-  // ELK nodes and edges (tree only) — each node uses its own width
-  const elkNodes = treeNodes.map((n) => ({
-    id: n.id,
-    width: pageWidth[n.id],
-    height: pageHeight[n.id] + epOverhead[n.id],
-  }));
+  const treeIds = new Set(treeNodes.map((n) => n.id));
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+  // ─── Cluster setup ───────────────────────────────────────────────────────────
+  // A node can pack its direct children into a compact block (childLayout 'stack'
+  // = 1 col, 'grid' = childCols). The clustered children are hidden from ELK (so it
+  // reserves no horizontal spread for them) and the parent's ELK width is widened to
+  // the block width; the children are then placed in a grid below the parent.
+  // Only applied when every direct child is a leaf, so no descendant is lost.
+  const CLUSTER_GAP_X = 16;
+  const CLUSTER_GAP_Y = 18;
+  const CLUSTER_TOP_GAP = 44; // gap below the parent card (matches ELK layer gap)
+
+  type ClusterInfo = { kids: string[]; cols: number; cellW: number; cellH: number; blockW: number };
+  const clusters = new Map<string, ClusterInfo>();
+  const clusteredHidden = new Set<string>();
+
+  treeNodes.forEach((n) => {
+    if (n.childLayout !== "stack" && n.childLayout !== "grid") return;
+    const kids = n.children.filter((c) => treeIds.has(c));
+    if (kids.length < 2) return;
+    const allLeaves = kids.every((c) => (nodeById.get(c)?.children.length ?? 0) === 0);
+    if (!allLeaves) return; // don't cluster parents whose children have their own subtrees
+    const cols = n.childLayout === "stack" ? 1 : Math.max(2, Math.min(6, n.childCols || 2));
+    const cellW = Math.max(...kids.map((c) => pageWidth[c]));
+    const cellH = Math.max(...kids.map((c) => pageHeight[c] + epOverhead[c]));
+    const blockW = cols * cellW + (cols - 1) * CLUSTER_GAP_X;
+    clusters.set(n.id, { kids, cols, cellW, cellH, blockW });
+    kids.forEach((c) => clusteredHidden.add(c));
+  });
+
+  // ELK nodes — exclude hidden cluster children; cluster parents reserve the block width
+  const elkNodes = treeNodes
+    .filter((n) => !clusteredHidden.has(n.id))
+    .map((n) => {
+      const ci = clusters.get(n.id);
+      return {
+        id: n.id,
+        width: ci ? Math.max(pageWidth[n.id], ci.blockW) : pageWidth[n.id],
+        height: pageHeight[n.id] + epOverhead[n.id],
+      };
+    });
 
   const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
   treeNodes.forEach((n) => {
+    if (clusteredHidden.has(n.id)) return;
     n.children.forEach((childId) => {
+      if (clusteredHidden.has(childId)) return;
       elkEdges.push({
         id: `${n.id}->${childId}`,
         sources: [n.id],
@@ -100,63 +138,26 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     positionMap[n.id] = { x: n.x, y: n.y };
   });
 
-  // ─── Cluster packing ────────────────────────────────────────────────────────
-  // A node can pack its direct children into a compact block instead of the
-  // default ELK left-right spread: childLayout 'stack' (1 col) or 'grid' (childCols).
-  // We re-position each child (and its whole subtree, rigidly) into grid cells
-  // centred under the parent. Deterministic, no manual positions stored.
-  {
-    const CLUSTER_GAP_X = 16;
-    const CLUSTER_GAP_Y = 18;
-    const CLUSTER_TOP_GAP = 44; // gap below the parent card (matches ELK layer gap)
-
-    const childrenOf = new Map<string, string[]>();
-    treeNodes.forEach((n) => childrenOf.set(n.id, n.children.filter((c) => positionMap[c])));
-
-    // Depth from the tree roots, so ancestors are packed before descendants.
-    const parentOf = new Map<string, string>();
-    treeNodes.forEach((n) => n.children.forEach((c) => parentOf.set(c, n.id)));
-    const depthOf = (id: string): number => {
-      let d = 0, cur = id; const seen = new Set<string>();
-      while (parentOf.has(cur) && !seen.has(cur)) { seen.add(cur); cur = parentOf.get(cur)!; d++; }
-      return d;
-    };
-
-    const translateSubtree = (rootId: string, dx: number, dy: number) => {
-      if (dx === 0 && dy === 0) return;
-      const stack = [rootId]; const seen = new Set<string>();
-      while (stack.length) {
-        const id = stack.pop()!;
-        if (seen.has(id)) continue; seen.add(id);
-        const p = positionMap[id];
-        if (p) positionMap[id] = { x: p.x + dx, y: p.y + dy };
-        (childrenOf.get(id) || []).forEach((c) => stack.push(c));
-      }
-    };
-
-    const clusterParents = treeNodes
-      .filter((n) => (n.childLayout === "stack" || n.childLayout === "grid") && (childrenOf.get(n.id)?.length ?? 0) >= 2 && positionMap[n.id])
-      .sort((a, b) => depthOf(a.id) - depthOf(b.id));
-
-    for (const parent of clusterParents) {
-      const kids = childrenOf.get(parent.id)!;
-      const cols = parent.childLayout === "stack" ? 1 : Math.max(2, Math.min(6, parent.childCols || 2));
-      const cellW = Math.max(...kids.map((c) => pageWidth[c]));
-      const cellH = Math.max(...kids.map((c) => pageHeight[c] + epOverhead[c]));
-      const blockW = cols * cellW + (cols - 1) * CLUSTER_GAP_X;
-      const pPos = positionMap[parent.id];
-      const pCenterX = pPos.x + pageWidth[parent.id] / 2;
-      const startX = pCenterX - blockW / 2;
-      const startY = pPos.y + pageHeight[parent.id] + epOverhead[parent.id] + CLUSTER_TOP_GAP;
-      kids.forEach((cid, i) => {
-        const col = i % cols, row = Math.floor(i / cols);
-        const newX = startX + col * (cellW + CLUSTER_GAP_X) + (cellW - pageWidth[cid]) / 2;
-        const newY = startY + row * (cellH + CLUSTER_GAP_Y);
-        const cur = positionMap[cid];
-        translateSubtree(cid, newX - cur.x, newY - cur.y);
-      });
-    }
-  }
+  // ─── Cluster placement ───────────────────────────────────────────────────────
+  // Centre each cluster parent's card within its reserved (block) width, then lay
+  // its children out in a grid directly below it. Children were excluded from ELK,
+  // so they hold no reserved width and leave no horizontal void.
+  const cardX: Record<string, number> = {}; // x override for cluster-parent cards
+  clusters.forEach((ci, pid) => {
+    const p = positionMap[pid];
+    if (!p) return;
+    const reservedW = Math.max(pageWidth[pid], ci.blockW);
+    cardX[pid] = p.x + (reservedW - pageWidth[pid]) / 2;
+    const startX = p.x + (reservedW - ci.blockW) / 2;
+    const startY = p.y + epOverhead[pid] + pageHeight[pid] + CLUSTER_TOP_GAP;
+    ci.kids.forEach((cid, i) => {
+      const col = i % ci.cols;
+      const row = Math.floor(i / ci.cols);
+      const x = startX + col * (ci.cellW + CLUSTER_GAP_X) + (ci.cellW - pageWidth[cid]) / 2;
+      const y = startY + row * (ci.cellH + CLUSTER_GAP_Y);
+      positionMap[cid] = { x, y };
+    });
+  });
 
   const rfNodes: Node[] = [];
   const rfEdges: Edge[] = [];
@@ -168,7 +169,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     rfNodes.push({
       id: n.id,
       type: "siteNode",
-      position: { x: p.x, y: p.y + epOverhead[n.id] },
+      position: { x: cardX[n.id] ?? p.x, y: p.y + epOverhead[n.id] },
       data: n,
     });
   });
@@ -200,7 +201,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       id: `ep_${n.id}`,
       type: "entryPointNode",
       position: {
-        x: p.x + (nodeW - EP_WIDTH) / 2,
+        x: (cardX[n.id] ?? p.x) + (nodeW - EP_WIDTH) / 2,
         y: p.y,
       },
       data: { entryPoints: n.entryPoints, targetId: n.id, isHome },
@@ -273,17 +274,22 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
 
   // Isolated standalone nodes — placed in a row below the tree
   if (isolatedNodes.length > 0) {
-    // Compute the bounding box of the ELK layout
+    // Bounding box of the FINAL tree layout (after cluster placement), so isolated
+    // nodes always sit below everything — including tall clustered grids.
     let maxY = 0;
     let minX = Infinity;
     let maxX = -Infinity;
 
     const COMPACT_NODE_W = getCardWidth("other") + 20; // non-home width for isolated nodes
-    layoutedChildren.forEach((n) => {
-      const bottom = n.y + (pageHeight[n.id] ?? 0) + (epOverhead[n.id] ?? 0);
+    treeNodes.forEach((n) => {
+      const p = positionMap[n.id];
+      if (!p) return;
+      const left = cardX[n.id] ?? p.x;
+      const w = pageWidth[n.id] ?? COMPACT_NODE_W;
+      const bottom = p.y + (pageHeight[n.id] ?? 0) + (epOverhead[n.id] ?? 0);
       if (bottom > maxY) maxY = bottom;
-      if (n.x < minX) minX = n.x;
-      if (n.x + (pageWidth[n.id] ?? COMPACT_NODE_W) > maxX) maxX = n.x + (pageWidth[n.id] ?? COMPACT_NODE_W);
+      if (left < minX) minX = left;
+      if (left + w > maxX) maxX = left + w;
     });
 
     const totalW =
