@@ -87,14 +87,20 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     kids.forEach((c) => clusteredHidden.add(c));
   });
 
-  // ELK nodes — real tree nodes (minus clustered children) + one synthetic block node per cluster
+  // ELK nodes — real tree nodes (minus clustered children) + one synthetic block node per cluster.
+  // Cluster parents are widened to the block width so ELK reserves their horizontal slot at the
+  // PARENT layer too (otherwise siblings pack tight against the narrow card and overlap once the
+  // card is centred over its wide block). The synthetic node reserves the CHILD layer rectangle.
   const elkNodes: { id: string; width: number; height: number }[] = treeNodes
     .filter((n) => !clusteredHidden.has(n.id))
-    .map((n) => ({
-      id: n.id,
-      width: pageWidth[n.id],
-      height: pageHeight[n.id] + epOverhead[n.id],
-    }));
+    .map((n) => {
+      const ci = clusters.get(n.id);
+      return {
+        id: n.id,
+        width: ci ? Math.max(pageWidth[n.id], ci.blockW) : pageWidth[n.id],
+        height: pageHeight[n.id] + epOverhead[n.id],
+      };
+    });
   clusters.forEach((ci, pid) => {
     elkNodes.push({ id: CLUSTER_PREFIX + pid, width: ci.blockW, height: ci.blockH });
   });
