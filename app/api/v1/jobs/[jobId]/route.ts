@@ -1,4 +1,4 @@
-import { authenticateApiToken, apiSuccess, apiError } from '@/lib/api-auth'
+import { authenticateApiToken, tokenCanAccessProject, apiSuccess, apiError } from '@/lib/api-auth'
 import { db } from '@/lib/db'
 
 export const dynamic = "force-dynamic"
@@ -27,8 +27,8 @@ export async function GET(
 
   if (!job) return apiError('NOT_FOUND', 'Job not found', 404)
 
-  // Ensure token has access to this project
-  if (job.project_id !== token.projectId) {
+  // Ensure token has access to this job's project (project-scoped or account-level token)
+  if (tokenCanAccessProject(token, job.project_id) !== true) {
     return apiError('FORBIDDEN', 'Token does not have access to this job', 403)
   }
 

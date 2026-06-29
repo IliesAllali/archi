@@ -16,7 +16,7 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const auth = authorizeRequest(req, 'admin', params.id)
+  const auth = authorizeRequest(req, 'write:nodes', params.id)
   if (auth instanceof Response) return auth
 
   const project = db
