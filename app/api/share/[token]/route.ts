@@ -29,15 +29,17 @@ export async function GET(
     .get(params.token) as ShareRow | undefined;
 
   // Invalid, expired, or password-protected -> bounce back to the page (it renders the right UI/form)
+  // Use a relative Location so the browser resolves it on the public host (req.url is the internal
+  // 0.0.0.0:3002 address behind the proxy).
   if (!link || (link.expires_at && link.expires_at < Date.now()) || link.password_hash) {
-    return NextResponse.redirect(new URL(`/share/${params.token}`, req.url));
+    return new NextResponse(null, { status: 307, headers: { Location: `/share/${params.token}` } });
   }
 
   db.prepare("UPDATE project_share_links SET visit_count = visit_count + 1 WHERE id = ?").run(link.id);
 
   const sessionToken = await createSession({ role: "viewer", project: link.project_id });
 
-  const res = NextResponse.redirect(new URL(`/${link.project_id}`, req.url));
+  const res = new NextResponse(null, { status: 307, headers: { Location: `/${link.project_id}` } });
   res.cookies.set(`arbo_project_${link.project_id}`, sessionToken, {
     path: "/",
     httpOnly: true,
