@@ -1012,9 +1012,11 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
       {ctxMenu && (() => {
         const node = nodes.find((n) => n.id === ctxMenu.nodeId);
         if (!node) return null;
+        const nid = ctxMenu.nodeId;
         const childCount = node.children?.length ?? 0;
         const hasParent = nodes.some((n) => n.children?.includes(node.id));
-        const canDetach = hasParent && node.type !== "home";
+        const isHome = node.type === "home";
+        const canDetach = hasParent && !isHome;
         const cur = node.childLayout || "spread";
         const curCols = node.childCols || 2;
         const opts: { label: string; layout: "spread" | "stack" | "grid"; cols?: number; active: boolean }[] = [
@@ -1024,6 +1026,20 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
           { label: "Grille 3 colonnes", layout: "grid", cols: 3, active: cur === "grid" && curCols === 3 },
           { label: "Grille 4 colonnes", layout: "grid", cols: 4, active: cur === "grid" && curCols === 4 },
         ];
+        const hover = (on: boolean) => (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = on ? "var(--hover, rgba(125,125,135,0.10))" : "transparent"; };
+        const Item = (label: string, onClick: () => void, danger = false) => (
+          <button
+            key={label}
+            onClick={onClick}
+            className="w-full text-left px-3 py-1.5 transition-colors"
+            style={{ fontSize: 12, color: danger ? "var(--danger, #E5534B)" : "var(--text)", cursor: "pointer", background: "transparent" }}
+            onMouseEnter={hover(true)}
+            onMouseLeave={hover(false)}
+          >
+            {label}
+          </button>
+        );
+        const Sep = (k: string) => <div key={k} className="my-1" style={{ borderTop: "1px solid var(--line-subtle)" }} />;
         return (
           <>
             <div className="fixed inset-0 z-[60]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
@@ -1031,13 +1047,18 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
               className="fixed z-[61] py-1.5 shadow-lg"
               style={{
                 left: Math.min(ctxMenu.x, (typeof window !== "undefined" ? window.innerWidth : 9999) - 230),
-                top: ctxMenu.y,
+                top: Math.min(ctxMenu.y, (typeof window !== "undefined" ? window.innerHeight : 9999) - 360),
                 minWidth: 210,
                 borderRadius: 10,
                 border: "1px solid var(--line)",
                 background: "var(--surface)",
               }}
             >
+              {Item("Ajouter une page enfant", () => { addNode(nid, "child"); setCtxMenu(null); })}
+              {hasParent && Item("Ajouter une page sœur", () => { addNode(nid, "sibling"); setCtxMenu(null); })}
+              {Item("Dupliquer", () => { duplicateNode(nid); setCtxMenu(null); })}
+
+              {Sep("s1")}
               <div className="px-3 pb-1.5 mb-1" style={{ borderBottom: "1px solid var(--line-subtle)" }}>
                 <div className="font-medium leading-tight" style={{ fontSize: 11, color: "var(--text-secondary)" }}>Disposition des enfants</div>
                 <div className="leading-tight mt-0.5" style={{ fontSize: 10, color: "var(--text-tertiary, var(--text-secondary))" }}>
@@ -1048,7 +1069,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
                 <button
                   key={o.label}
                   disabled={childCount < 2}
-                  onClick={() => applyChildLayout(ctxMenu.nodeId, o.layout, o.cols)}
+                  onClick={() => applyChildLayout(nid, o.layout, o.cols)}
                   className="w-full text-left px-3 py-1.5 flex items-center justify-between transition-colors"
                   style={{
                     fontSize: 12,
@@ -1064,20 +1085,10 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
                   {o.active && <span style={{ color: "var(--accent)", fontSize: 12 }}>✓</span>}
                 </button>
               ))}
-              {canDetach && (
-                <>
-                  <div className="my-1" style={{ borderTop: "1px solid var(--line-subtle)" }} />
-                  <button
-                    onClick={() => { detachNode(ctxMenu.nodeId); setCtxMenu(null); }}
-                    className="w-full text-left px-3 py-1.5 transition-colors"
-                    style={{ fontSize: 12, color: "var(--text)", cursor: "pointer", background: "transparent" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover, rgba(125,125,135,0.10))"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    Délier (sortir du contexte, en bas)
-                  </button>
-                </>
-              )}
+
+              {(canDetach || !isHome) && Sep("s2")}
+              {canDetach && Item("Délier (sortir du contexte, en bas)", () => { detachNode(nid); setCtxMenu(null); })}
+              {!isHome && Item("Supprimer", () => { setDeleteModalNodeId(nid); setCtxMenu(null); }, true)}
             </div>
           </>
         );
