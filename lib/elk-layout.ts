@@ -65,6 +65,7 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   // Only applied when every direct child is a leaf, so no descendant is lost.
   const CLUSTER_GAP_X = 16;
   const CLUSTER_GAP_Y = 18;
+  const CLUSTER_PREFIX = "__cluster__";
 
   type ClusterInfo = { kids: string[]; cols: number; rows: number; cellW: number; cellH: number; blockW: number; blockH: number };
   const clusters = new Map<string, ClusterInfo>();
@@ -86,30 +87,36 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     kids.forEach((c) => clusteredHidden.add(c));
   });
 
-  // ELK nodes — real tree nodes (minus clustered children). A cluster parent is laid out as a
-  // SINGLE node sized to its whole footprint: width = block width, height = card + gap + grid.
-  // Card and grid are then placed INSIDE that reserved rectangle, so parent + grid form one rigid
-  // unit ELK can never overlap with a sibling (no cross-layer x/y misalignment of a placeholder).
-  const CLUSTER_LABEL_GAP = CLUSTER_GAP_Y; // vertical gap between the parent card and its grid
+  // ELK nodes — real tree nodes (minus clustered children) + one synthetic block node per cluster.
+  // A cluster parent stays a SHORT card on its own layer (so it lines up in the sibling row) and a
+  // synthetic block node one layer below reserves the grid rectangle. The parent is widened to the
+  // block width so the row reserves the full horizontal slot. BRANDES_KOEPF node placement (see
+  // layoutOptions) keeps the parent card stacked exactly above its block — so the card never drifts
+  // out of its slot (the bug NETWORK_SIMPLEX caused) and stays centred over the grid.
   const elkNodes: { id: string; width: number; height: number }[] = treeNodes
     .filter((n) => !clusteredHidden.has(n.id))
     .map((n) => {
       const ci = clusters.get(n.id);
-      if (ci) {
-        return {
-          id: n.id,
-          width: Math.max(pageWidth[n.id], ci.blockW),
-          height: pageHeight[n.id] + epOverhead[n.id] + CLUSTER_LABEL_GAP + ci.blockH,
-        };
-      }
-      return { id: n.id, width: pageWidth[n.id], height: pageHeight[n.id] + epOverhead[n.id] };
+      return {
+        id: n.id,
+        width: ci ? Math.max(pageWidth[n.id], ci.blockW) : pageWidth[n.id],
+        height: pageHeight[n.id] + epOverhead[n.id],
+      };
     });
+  clusters.forEach((ci, pid) => {
+    elkNodes.push({ id: CLUSTER_PREFIX + pid, width: ci.blockW, height: ci.blockH });
+  });
 
   const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
   treeNodes.forEach((n) => {
     if (clusteredHidden.has(n.id)) return;
+    if (clusters.has(n.id)) {
+      // Parent connects to its single block placeholder; the real children are gridded inside it
+      elkEdges.push({ id: `${n.id}->cluster`, sources: [n.id], targets: [CLUSTER_PREFIX + n.id] });
+      return;
+    }
     n.children.forEach((childId) => {
-      if (clusteredHidden.has(childId)) return; // clustered kids live inside the parent box, not the graph
+      if (clusteredHidden.has(childId)) return;
       elkEdges.push({
         id: `${n.id}->${childId}`,
         sources: [n.id],
@@ -128,7 +135,9 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
       "elk.edgeRouting": "SPLINES",
       "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
-      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+      // BRANDES_KOEPF stacks a node directly above its single successor, so a cluster parent card
+      // lines up exactly over its grid block (NETWORK_SIMPLEX drifted ~150px and overlapped siblings).
+      "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
     },
     children: elkNodes,
     edges: elkEdges,
@@ -148,22 +157,19 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   });
 
   // ─── Cluster placement ───────────────────────────────────────────────────────
-  // The parent ELK node already reserves the whole footprint (card + grid). Centre the card at
-  // the top of that rectangle and grid the real children just below it, anchored to the parent's
-  // own laid-out position — so the grid can never poke outside the reserved slot.
+  // The synthetic block node holds ELK's reserved rectangle. Grid the real children inside it and
+  // centre the parent card over the block. With BRANDES_KOEPF the block sits directly beneath the
+  // parent's slot, so the card stays inside its reserved slot and stays centred over the grid.
   const cardX: Record<string, number> = {}; // x override for cluster-parent cards
   clusters.forEach((ci, pid) => {
-    const p = positionMap[pid];
-    if (!p) return;
-    const boxW = Math.max(pageWidth[pid], ci.blockW);
-    cardX[pid] = p.x + (boxW - pageWidth[pid]) / 2;
-    const gridX0 = p.x + (boxW - ci.blockW) / 2;
-    const gridY0 = p.y + epOverhead[pid] + pageHeight[pid] + CLUSTER_LABEL_GAP;
+    const block = positionMap[CLUSTER_PREFIX + pid];
+    if (!block) return;
+    cardX[pid] = block.x + (ci.blockW - pageWidth[pid]) / 2;
     ci.kids.forEach((cid, i) => {
       const col = i % ci.cols;
       const row = Math.floor(i / ci.cols);
-      const x = gridX0 + col * (ci.cellW + CLUSTER_GAP_X) + (ci.cellW - pageWidth[cid]) / 2;
-      const y = gridY0 + row * (ci.cellH + CLUSTER_GAP_Y);
+      const x = block.x + col * (ci.cellW + CLUSTER_GAP_X) + (ci.cellW - pageWidth[cid]) / 2;
+      const y = block.y + row * (ci.cellH + CLUSTER_GAP_Y);
       positionMap[cid] = { x, y };
     });
   });
