@@ -69,6 +69,8 @@ interface CanvasState {
   addNode: (parentId: string | null, position: "child" | "sibling", initialLabel?: string) => string;
   deleteNode: (nodeId: string, mode: "cascade" | "reparent") => void;
   reparentNode: (nodeId: string, newParentId: string | null) => void;
+  /** Detach a node from the tree: promote its children to its former parent, then leave it parentless + childless (renders as an isolated node at the bottom). */
+  detachNode: (nodeId: string) => void;
   moveNode: (nodeId: string, intent: DropIntent) => void;
   reorderSiblings: (parentId: string | null, orderedIds: string[]) => void;
   duplicateNode: (nodeId: string) => void;
@@ -361,6 +363,26 @@ export const useCanvasStore = create<CanvasState>()(
           }
         }
 
+        state.nodeMap = buildNodeMap(state.nodes);
+      });
+      get().markDirty("reparent");
+    },
+
+    detachNode: (nodeId: string) => {
+      get()._pushHistory();
+      set((state) => {
+        const node = state.nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+        const oldParentId = getParentId(nodeId, state.nodes);
+        const oldParent = oldParentId ? state.nodes.find((n) => n.id === oldParentId) : null;
+        if (oldParent) {
+          // Replace this node with its children in the parent (promote them in place)
+          const idx = oldParent.children.indexOf(nodeId);
+          if (idx >= 0) oldParent.children.splice(idx, 1, ...node.children);
+          else oldParent.children = oldParent.children.filter((c) => c !== nodeId);
+        }
+        // Node becomes parentless + childless → isolated row at the bottom
+        node.children = [];
         state.nodeMap = buildNodeMap(state.nodes);
       });
       get().markDirty("reparent");

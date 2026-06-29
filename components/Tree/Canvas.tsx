@@ -253,6 +253,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
   const rfNodesRef = useRef<Node[]>([]);
   const rfEdgesRef = useRef<Edge[]>([]);
   const [deleteModalNodeId, setDeleteModalNodeId] = useState<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null);
 
   // Drag tracking
   const baseNodesRef = useRef<Node[]>([]);
@@ -277,6 +278,8 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
   const duplicateNode = useCanvasStore((s) => s.duplicateNode);
   const moveNode = useCanvasStore((s) => s.moveNode);
   const setDropIntent = useCanvasStore((s) => s.setDropIntent);
+  const updateNodeData = useCanvasStore((s) => s.updateNodeData);
+  const detachNode = useCanvasStore((s) => s.detachNode);
 
   // Modifier keys
   const altKeyRef = useRef(false);
@@ -493,8 +496,36 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
   const onPaneClick = useCallback(() => {
     if (editingNodeId) stopEditing();
     selectNode(null);
+    setCtxMenu(null);
     onExternalSelectClear?.();
   }, [editingNodeId, stopEditing, selectNode, onExternalSelectClear]);
+
+  const onNodeContextMenu = useCallback(
+    (e: React.MouseEvent, node: Node) => {
+      if (readOnly) return;
+      if (node.id.startsWith("ep_")) return;
+      e.preventDefault();
+      selectNode(node.id);
+      setCtxMenu({ x: e.clientX, y: e.clientY, nodeId: node.id });
+    },
+    [readOnly, selectNode]
+  );
+
+  // Close the context menu on Escape
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCtxMenu(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ctxMenu]);
+
+  const applyChildLayout = useCallback(
+    (nodeId: string, childLayout: "spread" | "stack" | "grid", childCols?: number) => {
+      updateNodeData(nodeId, { childLayout, childCols });
+      setCtxMenu(null);
+    },
+    [updateNodeData]
+  );
 
   // ─── Drag handlers ──────────────────────────────────────────────────────────
 
@@ -849,6 +880,7 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
+        onNodeContextMenu={onNodeContextMenu}
         onNodeDragStart={onNodeDragStart}
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
@@ -976,6 +1008,80 @@ function CanvasInner({ project, externalSelectedNode, onExternalSelectClear, rea
           }
         }}
       />
+
+      {ctxMenu && (() => {
+        const node = nodes.find((n) => n.id === ctxMenu.nodeId);
+        if (!node) return null;
+        const childCount = node.children?.length ?? 0;
+        const hasParent = nodes.some((n) => n.children?.includes(node.id));
+        const canDetach = hasParent && node.type !== "home";
+        const cur = node.childLayout || "spread";
+        const curCols = node.childCols || 2;
+        const opts: { label: string; layout: "spread" | "stack" | "grid"; cols?: number; active: boolean }[] = [
+          { label: "Étalé (défaut)", layout: "spread", active: cur === "spread" },
+          { label: "Empilé (1 colonne)", layout: "stack", active: cur === "stack" },
+          { label: "Grille 2 colonnes", layout: "grid", cols: 2, active: cur === "grid" && curCols === 2 },
+          { label: "Grille 3 colonnes", layout: "grid", cols: 3, active: cur === "grid" && curCols === 3 },
+          { label: "Grille 4 colonnes", layout: "grid", cols: 4, active: cur === "grid" && curCols === 4 },
+        ];
+        return (
+          <>
+            <div className="fixed inset-0 z-[60]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+            <div
+              className="fixed z-[61] py-1.5 shadow-lg"
+              style={{
+                left: Math.min(ctxMenu.x, (typeof window !== "undefined" ? window.innerWidth : 9999) - 230),
+                top: ctxMenu.y,
+                minWidth: 210,
+                borderRadius: 10,
+                border: "1px solid var(--line)",
+                background: "var(--surface)",
+              }}
+            >
+              <div className="px-3 pb-1.5 mb-1" style={{ borderBottom: "1px solid var(--line-subtle)" }}>
+                <div className="font-medium leading-tight" style={{ fontSize: 11, color: "var(--text-secondary)" }}>Disposition des enfants</div>
+                <div className="leading-tight mt-0.5" style={{ fontSize: 10, color: "var(--text-tertiary, var(--text-secondary))" }}>
+                  {childCount === 0 ? "Aucune page enfant" : `${childCount} page${childCount > 1 ? "s" : ""} enfant${childCount > 1 ? "s" : ""}`}
+                </div>
+              </div>
+              {opts.map((o) => (
+                <button
+                  key={o.label}
+                  disabled={childCount < 2}
+                  onClick={() => applyChildLayout(ctxMenu.nodeId, o.layout, o.cols)}
+                  className="w-full text-left px-3 py-1.5 flex items-center justify-between transition-colors"
+                  style={{
+                    fontSize: 12,
+                    color: childCount < 2 ? "var(--text-tertiary, #9aa)" : "var(--text)",
+                    opacity: childCount < 2 ? 0.5 : 1,
+                    cursor: childCount < 2 ? "not-allowed" : "pointer",
+                    background: o.active ? "var(--accent-muted)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => { if (childCount >= 2 && !o.active) e.currentTarget.style.background = "var(--hover, rgba(125,125,135,0.10))"; }}
+                  onMouseLeave={(e) => { if (!o.active) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span>{o.label}</span>
+                  {o.active && <span style={{ color: "var(--accent)", fontSize: 12 }}>✓</span>}
+                </button>
+              ))}
+              {canDetach && (
+                <>
+                  <div className="my-1" style={{ borderTop: "1px solid var(--line-subtle)" }} />
+                  <button
+                    onClick={() => { detachNode(ctxMenu.nodeId); setCtxMenu(null); }}
+                    className="w-full text-left px-3 py-1.5 transition-colors"
+                    style={{ fontSize: 12, color: "var(--text)", cursor: "pointer", background: "transparent" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--hover, rgba(125,125,135,0.10))"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    Délier (sortir du contexte, en bas)
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

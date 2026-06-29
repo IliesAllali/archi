@@ -51,6 +51,8 @@ export async function POST(
     notes: body.notes ? sanitizeText(body.notes) : undefined,
     rationale: body.rationale ? sanitizeText(body.rationale) : undefined,
     group: body.group || undefined,
+    childLayout: body.childLayout || undefined,
+    childCols: body.childCols || undefined,
     zoningBlocks: body.zoningBlocks || undefined,
     zoningExpanded: body.zoningExpanded || false,
     zoningHtml: body.zoningHtml || undefined,

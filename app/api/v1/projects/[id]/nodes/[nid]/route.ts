@@ -49,6 +49,8 @@ export async function PUT(
     ...(body.notes !== undefined && { notes: sanitizeText(body.notes) }),
     ...(body.rationale !== undefined && { rationale: sanitizeText(body.rationale) }),
     ...(body.group !== undefined && { group: body.group || undefined }),
+    ...(body.childLayout !== undefined && { childLayout: body.childLayout || undefined }),
+    ...(body.childCols !== undefined && { childCols: body.childCols }),
     ...(body.zoningBlocks !== undefined && { zoningBlocks: body.zoningBlocks }),
     ...(body.zoningExpanded !== undefined && { zoningExpanded: body.zoningExpanded }),
     ...(body.zoningHtml !== undefined && { zoningHtml: body.zoningHtml }),

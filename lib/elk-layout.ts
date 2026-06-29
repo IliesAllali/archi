@@ -100,6 +100,64 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     positionMap[n.id] = { x: n.x, y: n.y };
   });
 
+  // ─── Cluster packing ────────────────────────────────────────────────────────
+  // A node can pack its direct children into a compact block instead of the
+  // default ELK left-right spread: childLayout 'stack' (1 col) or 'grid' (childCols).
+  // We re-position each child (and its whole subtree, rigidly) into grid cells
+  // centred under the parent. Deterministic, no manual positions stored.
+  {
+    const CLUSTER_GAP_X = 16;
+    const CLUSTER_GAP_Y = 18;
+    const CLUSTER_TOP_GAP = 44; // gap below the parent card (matches ELK layer gap)
+
+    const childrenOf = new Map<string, string[]>();
+    treeNodes.forEach((n) => childrenOf.set(n.id, n.children.filter((c) => positionMap[c])));
+
+    // Depth from the tree roots, so ancestors are packed before descendants.
+    const parentOf = new Map<string, string>();
+    treeNodes.forEach((n) => n.children.forEach((c) => parentOf.set(c, n.id)));
+    const depthOf = (id: string): number => {
+      let d = 0, cur = id; const seen = new Set<string>();
+      while (parentOf.has(cur) && !seen.has(cur)) { seen.add(cur); cur = parentOf.get(cur)!; d++; }
+      return d;
+    };
+
+    const translateSubtree = (rootId: string, dx: number, dy: number) => {
+      if (dx === 0 && dy === 0) return;
+      const stack = [rootId]; const seen = new Set<string>();
+      while (stack.length) {
+        const id = stack.pop()!;
+        if (seen.has(id)) continue; seen.add(id);
+        const p = positionMap[id];
+        if (p) positionMap[id] = { x: p.x + dx, y: p.y + dy };
+        (childrenOf.get(id) || []).forEach((c) => stack.push(c));
+      }
+    };
+
+    const clusterParents = treeNodes
+      .filter((n) => (n.childLayout === "stack" || n.childLayout === "grid") && (childrenOf.get(n.id)?.length ?? 0) >= 2 && positionMap[n.id])
+      .sort((a, b) => depthOf(a.id) - depthOf(b.id));
+
+    for (const parent of clusterParents) {
+      const kids = childrenOf.get(parent.id)!;
+      const cols = parent.childLayout === "stack" ? 1 : Math.max(2, Math.min(6, parent.childCols || 2));
+      const cellW = Math.max(...kids.map((c) => pageWidth[c]));
+      const cellH = Math.max(...kids.map((c) => pageHeight[c] + epOverhead[c]));
+      const blockW = cols * cellW + (cols - 1) * CLUSTER_GAP_X;
+      const pPos = positionMap[parent.id];
+      const pCenterX = pPos.x + pageWidth[parent.id] / 2;
+      const startX = pCenterX - blockW / 2;
+      const startY = pPos.y + pageHeight[parent.id] + epOverhead[parent.id] + CLUSTER_TOP_GAP;
+      kids.forEach((cid, i) => {
+        const col = i % cols, row = Math.floor(i / cols);
+        const newX = startX + col * (cellW + CLUSTER_GAP_X) + (cellW - pageWidth[cid]) / 2;
+        const newY = startY + row * (cellH + CLUSTER_GAP_Y);
+        const cur = positionMap[cid];
+        translateSubtree(cid, newX - cur.x, newY - cur.y);
+      });
+    }
+  }
+
   const rfNodes: Node[] = [];
   const rfEdges: Edge[] = [];
 

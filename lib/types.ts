@@ -74,6 +74,10 @@ export interface NodeData {
   cta?: string[]
   tags?: string[]
   group?: string
+  /** Layout of this node's direct children on the canvas. 'spread' (default) = ELK left-right; 'stack' = single column; 'grid' = packed grid of `childCols` columns. */
+  childLayout?: 'spread' | 'stack' | 'grid'
+  /** Number of columns when childLayout === 'grid' (2-6). 'stack' is always 1. */
+  childCols?: number
   entryPoints?: EntryPoint[]
   links?: string[]
   estimate?: number
