@@ -58,15 +58,16 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
 
   // ─── Cluster setup ───────────────────────────────────────────────────────────
   // A node can pack its direct children into a compact block (childLayout 'stack'
-  // = 1 col, 'grid' = childCols). The clustered children are hidden from ELK (so it
-  // reserves no horizontal spread for them) and the parent's ELK width is widened to
-  // the block width; the children are then placed in a grid below the parent.
+  // = 1 col, 'grid' = childCols). Instead of laying the children out individually,
+  // ELK lays out a single synthetic placeholder node sized to the whole block — so
+  // it reserves an exact rectangle (no void, no overlap with other branches). The
+  // real children are then gridded inside that rectangle.
   // Only applied when every direct child is a leaf, so no descendant is lost.
   const CLUSTER_GAP_X = 16;
   const CLUSTER_GAP_Y = 18;
-  const CLUSTER_TOP_GAP = 44; // gap below the parent card (matches ELK layer gap)
+  const CLUSTER_PREFIX = "__cluster__";
 
-  type ClusterInfo = { kids: string[]; cols: number; cellW: number; cellH: number; blockW: number };
+  type ClusterInfo = { kids: string[]; cols: number; rows: number; cellW: number; cellH: number; blockW: number; blockH: number };
   const clusters = new Map<string, ClusterInfo>();
   const clusteredHidden = new Set<string>();
 
@@ -77,28 +78,35 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
     const allLeaves = kids.every((c) => (nodeById.get(c)?.children.length ?? 0) === 0);
     if (!allLeaves) return; // don't cluster parents whose children have their own subtrees
     const cols = n.childLayout === "stack" ? 1 : Math.max(2, Math.min(6, n.childCols || 2));
+    const rows = Math.ceil(kids.length / cols);
     const cellW = Math.max(...kids.map((c) => pageWidth[c]));
     const cellH = Math.max(...kids.map((c) => pageHeight[c] + epOverhead[c]));
     const blockW = cols * cellW + (cols - 1) * CLUSTER_GAP_X;
-    clusters.set(n.id, { kids, cols, cellW, cellH, blockW });
+    const blockH = rows * cellH + (rows - 1) * CLUSTER_GAP_Y;
+    clusters.set(n.id, { kids, cols, rows, cellW, cellH, blockW, blockH });
     kids.forEach((c) => clusteredHidden.add(c));
   });
 
-  // ELK nodes — exclude hidden cluster children; cluster parents reserve the block width
-  const elkNodes = treeNodes
+  // ELK nodes — real tree nodes (minus clustered children) + one synthetic block node per cluster
+  const elkNodes: { id: string; width: number; height: number }[] = treeNodes
     .filter((n) => !clusteredHidden.has(n.id))
-    .map((n) => {
-      const ci = clusters.get(n.id);
-      return {
-        id: n.id,
-        width: ci ? Math.max(pageWidth[n.id], ci.blockW) : pageWidth[n.id],
-        height: pageHeight[n.id] + epOverhead[n.id],
-      };
-    });
+    .map((n) => ({
+      id: n.id,
+      width: pageWidth[n.id],
+      height: pageHeight[n.id] + epOverhead[n.id],
+    }));
+  clusters.forEach((ci, pid) => {
+    elkNodes.push({ id: CLUSTER_PREFIX + pid, width: ci.blockW, height: ci.blockH });
+  });
 
   const elkEdges: { id: string; sources: string[]; targets: string[] }[] = [];
   treeNodes.forEach((n) => {
     if (clusteredHidden.has(n.id)) return;
+    if (clusters.has(n.id)) {
+      // Parent connects to its single block placeholder
+      elkEdges.push({ id: `${n.id}->cluster`, sources: [n.id], targets: [CLUSTER_PREFIX + n.id] });
+      return;
+    }
     n.children.forEach((childId) => {
       if (clusteredHidden.has(childId)) return;
       elkEdges.push({
@@ -139,22 +147,18 @@ export async function computeLayout(nodes: SiteNode[]): Promise<{
   });
 
   // ─── Cluster placement ───────────────────────────────────────────────────────
-  // Centre each cluster parent's card within its reserved (block) width, then lay
-  // its children out in a grid directly below it. Children were excluded from ELK,
-  // so they hold no reserved width and leave no horizontal void.
+  // The synthetic block node holds ELK's reserved rectangle. Grid the real children
+  // inside it, and centre the parent card horizontally above the block.
   const cardX: Record<string, number> = {}; // x override for cluster-parent cards
   clusters.forEach((ci, pid) => {
-    const p = positionMap[pid];
-    if (!p) return;
-    const reservedW = Math.max(pageWidth[pid], ci.blockW);
-    cardX[pid] = p.x + (reservedW - pageWidth[pid]) / 2;
-    const startX = p.x + (reservedW - ci.blockW) / 2;
-    const startY = p.y + epOverhead[pid] + pageHeight[pid] + CLUSTER_TOP_GAP;
+    const block = positionMap[CLUSTER_PREFIX + pid];
+    if (!block) return;
+    cardX[pid] = block.x + (ci.blockW - pageWidth[pid]) / 2;
     ci.kids.forEach((cid, i) => {
       const col = i % ci.cols;
       const row = Math.floor(i / ci.cols);
-      const x = startX + col * (ci.cellW + CLUSTER_GAP_X) + (ci.cellW - pageWidth[cid]) / 2;
-      const y = startY + row * (ci.cellH + CLUSTER_GAP_Y);
+      const x = block.x + col * (ci.cellW + CLUSTER_GAP_X) + (ci.cellW - pageWidth[cid]) / 2;
+      const y = block.y + row * (ci.cellH + CLUSTER_GAP_Y);
       positionMap[cid] = { x, y };
     });
   });
