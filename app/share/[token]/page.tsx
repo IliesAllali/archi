@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { createSession, COOKIE_NAME } from "@/lib/auth";
 import Logo from "@/components/Logo";
 import SharePasswordForm from "./SharePasswordForm";
 
@@ -30,24 +28,10 @@ export default async function SharePage({ params }: { params: { token: string } 
     return <ShareError message="Ce lien a expiré" />;
   }
 
-  // No password required — create guest session, set cookie, redirect straight to the project.
+  // No password required — hand off to the route handler, which sets the guest cookie and
+  // redirects to the project. (Cookies cannot be written during a Server Component render.)
   if (!link.password_hash) {
-    db.prepare("UPDATE project_share_links SET visit_count = visit_count + 1 WHERE id = ?").run(link.id);
-
-    const sessionToken = await createSession({
-      role: "viewer",
-      project: link.project_id,
-    });
-
-    cookies().set(COOKIE_NAME, sessionToken, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    redirect(`/${link.project_id}`);
+    redirect(`/api/share/${params.token}`);
   }
 
   // Password required — render the form (client component).
